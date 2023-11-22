@@ -23,6 +23,7 @@ docker run -it \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
   -v /hugepages:/hugepages \
   -v /lib/modules/$(uname -r):/lib/modules/$(uname -r) \
+  --net=host \
   --entrypoint /bin/bash \
   my_ffmpeg
 ```
