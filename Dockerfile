@@ -45,7 +45,8 @@ ENV \
   X265=3.5 \
   XVID=1.3.7 \
   CARTWHEEL=2023q3 \
-  FFMPEG_COMMIT_ID=9e1ea3caba5effaf9c7596dc178bd457439d638f
+  FFMPEG_COMMIT_ID=9e1ea3caba5effaf9c7596dc178bd457439d638f \
+  IMTL_COMMIT_ID=553ac507273d8c8768a3c753df00015cd9373918
 
 RUN \
   echo "**** install build packages ****" && \
@@ -660,7 +661,7 @@ RUN \
   echo "**** Media Transport Library ****" && \
   mkdir -p /tmp/MTL && \
   curl -Lf \
-    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/main.tar.gz | \
+    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/${IMTL_COMMIT_ID}.tar.gz | \
     tar -zx --strip-components=1 -C /tmp/MTL
 RUN \
   echo "**** DPDK patch ****" && \
