@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # build stage
-FROM ubuntu:22.04 as buildstage
+FROM ubuntu as buildstage
 
 # set version label
 ARG FFMPEG_VERSION
@@ -9,44 +9,43 @@ ARG FFMPEG_VERSION
 # common env
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
-  MAKEFLAGS="-j4"
+  MAKEFLAGS="-j16"
 
 # versions
 ENV \
-  AOM=v3.7.0 \
+  AOM=v3.7.1 \
   FDKAAC=2.0.2 \
-  FFMPEG_HARD=6.0 \
+  FFMPEG_HARD=6.1 \
   FONTCONFIG=2.14.2 \
   FREETYPE=2.13.2 \
   FRIBIDI=1.0.13 \
-  GMMLIB=22.3.7 \
-  IHD=23.2.4 \
+  GMMLIB=22.3.12 \
+  IHD=23.3.5 \
   KVAZAAR=2.2.0 \
   LAME=3.100 \
   LIBASS=0.17.1 \
-  LIBDRM=2.4.116 \
+  LIBDRM=2.4.118 \
   LIBMFX=22.5.4 \
-  LIBVA=2.19.0 \
+  LIBVA=2.20.0 \
   LIBVDPAU=1.5 \
   LIBVIDSTAB=1.1.1 \
   LIBVMAF=2.3.1 \
   LIBVPL=2023.3.1 \
-  NVCODEC=n12.0.16.0 \
+  NVCODEC=n12.1.14.0 \
   OGG=1.3.5 \
-  ONEVPL=23.2.4 \
+  ONEVPL=23.3.4 \
   OPENCOREAMR=0.1.6 \
   OPENJPEG=2.5.0 \
-  OPUS=1.3.1 \
+  OPUS=1.4 \
+  SHADERC=v2023.7 \
   SVTAV1=1.7.0 \
   THEORA=1.1.1 \
   VORBIS=1.3.7 \
   VPX=1.13.1 \
+  VULKANSDK=vulkan-sdk-1.3.268.0 \
   WEBP=1.3.2 \
   X265=3.5 \
-  XVID=1.3.7 \
-  CARTWHEEL=2023q3 \
-  FFMPEG_COMMIT_ID=9e1ea3caba5effaf9c7596dc178bd457439d638f \
-  IMTL_COMMIT_ID=553ac507273d8c8768a3c753df00015cd9373918
+  XVID=1.3.7
 
 RUN \
   echo "**** install build packages ****" && \
@@ -86,9 +85,8 @@ RUN \
     ocl-icd-opencl-dev \
     perl \
     pkg-config \
-    python3-venv \
     python3-pip \
-    python3-pyelftools \
+    python3-venv \
     wayland-protocols \
     x11proto-xext-dev \
     xserver-xorg-dev \
@@ -449,7 +447,7 @@ RUN \
   echo "**** grabbing opus ****" && \
   mkdir -p /tmp/opus && \
   curl -Lf \
-    https://archive.mozilla.org/pub/opus/opus-${OPUS}.tar.gz | \
+    https://downloads.xiph.org/releases/opus/opus-${OPUS}.tar.gz | \
     tar -zx --strip-components=1 -C /tmp/opus
 RUN \
   echo "**** compiling opus ****" && \
@@ -460,6 +458,24 @@ RUN \
     --enable-shared && \
   make && \
   make install
+RUN \
+  echo "**** grabbing shaderc ****" && \
+  mkdir -p /tmp/shaderc && \
+  git clone \
+    --branch ${SHADERC} \
+    --depth 1 https://github.com/google/shaderc.git \
+    /tmp/shaderc
+RUN \
+  echo "**** compiling shaderc ****" && \
+  cd /tmp/shaderc && \
+  ./utils/git-sync-deps && \
+  mkdir -p build && \
+  cd build && \
+  cmake -GNinja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    .. && \
+  ninja install
 RUN \
   echo "**** grabbing SVT-AV1 ****" && \
   mkdir -p /tmp/svt-av1 && \
@@ -547,6 +563,18 @@ RUN \
   make && \
   make install
 RUN \
+  echo "**** grabbing vulkan headers ****" && \
+  mkdir -p /tmp/vulkan-headers && \
+  git clone \
+    --branch ${VULKANSDK} \
+    --depth 1 https://github.com/KhronosGroup/Vulkan-Headers.git \
+    /tmp/vulkan-headers
+RUN \
+  echo "**** compiling vulkan headers ****" && \
+  cd /tmp/vulkan-headers && \
+  cmake -S . -B build/ && \
+  cmake --install build --prefix /usr/local
+RUN \
   echo "**** grabbing webp ****" && \
   mkdir -p /tmp/webp && \
   curl -Lf \
@@ -597,6 +625,96 @@ RUN \
   ./configure && \ 
   make && \
   make install
+  
+######################################################### IMTL
+
+ENV MTL_REPO=Media-Transport-Library
+ENV DPDK_REPO=dpdk
+ENV DPDK_VER=23.07
+ENV IMTL_USER=imtl
+
+RUN apt-get update -y
+
+# Install dependencies
+RUN apt-get install -y git gcc meson python3 python3-pip pkg-config libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev libsdl2-ttf-dev libssl-dev
+
+RUN pip install pyelftools ninja
+
+RUN apt-get install -y sudo
+
+# some misc tools
+RUN apt-get install -y vim htop
+
+RUN apt clean all
+
+# user: imtl
+RUN adduser $IMTL_USER
+RUN usermod -G sudo $IMTL_USER
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+USER $IMTL_USER
+
+WORKDIR /home/$IMTL_USER/
+
+RUN git config --global user.email "you@example.com" && \
+    git config --global user.name "Your Name"
+
+RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git
+
+RUN git clone https://github.com/DPDK/$DPDK_REPO.git && \
+    cd $DPDK_REPO && \
+    git checkout v$DPDK_VER && \
+    git switch -c v$DPDK_VER
+
+# build dpdk
+RUN cd $DPDK_REPO && \
+    git am ../Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
+    meson build && \
+    ninja -C build && \
+    sudo ninja -C build install && \
+    cd ..
+
+# build mtl
+RUN cd $MTL_REPO && \
+    ./build.sh && \
+    cd ..
+    
+# add ffmpeg patches
+ENV \
+  CARTWHEEL=2023q3 \
+  FFMPEG_COMMIT_ID=9e1ea3caba5effaf9c7596dc178bd457439d638f
+
+RUN \
+  echo "**** Get FFMPEG from git branch ****" && \
+  mkdir -p /tmp/ffmpeg && \
+  curl -Lf \
+    https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz | \
+    tar -zx --strip-components=1 -C /tmp/ffmpeg
+RUN \
+  echo "**** Cartwheel patch ****" && \
+  mkdir -p /tmp/cartwheel && \
+  curl -Lf \
+    https://github.com/intel/cartwheel-ffmpeg/archive/${CARTWHEEL}.tar.gz | \
+    tar -zx --strip-components=1 -C /tmp/cartwheel && \
+  cd /tmp/ffmpeg && \
+  git init && \
+  git add . && \
+  git commit -m "initial" && \
+  git am /tmp/cartwheel/patches/*.patch
+RUN \
+  echo "**** openh264 library ****" && \
+  mkdir -p /tmp/openh264 && \
+  curl -Lf \
+    https://github.com/cisco/openh264/archive/master.tar.gz | \
+    tar -zx --strip-components=1 -C /tmp/openh264 && \
+  cd /tmp/openh264 && \
+  make && \
+  sudo make install
+COPY \
+  patches/kahawai_on_cartwheel.diff /
+RUN \
+  echo "**** FFMPEG IMTL patch ****" && \
+  cd /tmp/ffmpeg && \
+  git apply /kahawai_on_cartwheel.diff
 
 # main ffmpeg build
 #RUN \
@@ -612,78 +730,7 @@ RUN \
 #  curl -Lf \
 #    https://ffmpeg.org/releases/ffmpeg-${FFMPEG}.tar.bz2 | \
 #    tar -jx --strip-components=1 -C /tmp/ffmpeg
-RUN apt-get install -y libnuma-dev libdpdk-dev libjson-c-dev clang libgtest-dev
-RUN \
-  echo "**** Get FFMPEG from git branch ****" && \
-  mkdir -p /tmp/ffmpeg && \
-  curl -Lf \
-    https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/ffmpeg
-RUN \
-  echo "**** Cartwheel patch ****" && \
-  mkdir -p /tmp/cartwheel && \
-  curl -Lf \
-    https://github.com/intel/cartwheel-ffmpeg/archive/${CARTWHEEL}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/cartwheel && \
-  cd /tmp/ffmpeg && \
-  git init && \
-  git config user.name "NoName" && \
-  git config user.email "Noname@localhost.com" && \
-  git add . && \
-  git commit -m "initial" && \
-  git am /tmp/cartwheel/patches/*.patch
-RUN \
-  echo "**** openh264 library ****" && \
-  mkdir -p /tmp/openh264 && \
-  curl -Lf \
-    https://github.com/cisco/openh264/archive/master.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/openh264 && \
-  cd /tmp/openh264 && \
-  make && \
-  make install
-RUN \
-  echo "**** DPDK library ****" && \
-  mkdir -p /tmp/dpdk && \
-  curl -Lf \
-    https://github.com/DPDK/dpdk/archive/v23.07.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/dpdk
-RUN \
-  echo "**** XDP tools ****" && \
-  mkdir -p /tmp/xdp-tools && \
-  curl -Lf \
-    https://github.com/xdp-project/xdp-tools/archive/master.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/xdp-tools && \
-  cd /tmp/xdp-tools && \
-  ./configure && \
-  make && \
-  make install
-RUN \
-  echo "**** Media Transport Library ****" && \
-  mkdir -p /tmp/MTL && \
-  curl -Lf \
-    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/${IMTL_COMMIT_ID}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/MTL
-RUN \
-  echo "**** DPDK patch ****" && \
-  cd /tmp/dpdk && \
-  git init && \
-  git config user.name "NoName" && \
-  git config user.email "Noname@localhost.com" && \
-  git add . && \
-  git commit -m "initial" && \
-  git am /tmp/MTL/patches/dpdk/23.07/*.patch && \
-  meson setup build && \
-  ninja -C build && \
-  ninja install -C build
-COPY \
-  patches/kahawai_on_cartwheel.diff /
-RUN \
-  echo "**** FFMPEG IMTL patch ****" && \
-  cd /tmp/ffmpeg && \
-  git apply /kahawai_on_cartwheel.diff
-RUN \
-  echo "**** build IMTL ****" && \
-  cd /tmp/MTL && ./build.sh
+
 RUN \
   echo "**** compiling ffmpeg ****" && \
   cd /tmp/ffmpeg && \
@@ -703,9 +750,9 @@ RUN \
     --enable-libmp3lame \
     --enable-libopencore-amrnb \
     --enable-libopencore-amrwb \
-    --enable-libopenh264 \
     --enable-libopenjpeg \
     --enable-libopus \
+    --enable-libshaderc \
     --enable-libsvtav1 \
     --enable-libtheora \
     --enable-libv4l2 \
@@ -730,72 +777,74 @@ RUN \
     --enable-stripping \
     --enable-vaapi \
     --enable-vdpau \
-    --enable-version3 && \
-    make
+    --enable-version3 \
+    --enable-vulkan && \
+  make
+
 RUN \
   echo "**** arrange files ****" && \
-  ldconfig && \
-  mkdir -p \
+  sudo ldconfig && \
+  sudo mkdir -p \
     /buildout/usr/local/bin \
     /buildout/usr/local/lib/libmfx-gen \
     /buildout/usr/local/lib/mfx \
     /buildout/usr/local/lib/vpl \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri \
     /buildout/etc/OpenCL/vendors && \
-  cp \
+  sudo cp \
     /tmp/ffmpeg/ffmpeg \
     /buildout/usr/local/bin && \
-  cp \
+  sudo cp \
     /tmp/ffmpeg/ffprobe \
     /buildout/usr/local/bin && \
-  cp -a \
+  sudo cp -a \
     /usr/local/lib/lib*so* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /usr/local/lib/libmfx-gen/*.so \
     /buildout/usr/local/lib/libmfx-gen/ && \
-  cp -a \
+  sudo cp -a \
     /usr/local/lib/mfx/*.so \
     /buildout/usr/local/lib/mfx/ && \
-  cp -a \
+  sudo cp -a \
     /usr/local/lib/vpl/*.so \
     /buildout/usr/local/lib/vpl/ && \
-  cp -a \
+  sudo cp -a \
     /usr/local/lib/x86_64-linux-gnu/lib*so* \
     /buildout/usr/local/lib/x86_64-linux-gnu/ && \
-  cp -a \
+  sudo cp -a \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libavdevice/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libavfilter/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libavformat/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libavcodec/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libpostproc/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libavutil/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libswscale/* \
     /buildout/usr/local/lib/ && \
-  cp -a \
+  sudo cp -a \
     /tmp/ffmpeg/libswresample/* \
     /buildout/usr/local/lib/ && \
-  echo \
-    'libnvidia-opencl.so.1' > \
+  sudo echo \
+    'libnvidia-opencl.so.1' | sudo tee \
     /buildout/etc/OpenCL/vendors/nvidia.icd
 
 # runtime stage
-FROM ubuntu:22.04
+FROM ubuntu
 
 # Add files from binstage
 COPY --from=buildstage /buildout/ /
@@ -803,8 +852,6 @@ COPY --from=buildstage /buildout/ /
 # set version label
 ARG BUILD_DATE
 ARG VERSION
-LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
-LABEL maintainer="thelamer"
 
 ARG DEBIAN_FRONTEND="noninteractive"
 
@@ -819,14 +866,10 @@ RUN \
   echo "**** install runtime ****" && \
     apt-get update && \
     apt-get install -y \
-    libbpf-dev \
     libexpat1 \
-    libfdt-dev \
     libglib2.0-0 \
     libgomp1 \
     libharfbuzz0b \
-    libjson-c-dev \
-    libnuma-dev \
     libpciaccess0 \
     libv4l-0 \
     libwayland-client0 \
@@ -839,50 +882,82 @@ RUN \
     libxext6 \
     libxfixes3 \
     libxml2 \
-    ocl-icd-libopencl1 \
-    s6 && \
+    ocl-icd-libopencl1 && \
   echo "**** clean up ****" && \
   rm -rf \
     /var/lib/apt/lists/* \
     /var/tmp/*
+    
+############################# IMTL
+ENV MTL_REPO=Media-Transport-Library
+ENV DPDK_REPO=dpdk
+ENV DPDK_VER=23.07
+ENV IMTL_USER=imtl
+
+RUN apt-get update -y
+
+# Install dependencies
+RUN apt-get install -y git gcc meson python3 python3-pip pkg-config libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev libsdl2-ttf-dev libssl-dev sudo autoconf curl tar libtool
+
+RUN pip install pyelftools ninja
 
 RUN \
-  apt-get update -y && \
-  apt install -y cmake curl git libdpdk-dev libgtest-dev meson pkg-config python3-pyelftools
-RUN \
-  echo "**** DPDK library ****" && \
-  mkdir -p /tmp/dpdk && \
+  echo "**** grabbing libva ****" && \
+  mkdir -p /tmp/libva && \
+  ls -ltr /tmp/libva/ && \
   curl -Lf \
-    https://github.com/DPDK/dpdk/archive/v23.07.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/dpdk    
+    https://github.com/intel/libva/archive/2.20.0.tar.gz | \
+    tar -zx --strip-components=1 -C /tmp/libva
 RUN \
-  echo "**** Media Transport Library ****" && \
-  mkdir -p /tmp/MTL && \
-  curl -Lf \
-    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/main.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/MTL
-RUN \
-  echo "**** DPDK patch ****" && \
-  cd /tmp/dpdk && \
-  git init && \
-  git config user.name "NoName" && \
-  git config user.email "Noname@localhost.com" && \
-  git add . && \
-  git commit -m "initial" && \
-  git am /tmp/MTL/patches/dpdk/23.07/*.patch && \
-  meson setup build && \
-  ninja -C build && \
-  ninja install -C build
-RUN \
-  cd /tmp/MTL && \
-  ./build.sh
-RUN \
-  apt-get update && \
-  apt install -y kmod libkmod-dev pciutils
-  
+  echo "**** compiling libva ****" && \
+  cd /tmp/libva && \
+  ./autogen.sh && \
+  ./configure \
+    --disable-static \
+    --enable-shared && \
+  make && \
+  make install
+
+# user: imtl
+RUN adduser $IMTL_USER
+RUN usermod -G sudo $IMTL_USER
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+USER $IMTL_USER
+
+WORKDIR /home/$IMTL_USER/
+
+RUN git config --global user.email "you@example.com" && \
+    git config --global user.name "Your Name"
+    
+RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git
+
+RUN git clone https://github.com/DPDK/$DPDK_REPO.git && \
+    cd $DPDK_REPO && \
+    git checkout v$DPDK_VER && \
+    git switch -c v$DPDK_VER
+
+# build dpdk
+RUN cd $DPDK_REPO && \
+    git am ../Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
+    meson build && \
+    ninja -C build && \
+    sudo ninja -C build install && \
+    cd ..
+
+# build mtl
+RUN cd $MTL_REPO && \
+    ./build.sh && \
+    cd ..
+
+USER root
+WORKDIR /
 COPY /start.sh /
-RUN chmod +x start.sh
+RUN chmod +x /start.sh
 
 RUN mkdir /hugetlbfs
 
-ENTRYPOINT ["./start.sh"]
+RUN \
+  apt-get install -y kmod libkmod-dev pciutils
+
+#ENTRYPOINT ["./start.sh"]
+ENTRYPOINT ["./usr/local/bin/ffmpeg"]
