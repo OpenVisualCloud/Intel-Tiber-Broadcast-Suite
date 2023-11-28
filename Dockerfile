@@ -951,13 +951,10 @@ RUN cd $MTL_REPO && \
 
 USER root
 WORKDIR /
-COPY /start.sh /
-RUN chmod +x /start.sh
 
 RUN mkdir /hugetlbfs
 
 RUN \
   apt-get install -y kmod libkmod-dev pciutils
 
-#ENTRYPOINT ["./start.sh"]
 ENTRYPOINT ["./usr/local/bin/ffmpeg"]
