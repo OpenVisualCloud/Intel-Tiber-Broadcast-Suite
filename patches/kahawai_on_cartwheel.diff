@@ -193,10 +193,10 @@ index 0000000..5e38d06
 +void kahawai_set_handle(mtl_handle handle);
 diff --git a/libavdevice/kahawai_dec.c b/libavdevice/kahawai_dec.c
 new file mode 100644
-index 0000000..38ade7f
+index 0000000..0de99d5
 --- /dev/null
 +++ b/libavdevice/kahawai_dec.c
-@@ -0,0 +1,591 @@
+@@ -0,0 +1,607 @@
 +/*
 + * Kahawai raw video demuxer
 + * Copyright (c) 2023 Intel
@@ -335,6 +335,10 @@ index 0000000..38ade7f
 +      } else {
 +        ops_rx.output_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
 +      }
++      break; 
++    case AV_PIX_FMT_Y210:
++      ops_rx.transport_fmt = ST20_FMT_YUV_422_16BIT;
++      ops_rx.output_fmt = ST_FRAME_FMT_Y210;
 +      break;
 +    case AV_PIX_FMT_RGB24:
 +      ops_rx.transport_fmt = ST20_FMT_RGB_8BIT;
@@ -598,6 +602,18 @@ index 0000000..38ade7f
 +          return ret;
 +        }
 +        break;
++      case AV_PIX_FMT_Y210:
++        ret = st20_rfc4175_422be10_to_y210(
++            (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), (uint16_t*)pkt->data,
++            s->width, s->height);
++        if (ret != 0) {
++          av_log(ctx, AV_LOG_ERROR,
++                 "st20_rfc4175_422be10_to_y210 failed with %d\n", ret);
++          // s->stopped = true;
++          // pthread_mutex_unlock(&(s->read_packet_mutex));
++          return ret;
++        }
++        break;      
 +      case AV_PIX_FMT_RGB24:
 +        memcpy((uint8_t*)pkt->data, s->frame->addr[0], s->width * s->height * 3);
 +    }
@@ -725,7 +741,7 @@ index 0000000..38ade7f
 +     "Video frame format",
 +     OFFSET(pixel_format),
 +     AV_OPT_TYPE_STRING,
-+     {.str = "yuv422p10le"},
++     {.str = "y210"},
 +     .flags = DEC},
 +    {"framerate",
 +     "Video frame rate",
@@ -790,10 +806,10 @@ index 0000000..38ade7f
 +};
 diff --git a/libavdevice/kahawai_enc.c b/libavdevice/kahawai_enc.c
 new file mode 100644
-index 0000000..91e84c3
+index 0000000..d34100c
 --- /dev/null
 +++ b/libavdevice/kahawai_enc.c
-@@ -0,0 +1,378 @@
+@@ -0,0 +1,387 @@
 +/*
 + * Kahawai raw video muxer
 + * Copyright (c) 2023 Intel
@@ -933,6 +949,10 @@ index 0000000..91e84c3
 +      ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
 +      ops_tx.input_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
 +      break;
++    case AV_PIX_FMT_Y210:
++      ops_tx.transport_fmt = ST20_FMT_YUV_422_16BIT;
++      ops_tx.input_fmt = ST_FRAME_FMT_Y210;
++      break;
 +    case AV_PIX_FMT_RGB24:
 +      ops_tx.transport_fmt = ST20_FMT_RGB_8BIT;
 +      ops_tx.input_fmt = ST_FRAME_FMT_RGB8;
@@ -1042,6 +1062,11 @@ index 0000000..91e84c3
 +          (uint16_t*)pkt->data, (uint16_t*)(pkt->data + (s->width * s->height * 2)),
 +          (uint16_t*)(pkt->data + (s->width * s->height * 3)),
 +          (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), s->width, s->height);
++      break;
++    case AV_PIX_FMT_Y210:
++      st20_y210_to_rfc4175_422be10(
++          (uint16_t*)pkt->data, (struct st20_rfc4175_422_10_pg2_be*)(pkt->data + (s->width * s->height * 2)),
++           s->width, s->height);
 +      break;
 +    case AV_PIX_FMT_RGB24:
 +      av_image_fill_arrays(data, linesize, pkt->data, s->pixel_format, s->width,
