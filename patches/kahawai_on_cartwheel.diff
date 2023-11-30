@@ -193,7 +193,7 @@ index 0000000..5e38d06
 +void kahawai_set_handle(mtl_handle handle);
 diff --git a/libavdevice/kahawai_dec.c b/libavdevice/kahawai_dec.c
 new file mode 100644
-index 0000000..0de99d5
+index 0000000..bb3d624
 --- /dev/null
 +++ b/libavdevice/kahawai_dec.c
 @@ -0,0 +1,607 @@
@@ -337,7 +337,7 @@ index 0000000..0de99d5
 +      }
 +      break; 
 +    case AV_PIX_FMT_Y210:
-+      ops_rx.transport_fmt = ST20_FMT_YUV_422_16BIT;
++      ops_rx.transport_fmt = ST20_FMT_YUV_422_10BIT;
 +      ops_rx.output_fmt = ST_FRAME_FMT_Y210;
 +      break;
 +    case AV_PIX_FMT_RGB24:
@@ -806,7 +806,7 @@ index 0000000..0de99d5
 +};
 diff --git a/libavdevice/kahawai_enc.c b/libavdevice/kahawai_enc.c
 new file mode 100644
-index 0000000..d34100c
+index 0000000..24a03b6
 --- /dev/null
 +++ b/libavdevice/kahawai_enc.c
 @@ -0,0 +1,387 @@
@@ -950,7 +950,7 @@ index 0000000..d34100c
 +      ops_tx.input_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
 +      break;
 +    case AV_PIX_FMT_Y210:
-+      ops_tx.transport_fmt = ST20_FMT_YUV_422_16BIT;
++      ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
 +      ops_tx.input_fmt = ST_FRAME_FMT_Y210;
 +      break;
 +    case AV_PIX_FMT_RGB24:
