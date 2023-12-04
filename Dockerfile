@@ -710,11 +710,11 @@ RUN \
   make && \
   sudo make install
 COPY \
-  patches/kahawai_on_cartwheel.diff /
+  patches/*.diff /
 RUN \
-  echo "**** FFMPEG IMTL patch ****" && \
+  echo "**** FFMPEG patches ****" && \
   cd /tmp/ffmpeg && \
-  git apply /kahawai_on_cartwheel.diff
+  git apply /*.diff
 
 # main ffmpeg build
 #RUN \

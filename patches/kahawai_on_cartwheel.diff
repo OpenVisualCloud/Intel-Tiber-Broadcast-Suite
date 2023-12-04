@@ -193,7 +193,7 @@ index 0000000..5e38d06
 +void kahawai_set_handle(mtl_handle handle);
 diff --git a/libavdevice/kahawai_dec.c b/libavdevice/kahawai_dec.c
 new file mode 100644
-index 0000000..bb3d624
+index 0000000..3258132
 --- /dev/null
 +++ b/libavdevice/kahawai_dec.c
 @@ -0,0 +1,607 @@
@@ -336,7 +336,7 @@ index 0000000..bb3d624
 +        ops_rx.output_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
 +      }
 +      break; 
-+    case AV_PIX_FMT_Y210:
++    case AV_PIX_FMT_Y210LE:
 +      ops_rx.transport_fmt = ST20_FMT_YUV_422_10BIT;
 +      ops_rx.output_fmt = ST_FRAME_FMT_Y210;
 +      break;
@@ -455,13 +455,13 @@ index 0000000..bb3d624
 +      }
 +
 +      s->ext_frames[i].addr[0] = s->av_buffers[i]->data;
-+      s->ext_frames[i].linesize[0] = s->width * 2;
++      s->ext_frames[i].linesize[0] = s->width * 2 * (pix_fmt == AV_PIX_FMT_Y210LE ? 2 : 1);
 +      s->ext_frames[i].addr[1] =
 +          (void*)((unsigned long)s->ext_frames[i].addr[0] + (s->width * s->height * 2));
-+      s->ext_frames[i].linesize[1] = s->width;
++      s->ext_frames[i].linesize[1] = s->width * (pix_fmt == AV_PIX_FMT_Y210LE ? 0 : 1);
 +      s->ext_frames[i].addr[2] =
 +          (void*)((unsigned long)s->ext_frames[i].addr[1] + (s->width * s->height));
-+      s->ext_frames[i].linesize[2] = s->width;
++      s->ext_frames[i].linesize[2] = s->width * (pix_fmt == AV_PIX_FMT_Y210LE ? 0 : 1);
 +      s->ext_frames[i].size = ctx->packet_size;
 +
 +      av_log(ctx, AV_LOG_VERBOSE, "Allocated Framebuf[%d]: 0x%" PRIx64 "\n", i,
@@ -602,13 +602,13 @@ index 0000000..bb3d624
 +          return ret;
 +        }
 +        break;
-+      case AV_PIX_FMT_Y210:
++      case AV_PIX_FMT_Y210LE:
 +        ret = st20_rfc4175_422be10_to_y210(
 +            (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), (uint16_t*)pkt->data,
 +            s->width, s->height);
 +        if (ret != 0) {
 +          av_log(ctx, AV_LOG_ERROR,
-+                 "st20_rfc4175_422be10_to_y210 failed with %d\n", ret);
++                 "st20_rfc4175_422be10_to_y210le failed with %d\n", ret);
 +          // s->stopped = true;
 +          // pthread_mutex_unlock(&(s->read_packet_mutex));
 +          return ret;
@@ -741,7 +741,7 @@ index 0000000..bb3d624
 +     "Video frame format",
 +     OFFSET(pixel_format),
 +     AV_OPT_TYPE_STRING,
-+     {.str = "y210"},
++     {.str = NULL},
 +     .flags = DEC},
 +    {"framerate",
 +     "Video frame rate",
@@ -806,7 +806,7 @@ index 0000000..bb3d624
 +};
 diff --git a/libavdevice/kahawai_enc.c b/libavdevice/kahawai_enc.c
 new file mode 100644
-index 0000000..24a03b6
+index 0000000..a91922c
 --- /dev/null
 +++ b/libavdevice/kahawai_enc.c
 @@ -0,0 +1,387 @@
@@ -949,7 +949,7 @@ index 0000000..24a03b6
 +      ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
 +      ops_tx.input_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
 +      break;
-+    case AV_PIX_FMT_Y210:
++    case AV_PIX_FMT_Y210LE:
 +      ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
 +      ops_tx.input_fmt = ST_FRAME_FMT_Y210;
 +      break;
@@ -1063,7 +1063,7 @@ index 0000000..24a03b6
 +          (uint16_t*)(pkt->data + (s->width * s->height * 3)),
 +          (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), s->width, s->height);
 +      break;
-+    case AV_PIX_FMT_Y210:
++    case AV_PIX_FMT_Y210LE:
 +      st20_y210_to_rfc4175_422be10(
 +          (uint16_t*)pkt->data, (struct st20_rfc4175_422_10_pg2_be*)(pkt->data + (s->width * s->height * 2)),
 +           s->width, s->height);

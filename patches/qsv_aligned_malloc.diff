@@ -1,5 +1,5 @@
 diff --git a/libavutil/mem.c b/libavutil/mem.c
-index 36b8940a0c..6785701cf0 100644
+index 36b8940..6785701 100644
 --- a/libavutil/mem.c
 +++ b/libavutil/mem.c
 @@ -96,21 +96,26 @@ static int size_mult(size_t a, size_t b, size_t *r)
