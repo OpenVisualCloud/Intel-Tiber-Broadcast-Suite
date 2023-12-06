@@ -3,8 +3,9 @@ docker run --rm -it \
   --device=/dev/dri:/dev/dri \
   -v $(pwd)/clips:/clips \
   -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-  my_ffmpeg \
+  my_ffmpeg_debug \
   -y \
+  -v debug \
   -qsv_device /dev/dri/renderD128 \
   -an \
   -hwaccel qsv -hwaccel_output_format qsv -f rawvideo -pix_fmt y210le -s:v 3840x2160 -i clips/random_y210le.yuv \
