@@ -63,10 +63,10 @@ index 8a90fcb..5150903 100644
  extern const AVInputFormat  ff_libcdio_demuxer;
 diff --git a/libavdevice/kahawai_common.c b/libavdevice/kahawai_common.c
 new file mode 100644
-index 0000000..2eb9980
+index 0000000..639efaf
 --- /dev/null
 +++ b/libavdevice/kahawai_common.c
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,87 @@
 +/*
 + * Kahawai common struct and functions
 + * Copyright (c) 2023 Intel
@@ -137,7 +137,10 @@ index 0000000..2eb9980
 +  param.log_level = MTL_LOG_LEVEL_DEBUG;  // log level. ERROR, INFO, WARNING
 +  param.priv = NULL;                      // usr crx pointer
 +  param.ptp_get_time_fn = NULL;
-+  param.lcores = NULL;
++  av_log(NULL, AV_LOG_DEBUG, "params.lcores = %s\n", getenv("MTL_PARAM_LCORES"));
++  //param.lcores = (char*) malloc(256*sizeof(char));
++  //param.lcores = strcpy(param.lcores, getenv("MTL_PARAM_LCORES"));
++  sprintf(param.lcores, "%s", getenv("MTL_PARAM_LCORES"));
 +
 +  if (dma_dev) {
 +    param.num_dma_dev_port = 1;

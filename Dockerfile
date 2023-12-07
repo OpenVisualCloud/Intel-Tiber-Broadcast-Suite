@@ -658,7 +658,22 @@ WORKDIR /home/$IMTL_USER/
 RUN git config --global user.email "you@example.com" && \
     git config --global user.name "Your Name"
 
-RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git
+RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git && \
+    cd $MTL_REPO && \
+    git checkout c3bc6529a77e177bceccc4bd9be1e2ab2faef379 && \
+    git switch -c c3bc6529a77e177bceccc4bd9be1e2ab2faef379
+
+RUN \
+    sed -i '539 d' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '539 i char lcores[256];' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '252 d' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '252 i strcpy(p->lcores, list);' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '1860 d' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '1860 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '130 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '130 i strcpy(p->lcores, optarg);' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '386 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '386 i strcpy(p->lcores, ctx->lcores_list);' ./Media-Transport-Library/tests/src/tests.cpp
 
 RUN git clone https://github.com/DPDK/$DPDK_REPO.git && \
     cd $DPDK_REPO && \
@@ -929,7 +944,22 @@ WORKDIR /home/$IMTL_USER/
 RUN git config --global user.email "you@example.com" && \
     git config --global user.name "Your Name"
     
-RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git
+RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git && \
+    cd $MTL_REPO && \
+    git checkout c3bc6529a77e177bceccc4bd9be1e2ab2faef379 && \
+    git switch -c c3bc6529a77e177bceccc4bd9be1e2ab2faef379
+
+RUN \
+    sed -i '539 d' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '539 i char lcores[256];' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '252 d' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '252 i strcpy(p->lcores, list);' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '1860 d' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '1860 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '130 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '130 i strcpy(p->lcores, optarg);' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '386 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '386 i strcpy(p->lcores, ctx->lcores_list);' ./Media-Transport-Library/tests/src/tests.cpp
 
 RUN git clone https://github.com/DPDK/$DPDK_REPO.git && \
     cd $DPDK_REPO && \
