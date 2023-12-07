@@ -18,11 +18,12 @@ docker run -it \
   --network=my_net_801f0 \
   --ip=192.168.2.2 \
   --expose=20000-20170 \
+  --ipc=host -v /dev/shm:/dev/shm \
+  --cpuset-cpus="56-84" \
   my_ffmpeg \
   -y \
   -an \
-  -threads 16 \
-  -thread_queue_size 64 \
+  -thread_queue_size 512 \
   -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20000 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "0" \
   -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20001 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "1" \
   -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20002 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "2" \

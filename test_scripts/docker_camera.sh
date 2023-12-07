@@ -18,6 +18,7 @@ docker run -it \
   --network=my_net_801f0 \
   --ip=192.168.2.1 \
   --expose=20000-20170 \
+  --ipc=host -v /dev/shm:/dev/shm \
   --cpuset-cpus="28-55" \
   my_ffmpeg \
   -y \
