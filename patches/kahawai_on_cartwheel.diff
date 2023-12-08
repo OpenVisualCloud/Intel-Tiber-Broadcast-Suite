@@ -63,10 +63,10 @@ index 8a90fcb..5150903 100644
  extern const AVInputFormat  ff_libcdio_demuxer;
 diff --git a/libavdevice/kahawai_common.c b/libavdevice/kahawai_common.c
 new file mode 100644
-index 0000000..639efaf
+index 0000000..f49a32c
 --- /dev/null
 +++ b/libavdevice/kahawai_common.c
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,100 @@
 +/*
 + * Kahawai common struct and functions
 + * Copyright (c) 2023 Intel
@@ -140,7 +140,20 @@ index 0000000..639efaf
 +  av_log(NULL, AV_LOG_DEBUG, "params.lcores = %s\n", getenv("MTL_PARAM_LCORES"));
 +  //param.lcores = (char*) malloc(256*sizeof(char));
 +  //param.lcores = strcpy(param.lcores, getenv("MTL_PARAM_LCORES"));
-+  sprintf(param.lcores, "%s", getenv("MTL_PARAM_LCORES"));
++  if (getenv("MTL_PARAM_LCORES")) {
++    sprintf(param.lcores, "%s", getenv("MTL_PARAM_LCORES"));
++  } else {
++    param.lcores = NULL;
++  }
++
++  if (getenv("MTL_PARAM_DATA_QUOTA")) {
++    uint32_t data_quota_mbs_per_sch = (uint32_t)atol(getenv("MTL_PARAM_DATA_QUOTA"));
++    av_log(NULL, AV_LOG_DEBUG, "params.data_quota_mbs_per_sch = %u\n", data_quota_mbs_per_sch);
++    param.data_quota_mbs_per_sch = data_quota_mbs_per_sch;
++  } else {
++    av_log(NULL, AV_LOG_DEBUG, "params.data_quota_mbs_per_sch set do default: %lu\n", 4 * st20_1080p59_yuv422_10bit_bandwidth_mps());
++    param.data_quota_mbs_per_sch = (uint32_t)(4 * st20_1080p59_yuv422_10bit_bandwidth_mps());
++  }
 +
 +  if (dma_dev) {
 +    param.num_dma_dev_port = 1;
