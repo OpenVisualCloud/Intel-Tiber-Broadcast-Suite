@@ -63,7 +63,7 @@ index 8a90fcb..5150903 100644
  extern const AVInputFormat  ff_libcdio_demuxer;
 diff --git a/libavdevice/kahawai_common.c b/libavdevice/kahawai_common.c
 new file mode 100644
-index 0000000..f49a32c
+index 0000000..37c32d9
 --- /dev/null
 +++ b/libavdevice/kahawai_common.c
 @@ -0,0 +1,100 @@
@@ -143,7 +143,7 @@ index 0000000..f49a32c
 +  if (getenv("MTL_PARAM_LCORES")) {
 +    sprintf(param.lcores, "%s", getenv("MTL_PARAM_LCORES"));
 +  } else {
-+    param.lcores = NULL;
++    sprintf(param.lcores, "");
 +  }
 +
 +  if (getenv("MTL_PARAM_DATA_QUOTA")) {
