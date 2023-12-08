@@ -1,0 +1,202 @@
+diff --git a/_studio/mfx_lib/vpp/include/mfx_vpp_hw.h b/_studio/mfx_lib/vpp/include/mfx_vpp_hw.h
+index b17613e1..5e7dc6e4 100644
+--- a/_studio/mfx_lib/vpp/include/mfx_vpp_hw.h
++++ b/_studio/mfx_lib/vpp/include/mfx_vpp_hw.h
+@@ -933,7 +933,7 @@ namespace MfxHwVideoProcessing
+             mfxFrameSurface1 *pOutputSurface);
+ 
+         mfxStatus PreWorkOutSurface(ExtSurface & output);
+-        mfxStatus PreWorkInputSurface(std::vector<ExtSurface> & surfQueue);
++        mfxStatus PreWorkInputSurface(std::vector<ExtSurface> & surfQueue, ExtSurface & output);
+ 
+         mfxStatus PostWorkOutSurfaceCopy(ExtSurface & output);
+         mfxStatus PostWorkOutSurface(ExtSurface & output);
+diff --git a/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp b/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
+index 5be16feb..98ee30d5 100644
+--- a/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
++++ b/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
+@@ -3646,7 +3646,7 @@ mfxStatus VideoVPPHW::PreWorkOutSurface(ExtSurface & output)
+ } // mfxStatus VideoVPPHW::PreWorkOutSurface(DdiTask* pTask)
+ 
+ 
+-mfxStatus VideoVPPHW::PreWorkInputSurface(std::vector<ExtSurface> & surfQueue)
++mfxStatus VideoVPPHW::PreWorkInputSurface(std::vector<ExtSurface> & surfQueue, ExtSurface & output)
+ {
+     mfxStatus sts = MFX_ERR_NONE;
+     mfxU32 numSamples = (mfxU32)surfQueue.size();
+@@ -3664,7 +3664,13 @@ mfxStatus VideoVPPHW::PreWorkInputSurface(std::vector<ExtSurface> & surfQueue)
+ 
+             if( surfQueue[i].bUpdate )
+             {
+-                mfxFrameSurface1 inputVidSurf = MakeSurface(surfQueue[i].pSurf->Info, m_internalVidSurf[VPP_IN].mids[resIdx]);
++                mfxFrameSurface1 inputVidSurf = {};
++                if(m_executeParams.isCopy){
++                    inputVidSurf = *output.pSurf;
++                }
++                else {
++                    inputVidSurf = MakeSurface(surfQueue[i].pSurf->Info, m_internalVidSurf[VPP_IN].mids[resIdx]);
++                }
+ 
+ #ifdef MFX_ENABLE_EXT
+                 if (MFX_MIRRORING_HORIZONTAL == m_executeParams.mirroring && MIRROR_INPUT == m_executeParams.mirroringPosition && m_pCmCopy && !m_isD3D9SimWithVideoMemIn)
+@@ -3721,7 +3727,7 @@ mfxStatus VideoVPPHW::PreWorkInputSurface(std::vector<ExtSurface> & surfQueue)
+ 
+                     mfxU16 inMemType = static_cast<mfxU16>((m_IOPattern & MFX_IOPATTERN_IN_SYSTEM_MEMORY ? MFX_MEMTYPE_SYSTEM_MEMORY : MFX_MEMTYPE_DXVA2_DECODER_TARGET) |
+                         MFX_MEMTYPE_EXTERNAL_FRAME);
+-
++                    m_executeParams.isCopy = true;
+                     sts = m_pCore->DoFastCopyWrapper(
+                         &inputVidSurf,
+                         MFX_MEMTYPE_INTERNAL_FRAME | MFX_MEMTYPE_DXVA2_DECODER_TARGET,
+@@ -4333,7 +4339,7 @@ mfxStatus VideoVPPHW::SyncTaskSubmission(DdiTask* pTask)
+         sts = PreWorkOutSurface(pTask->output);
+         MFX_CHECK_STS(sts);
+ 
+-        sts = PreWorkInputSurface(surfQueue);
++        sts = PreWorkInputSurface(surfQueue, pTask->output);
+         MFX_CHECK_STS(sts);
+ 
+         if ((imfxFPMode == TFF2FIELD) || (imfxFPMode == BFF2FIELD))
+@@ -4401,7 +4407,7 @@ mfxStatus VideoVPPHW::SyncTaskSubmission(DdiTask* pTask)
+         sts = PreWorkOutSurface(pTask->output);
+         MFX_CHECK_STS(sts);
+ 
+-        sts = PreWorkInputSurface(surfQueue);
++        sts = PreWorkInputSurface(surfQueue, pTask->output);
+         MFX_CHECK_STS(sts);
+ 
+         MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_HOTSPOTS, "HW_VPP: Mirror (d3d->d3d)");
+@@ -4440,7 +4446,7 @@ mfxStatus VideoVPPHW::SyncTaskSubmission(DdiTask* pTask)
+     sts = PreWorkOutSurface(pTask->output);
+     MFX_CHECK_STS(sts);
+ 
+-    sts = PreWorkInputSurface(surfQueue);
++    sts = PreWorkInputSurface(surfQueue, pTask->output);
+     MFX_CHECK_STS(sts);
+ 
+ #if defined(MFX_ENABLE_SCENE_CHANGE_DETECTION_VPP)
+@@ -4740,6 +4746,7 @@ mfxStatus VideoVPPHW::SyncTaskSubmission(DdiTask* pTask)
+     else
+     {
+         sts = (*m_ddi)->Execute(&execParams);
++        m_executeParams.isCopy = false;
+     }
+ 
+     if (sts != MFX_ERR_NONE)
+diff --git a/_studio/shared/include/mfx_vpp_interface.h b/_studio/shared/include/mfx_vpp_interface.h
+index 613eaadd..c448fd7d 100644
+--- a/_studio/shared/include/mfx_vpp_interface.h
++++ b/_studio/shared/include/mfx_vpp_interface.h
+@@ -400,6 +400,7 @@ namespace MfxHwVideoProcessing
+                ,mirroringExt(false)
+                ,scene(VPP_NO_SCENE_CHANGE)
+                ,bDeinterlace30i60p(false)
++               ,isCopy()
+ #if defined (MFX_EXTBUFF_GPU_HANG_ENABLE)
+                ,gpuHangTrigger(false)
+ #endif
+@@ -541,6 +542,7 @@ namespace MfxHwVideoProcessing
+ 
+         mfxU32         iFieldProcessingMode;
+ 
++        bool            isCopy;
+         //  Camera Pipe specific params
+         bool                            bCameraPipeEnabled;
+         bool                            bCameraPipeControl;
+diff --git a/_studio/shared/src/libmfx_core_vaapi.cpp b/_studio/shared/src/libmfx_core_vaapi.cpp
+index 7b215e80..12f16ab4 100644
+--- a/_studio/shared/src/libmfx_core_vaapi.cpp
++++ b/_studio/shared/src/libmfx_core_vaapi.cpp
+@@ -384,7 +384,6 @@ public:
+     mfxStatus Copy(const mfxFrameSurface1& src, const mfxFrameSurface1& dst, eEngine forceEngine = DEFAULT)
+     {
+         uint32_t copyEngine = (forceEngine == DEFAULT) ? m_copyEngine : uint32_t(forceEngine);
+-
+         auto copyMode = GetMode(src, dst);
+         MFX_CHECK(copyMode != VACOPY_UNSUPPORTED, MFX_ERR_UNSUPPORTED);
+         MFX_CHECK(forceEngine == DEFAULT || ((1 << forceEngine) & m_copyEngineSupported), MFX_ERR_UNSUPPORTED);
+@@ -1929,10 +1928,11 @@ VAAPIVideoCORE_VPL::DoFastCopyExtended(
+             : VACopyWrapper::VE
+             ;
+ 
+-        if (m_HWType == MFX_HW_DG2)
+-        {
+-            vacopyMode = VACopyWrapper::BLT;
+-        }
++        //  Removed to enforce EU engine on Flex 170
++        // if (m_HWType == MFX_HW_DG2)
++        // {
++        //     vacopyMode = VACopyWrapper::BLT;
++        // }
+ 
+         auto vaCopySts = m_pVaCopy->Copy(*pSrc, *pDst, vacopyMode);
+         MFX_RETURN_IF_ERR_NONE(vaCopySts);
+diff --git a/_studio/shared/src/mfx_vpp_vaapi.cpp b/_studio/shared/src/mfx_vpp_vaapi.cpp
+index 99dd4401..17b6b93a 100644
+--- a/_studio/shared/src/mfx_vpp_vaapi.cpp
++++ b/_studio/shared/src/mfx_vpp_vaapi.cpp
+@@ -1810,36 +1810,38 @@ if (pParams->mirroringExt)
+ 
+     VASurfaceID *outputSurface = (VASurfaceID*)(pParams->targetSurface.hdl.first);
+ 
+-    MFX_LTRACE_2(MFX_TRACE_LEVEL_HOTSPOTS, "A|VPP|FILTER|PACKET_START|", "%d|%d", m_vaContextVPP, 0);
+-    {
+-        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaBeginPicture");
+-        vaSts = vaBeginPicture(m_vaDisplay,
+-                            m_vaContextVPP,
+-                            *outputSurface);
+-        MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
+-    }
++    if(!pParams->isCopy){
++        MFX_LTRACE_2(MFX_TRACE_LEVEL_HOTSPOTS, "A|VPP|FILTER|PACKET_START|", "%d|%d", m_vaContextVPP, 0);
++        {
++            MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaBeginPicture");
++            vaSts = vaBeginPicture(m_vaDisplay,
++                                m_vaContextVPP,
++                                *outputSurface);
++            MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
++        }
+ 
+-#if defined (MFX_EXTBUFF_GPU_HANG_ENABLE)
+-    if (trigger.id != VA_INVALID_ID)
+-    {
+-        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaRenderPicture");
+-        vaSts = vaRenderPicture(m_vaDisplay, m_vaContextVPP, &trigger.id, 1);
+-        MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
+-    }
+-#endif
++    #if defined (MFX_EXTBUFF_GPU_HANG_ENABLE)
++        if (trigger.id != VA_INVALID_ID)
++        {
++            MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaRenderPicture");
++            vaSts = vaRenderPicture(m_vaDisplay, m_vaContextVPP, &trigger.id, 1);
++            MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
++        }
++    #endif
+ 
+-    {
+-        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaRenderPicture");
+-        vaSts = vaRenderPicture(m_vaDisplay, m_vaContextVPP, &m_pipelineParamID[0], 1);
+-        MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
+-    }
++        {
++            MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaRenderPicture");
++            vaSts = vaRenderPicture(m_vaDisplay, m_vaContextVPP, &m_pipelineParamID[0], 1);
++            MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
++        }
+ 
+-    {
+-        MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaEndPicture");
+-        vaSts = vaEndPicture(m_vaDisplay, m_vaContextVPP);
+-        MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
++        {
++            MFX_AUTO_LTRACE(MFX_TRACE_LEVEL_EXTCALL, "vaEndPicture");
++            vaSts = vaEndPicture(m_vaDisplay, m_vaContextVPP);
++            MFX_CHECK_WITH_ASSERT(VA_STATUS_SUCCESS == vaSts, MFX_ERR_DEVICE_FAILED);
++        }
++        MFX_LTRACE_2(MFX_TRACE_LEVEL_HOTSPOTS, "A|VPP|FILTER|PACKET_END|", "%d|%d", m_vaContextVPP, 0);
+     }
+-    MFX_LTRACE_2(MFX_TRACE_LEVEL_HOTSPOTS, "A|VPP|FILTER|PACKET_END|", "%d|%d", m_vaContextVPP, 0);
+ 
+     for (VABufferID& id : m_pipelineParamID)
+     {
