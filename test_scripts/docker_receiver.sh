@@ -19,15 +19,17 @@ docker run -it \
   --ip=192.168.2.2 \
   --expose=20000-20170 \
   --ipc=host -v /dev/shm:/dev/shm \
-  --cpuset-cpus="56-84" \
+  --cpuset-cpus="96-127" \
+  -e MTL_PARAM_LCORES="123-127" \
+  -e MTL_PARAM_DATA_QUOTA=10356 \
   my_ffmpeg \
   -y \
   -an \
   -thread_queue_size 512 \
-  -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20000 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "0" \
-  -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20001 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "1" \
-  -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20002 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "2" \
-  -framerate 60 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20003 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "3" \
+  -framerate 50 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20000 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "0" \
+  -framerate 50 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20001 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "1" \
+  -framerate 50 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20002 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "2" \
+  -framerate 50 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS -udp_port 20003 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "3" \
   -map 0:0 -f rawvideo /dev/null \
   -map 1:0 -f rawvideo /dev/null \
   -map 2:0 -f rawvideo /dev/null \

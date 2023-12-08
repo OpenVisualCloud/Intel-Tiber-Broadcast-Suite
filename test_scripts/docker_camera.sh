@@ -19,16 +19,15 @@ docker run -it \
   --ip=192.168.2.1 \
   --expose=20000-20170 \
   --ipc=host -v /dev/shm:/dev/shm \
-  --cpuset-cpus="28-55" \
+  --cpuset-cpus="32-63" \
+  -e MTL_PARAM_LCORES="59-63" \
+  -e MTL_PARAM_DATA_QUOTA=10356 \
   my_ffmpeg \
   -y \
   -an \
-  -threads 16 \
   -i /config/test0_4k.mkv \
-  -i /config/test1_4k.mkv \
-  -i /config/test2_4k.mkv \
-  -i /config/test3_4k.mkv \
-  -map 0:v -vframes 2000 -filter:v format=y210le,fps=60 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20000 -total_sessions 4 -f kahawai_mux -\
-  -map 1:v -vframes 2000 -filter:v format=y210le,fps=60 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai_mux -\
-  -map 2:v -vframes 2000 -filter:v format=y210le,fps=60 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20002 -total_sessions 4 -f kahawai_mux -\
-  -map 3:v -vframes 2000 -filter:v format=y210le,fps=60 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20003 -total_sessions 4 -f kahawai_mux -
+  -filter_complex "[0:v]format=y210le,fps=50,split=4[in1][in2][in3][in4]" \
+  -map "[in1]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20000 -total_sessions 4 -f kahawai_mux -\
+  -map "[in2]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai_mux -\
+  -map "[in3]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20002 -total_sessions 4 -f kahawai_mux -\
+  -map "[in4]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20003 -total_sessions 4 -f kahawai_mux -
