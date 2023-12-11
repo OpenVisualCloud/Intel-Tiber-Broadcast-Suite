@@ -331,6 +331,11 @@ RUN \
   curl -Lf \
     https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
     tar -zx --strip-components=1 -C /tmp/onevpl
+COPY /patches/onevpl/*.patch /
+RUN \
+  echo "**** FFMPEG oneVPL patch ****" && \
+  cd /tmp/onevpl && \
+  git apply /*.patch
 RUN \
   echo "**** compiling onevpl ****" && \
   mkdir -p /tmp/onevpl/build && \
@@ -725,7 +730,7 @@ RUN \
   make && \
   sudo make install
 COPY \
-  patches/*.diff /
+  patches/ffmpeg/*.diff /
 RUN \
   echo "**** FFMPEG patches ****" && \
   cd /tmp/ffmpeg && \
