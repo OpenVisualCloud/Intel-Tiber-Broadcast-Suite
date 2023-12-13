@@ -29,7 +29,7 @@ docker run \
   -framerate 25 -pixel_format y210le -pix_fmt y210le -width 640 -height 480 -port $RECV_NIC_PORT -local_addr $RECV_LOCAL_IP_ADDRESS -src_addr $RECV_SOURCE_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai -i "1" \
   -framerate 25 -pixel_format y210le -pix_fmt y210le -width 640 -height 480 -port $RECV_NIC_PORT -local_addr $RECV_LOCAL_IP_ADDRESS -src_addr $RECV_SOURCE_IP_ADDRESS -udp_port 20002 -total_sessions 4 -f kahawai -i "2" \
   -framerate 25 -pixel_format y210le -pix_fmt y210le -width 640 -height 480 -port $RECV_NIC_PORT -local_addr $RECV_LOCAL_IP_ADDRESS -src_addr $RECV_SOURCE_IP_ADDRESS -udp_port 20003 -total_sessions 4 -f kahawai -i "3" \
-  -map 0:0 -f rawvideo -pix_fmt yuv422p10le /config/received.yuv \
+  -map 0:0 -f rawvideo -pix_fmt y210le /config/received.yuv \
   -map 1:0 -f rawvideo /dev/null \
   -map 2:0 -f rawvideo /dev/null \
   -map 3:0 -f rawvideo /dev/null 
