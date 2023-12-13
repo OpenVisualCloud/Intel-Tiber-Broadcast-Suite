@@ -1,0 +1,160 @@
+diff --git a/fftools/ffmpeg.c b/fftools/ffmpeg.c
+index 34ccaa6491..c560a07ffd 100644
+--- a/fftools/ffmpeg.c
++++ b/fftools/ffmpeg.c
+@@ -1146,24 +1146,30 @@ static int process_input(int file_index)
+  */
+ static int transcode_step(OutputStream *ost)
+ {
+-    InputStream  *ist = NULL;
++    InputStream  **ist = NULL;
++    int ist_num;
+     int ret;
+ 
++    ist = malloc(sizeof(struct InputStream*) * nb_input_files);
++    ist_num = 0;
++
+     if (ost->filter) {
+-        if ((ret = fg_transcode_step(ost->filter->graph, &ist)) < 0)
++        if ((ret = fg_transcode_step(ost->filter->graph, ist, &ist_num)) < 0)
+             return ret;
+         if (!ist)
+             return 0;
+     } else {
+-        ist = ost->ist;
+-        av_assert0(ist);
++        ist[0] = ost->ist;
++        av_assert0(ist[0]);
+     }
+ 
+-    ret = process_input(ist->file_index);
+-    if (ret == AVERROR(EAGAIN)) {
+-        if (input_files[ist->file_index]->eagain)
+-            ost->unavailable = 1;
+-        return 0;
++    for (int i = 0; i<ist_num; i++) {
++        ret = process_input(ist[i]->file_index);
++        if (ret == AVERROR(EAGAIN)) {
++            if (input_files[ist[i]->file_index]->eagain)
++                ost->unavailable = 1;
++            return 0;
++        }
+     }
+ 
+     if (ret < 0)
+diff --git a/fftools/ffmpeg.h b/fftools/ffmpeg.h
+index 55395f48a9..8f6be50f75 100644
+--- a/fftools/ffmpeg.h
++++ b/fftools/ffmpeg.h
+@@ -758,7 +758,7 @@ void fg_free(FilterGraph **pfg);
+  * @param[out] best_ist  input stream where a frame would allow to continue
+  * @return  0 for success, <0 for error
+  */
+-int fg_transcode_step(FilterGraph *graph, InputStream **best_ist);
++int fg_transcode_step(FilterGraph *graph, InputStream **best_ist, int *ist_num);
+ 
+ void fg_send_command(FilterGraph *fg, double time, const char *target,
+                      const char *command, const char *arg, int all_filters);
+diff --git a/fftools/ffmpeg_filter.c b/fftools/ffmpeg_filter.c
+index b7da105141..e8c1553485 100644
+--- a/fftools/ffmpeg_filter.c
++++ b/fftools/ffmpeg_filter.c
+@@ -2446,7 +2446,8 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
+ #endif
+ 
+     ret = av_buffersrc_add_frame_flags(ifp->filter, frame,
+-                                       AV_BUFFERSRC_FLAG_PUSH);
++    //                                   AV_BUFFERSRC_FLAG_PUSH);
++                                        0);
+     if (ret < 0) {
+         av_frame_unref(frame);
+         if (ret != AVERROR_EOF)
+@@ -2457,11 +2458,12 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
+     return 0;
+ }
+ 
+-int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
++int fg_transcode_step(FilterGraph *graph, InputStream **best_ist, int *ist_num)
+ {
+     FilterGraphPriv *fgp = fgp_from_fg(graph);
+     int i, ret;
+-    int nb_requests, nb_requests_max = 0;
++    //int nb_requests, nb_requests_max = 0;
++    int nb_requests;
+     InputStream *ist;
+ 
+     if (!graph->graph) {
+@@ -2469,7 +2471,8 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
+             InputFilter *ifilter = graph->inputs[i];
+             InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+             if (ifp->format < 0 && !ifp->eof) {
+-                *best_ist = ifp->ist;
++                best_ist[*ist_num] = ifp->ist;
++                (*ist_num)++;
+                 return 0;
+             }
+         }
+@@ -2543,9 +2546,11 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
+         if (input_files[ist->file_index]->eagain || ifp->eof)
+             continue;
+         nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
+-        if (nb_requests > nb_requests_max) {
+-            nb_requests_max = nb_requests;
+-            *best_ist = ist;
++        //if (nb_requests > nb_requests_max) {
++        //    nb_requests_max = nb_requests;
++        if (nb_requests > 0) {
++            best_ist[*ist_num] = ist;
++            (*ist_num)++;
+         }
+     }
+ 
+diff --git a/libavfilter/qsvvpp.c b/libavfilter/qsvvpp.c
+index 2c8e73e87d..f58a66bff9 100644
+--- a/libavfilter/qsvvpp.c
++++ b/libavfilter/qsvvpp.c
+@@ -972,7 +972,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+     QSVFrame         *in_frame, *out_frame;
+     int               ret, ret1, filter_ret;
+ 
+-    while (s->eof && av_fifo_read(s->async_fifo, &aframe, 1) >= 0) {
++    while ((s->eof || !picref) && av_fifo_read(s->async_fifo, &aframe, 1) >= 0) {
+         if (MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000) < 0)
+             av_log(ctx, AV_LOG_WARNING, "Sync failed.\n");
+ 
+@@ -1048,6 +1048,9 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+             aframe.frame->queued--;
+             s->got_frame = 1;
+             aframe.frame->frame = NULL;
++        } else {
++            // request call again
++            inlink->dst->ready = 200;
+         }
+     } while(ret == MFX_ERR_MORE_SURFACE);
+ 
+diff --git a/libavfilter/vf_vpp_qsv.c b/libavfilter/vf_vpp_qsv.c
+index c07b45fedb..ee9c4680e0 100644
+--- a/libavfilter/vf_vpp_qsv.c
++++ b/libavfilter/vf_vpp_qsv.c
+@@ -747,9 +747,10 @@ static int activate(AVFilterContext *ctx)
+     }
+ 
+     if (qsv->session) {
+-        if (in || qsv->eof) {
++        if (in || qsv->eof || qsv->async_depth>0) {
+             ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
+-            av_frame_free(&in);
++            if (in)
++                av_frame_free(&in);
+             if (ret == AVERROR(EAGAIN))
+                 goto not_ready;
+             else if (ret < 0)
+@@ -977,7 +978,7 @@ static const AVOption qsvscale_options[] = {
+     { "w",      "Output video width(0=input video width, -1=keep input video aspect)",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str = "iw"   }, .flags = FLAGS },
+     { "h",      "Output video height(0=input video height, -1=keep input video aspect)", OFFSET(oh), AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
+     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
+-
++    { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
+ #if QSV_ONEVPL
+     { "mode",      "scaling & format conversion mode (mode compute(3), vd(4) and ve(5) are only available on some platforms)",    OFFSET(scale_mode),    AV_OPT_TYPE_INT,    { .i64 = 0}, 0, 5, FLAGS, "mode"},
+ #else
