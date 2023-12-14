@@ -21,4 +21,4 @@ docker run \
   --ip=192.168.2.1 \
   --expose=20000-20170 \
   my_ffmpeg \
-   -video_size 3840x2160 -framerate 25 -pix_fmt y210le -i /videos/outfile.yuv /videos/outfile.mp4
+   -video_size 3840x2160 -framerate 25 -pix_fmt y210le -i /videos/$1.yuv /videos/$1.mp4

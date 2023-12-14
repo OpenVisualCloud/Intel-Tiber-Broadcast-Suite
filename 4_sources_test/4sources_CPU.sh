@@ -34,4 +34,4 @@ docker run \
     [2:v]scale=w=iw/2:h=ih/2[tile2];
     [3:v]scale=w=iw/2:h=ih/2[tile3];
     [tile0][tile1][tile2][tile3]xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[out];" \
-  -map [out] -f rawvideo -pix_fmt y210le /videos/outfile.yuv
+  -map [out] -f rawvideo -pix_fmt y210le /videos/outfile_CPU.yuv

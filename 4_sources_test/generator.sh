@@ -22,7 +22,7 @@ docker run \
   --expose=20000-20170 \
   my_ffmpeg \
    -f lavfi -i \
-gradients=duration=5\
+gradients=duration=1\
 :nb_colors=5:x0=1920:y0=1080\
 :type=spiral:speed=0.1:size=3840x2160 \
 -pix_fmt y210le /videos/gradients.yuv
