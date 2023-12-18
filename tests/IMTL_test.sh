@@ -2,7 +2,7 @@
 pkill -f -9 ffmpeg
 rm -f gradients.* received.*
 ./IMTL_generator.sh
-./IMTL_docker_camera.sh & timeout 40 ./docker_receiver.sh
+./IMTL_docker_camera.sh & timeout 40 ./IMTL_docker_receiver.sh
 ./IMTL_compressor.sh
 ./IMTL_compressor_received.sh
 sha256sum -b *.mp4
