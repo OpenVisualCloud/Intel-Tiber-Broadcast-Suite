@@ -177,7 +177,7 @@ index a29af0005b..93f8ff3b18 100644
 -    if (err < 0) {
 -        av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
 -        return AVERROR_UNKNOWN;
-+    if (!s->session_upload_async_depth == 0) {
++    if (s->session_upload_async_depth == 0) {
 +        do {
 +            err = MFXVideoCORE_SyncOperation(s->session_upload, s->session_upload_sync, 1000);
 +        } while (err == MFX_WRN_IN_EXECUTION);
