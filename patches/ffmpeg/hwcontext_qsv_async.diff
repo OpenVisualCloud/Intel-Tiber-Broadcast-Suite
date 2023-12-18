@@ -1,0 +1,191 @@
+diff --git a/libavutil/hwcontext_qsv.c b/libavutil/hwcontext_qsv.c
+index a29af0005b..93f8ff3b18 100644
+--- a/libavutil/hwcontext_qsv.c
++++ b/libavutil/hwcontext_qsv.c
+@@ -81,9 +81,15 @@ typedef struct QSVDeviceContext {
+ 
+ typedef struct QSVFramesContext {
+     mfxSession session_download;
++    mfxFrameSurface1 session_download_out;
++    mfxSyncPoint session_download_sync;
+     atomic_int session_download_init;
++    int session_download_async_depth;
+     mfxSession session_upload;
++    mfxFrameSurface1 session_upload_in;
++    mfxSyncPoint session_upload_sync;
+     atomic_int session_upload_init;
++    int session_upload_async_depth;
+ #if HAVE_PTHREADS
+     pthread_mutex_t session_lock;
+ #endif
+@@ -1261,7 +1267,7 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
+     AVQSVFramesContext *frames_hwctx = ctx->hwctx;
+     QSVDeviceContext   *device_priv  = ctx->device_ctx->internal->priv;
+     int opaque = 0;
+-
++ 
+     mfxFrameAllocator frame_allocator = {
+         .pthis  = ctx,
+         .Alloc  = frame_alloc,
+@@ -1416,8 +1422,14 @@ static int qsv_frames_init(AVHWFramesContext *ctx)
+     s->session_download = NULL;
+     s->session_upload   = NULL;
+ 
++    memset(&s->session_download_out, 0, sizeof(s->session_download_out));
+     s->session_download_init = 0;
++    s->session_download_sync = NULL;
++    s->session_download_async_depth = 0;
++    memset(&s->session_upload_in, 0, sizeof(s->session_upload_in));
+     s->session_upload_init   = 0;
++    s->session_upload_sync   = NULL;
++    s->session_upload_async_depth  = 0;
+ 
+ #if HAVE_PTHREADS
+     pthread_mutex_init(&s->session_lock, NULL);
+@@ -1766,10 +1778,10 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+                                   const AVFrame *src)
+ {
+     QSVFramesContext  *s = ctx->internal->priv;
+-    mfxFrameSurface1 out = {{ 0 }};
++    //mfxFrameSurface1 out = {{ 0 }};
+     mfxFrameSurface1 *in = (mfxFrameSurface1*)src->data[3];
+ 
+-    mfxSyncPoint sync = NULL;
++    //mfxSyncPoint sync = NULL;
+     mfxStatus err;
+     int ret = 0;
+     /* download to temp frame if the output is not padded as libmfx requires */
+@@ -1781,6 +1793,18 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+     if (ret < 0)
+         return ret;
+ 
++    if (s->session_download_async_depth == 1) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_download, s->session_download_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
++            return AVERROR_UNKNOWN;
++        }
++        //av_log(ctx, AV_LOG_WARNING, "SyncOperation download-early\n");
++    }
++    s->session_download_sync = NULL;
++
+     /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
+      * Height must be a multiple of 16 for progressive frame sequence and a
+      * multiple of 32 otherwise.", so allign all frames to 16 before downloading. */
+@@ -1810,26 +1834,30 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+         return AVERROR(ENOSYS);
+     }
+ 
+-    out.Info = in->Info;
+-    map_frame_to_surface(dst_frame, &out);
++    s->session_download_out.Info = in->Info;
++    map_frame_to_surface(dst_frame, &s->session_download_out);
+ 
+     do {
+-        err = MFXVideoVPP_RunFrameVPPAsync(s->session_download, in, &out, NULL, &sync);
++        err = MFXVideoVPP_RunFrameVPPAsync(s->session_download, in, &s->session_download_out, NULL, &s->session_download_sync);
+         if (err == MFX_WRN_DEVICE_BUSY)
+             av_usleep(1);
+     } while (err == MFX_WRN_DEVICE_BUSY);
++    //av_log(ctx, AV_LOG_WARNING, "RunFrameVPPAsync DOWNLOAD\n");
+ 
+-    if (err < 0 || !sync) {
++    if (err < 0 || !s->session_download_sync) {
+         av_log(ctx, AV_LOG_ERROR, "Error downloading the surface\n");
+         return AVERROR_UNKNOWN;
+     }
+ 
+-    do {
+-        err = MFXVideoCORE_SyncOperation(s->session_download, sync, 1000);
+-    } while (err == MFX_WRN_IN_EXECUTION);
+-    if (err < 0) {
+-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
+-        return AVERROR_UNKNOWN;
++    if (s->session_download_async_depth == 0) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_download, s->session_download_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        //av_log(ctx, AV_LOG_WARNING, "SyncOperation download-late\n");
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
++            return AVERROR_UNKNOWN;
++        }
+     }
+ 
+     if (realigned) {
+@@ -1849,11 +1877,11 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+                                 const AVFrame *src)
+ {
+     QSVFramesContext   *s = ctx->internal->priv;
+-    mfxFrameSurface1   in = {{ 0 }};
++    //mfxFrameSurface1   in = {{ 0 }};
+     mfxFrameSurface1 *out = (mfxFrameSurface1*)dst->data[3];
+     mfxFrameInfo tmp_info;
+ 
+-    mfxSyncPoint sync = NULL;
++    //mfxSyncPoint sync = NULL;
+     mfxStatus err;
+     int ret = 0;
+     /* make a copy if the input is not padded as libmfx requires */
+@@ -1865,6 +1893,18 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+     if (ret < 0)
+         return ret;
+ 
++    if (s->session_upload_async_depth == 1) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_upload, s->session_upload_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
++            return AVERROR_UNKNOWN;
++        }
++        //av_log(ctx, AV_LOG_WARNING, "SyncOperation upload-early\n");
++    }
++    s->session_upload_sync = NULL;    
++
+     /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
+      * Height must be a multiple of 16 for progressive frame sequence and a
+      * multiple of 32 otherwise.", so allign all frames to 16 before uploading. */
+@@ -1908,26 +1948,30 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+         return AVERROR(ENOSYS);
+     }
+ 
+-    in.Info = out->Info;
+-    map_frame_to_surface(src_frame, &in);
++    s->session_upload_in.Info = out->Info;
++    map_frame_to_surface(src_frame, &s->session_upload_in);
+ 
+     do {
+-        err = MFXVideoVPP_RunFrameVPPAsync(s->session_upload, &in, out, NULL, &sync);
++        err = MFXVideoVPP_RunFrameVPPAsync(s->session_upload, &s->session_upload_in, out, NULL, &s->session_upload_sync);
+         if (err == MFX_WRN_DEVICE_BUSY)
+             av_usleep(1);
+     } while (err == MFX_WRN_DEVICE_BUSY);
++    //av_log(ctx, AV_LOG_WARNING, "RunFrameVPPAsync UPLOAD\n");
+ 
+-    if (err < 0 || !sync) {
++    if (err < 0 || !s->session_upload_sync) {
+         av_log(ctx, AV_LOG_ERROR, "Error uploading the surface\n");
+         return AVERROR_UNKNOWN;
+     }
+ 
+-    do {
+-        err = MFXVideoCORE_SyncOperation(s->session_upload, sync, 1000);
+-    } while (err == MFX_WRN_IN_EXECUTION);
+-    if (err < 0) {
+-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
+-        return AVERROR_UNKNOWN;
++    if (!s->session_upload_async_depth == 0) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_upload, s->session_upload_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
++            return AVERROR_UNKNOWN;
++        }
++        //av_log(ctx, AV_LOG_WARNING, "SyncOperation upload-late\n");
+     }
+ 
+     if (realigned) {
