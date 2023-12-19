@@ -26,7 +26,7 @@ docker run -it \
   -y \
   -an \
   -i /config/test0_4k.mkv \
-  -filter_complex "[0:v]format=y210le,fps=50,split=4[in1][in2][in3][in4]" \
+  -filter_complex "[0:v]format=yuv422p10le,fps=50,split=4[in1][in2][in3][in4]" \
   -map "[in1]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20000 -total_sessions 4 -f kahawai_mux -\
   -map "[in2]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai_mux -\
   -map "[in3]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20002 -total_sessions 4 -f kahawai_mux -\
