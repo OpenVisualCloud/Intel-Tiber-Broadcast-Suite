@@ -6,7 +6,7 @@ The Intel® Video Production Pipeline is a software based solution designed for 
 The pipelines are built using Intel-optimized version of FFMpeg and combine: media transport protocols (SMPTE ST 2110-compliant), JPEG-XS encoding/decoding, GPU media processing and rendering. 
 
 The diagram below illustrates an example pipeline created with this software package:  
-[alt text](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
+![Multiviewer](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
 
 ## 2. Software Architecture 
 
@@ -21,7 +21,7 @@ The software package includes performance features on to of regular Intel® FFMp
 - asynchronous execution of video pipeline filters to maximise GPU utilization
 - high-throuthput GPU-CPU memory copy 
 
-[Architecture](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/architecture.png)
+![Architecture](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/architecture.png)
 
 ## 3. Build Instructions 
 
