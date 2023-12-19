@@ -10,6 +10,9 @@ Note that both input and output are expected to use Y’CRCB 10b BT2110 HLG with
 
 For development and integration ease, input/output to support either input from file or from network. 
 
+Example usage (single machine): 
+>docker_camera.sh & docker_receiver.sh
+
 ![Multiviewer](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
 
 Known restrictions in the first release:
