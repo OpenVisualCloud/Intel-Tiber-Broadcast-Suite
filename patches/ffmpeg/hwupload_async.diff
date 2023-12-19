@@ -1,3 +1,19 @@
+diff --git a/libavfilter/internal.h b/libavfilter/internal.h
+index 2dbc5def0a..30f6b6eac9 100644
+--- a/libavfilter/internal.h
++++ b/libavfilter/internal.h
+@@ -70,6 +70,11 @@ struct AVFilterPad {
+      */
+ #define AVFILTERPAD_FLAG_FREE_NAME                       (1 << 1)
+ 
++    /**
++     * The filter executes asynchronous operation.
++     */
++#define AVFILTERPAD_FLAG_ASYNC                           (1 << 2)
++
+     /**
+      * A combination of AVFILTERPAD_FLAG_* flags.
+      */
 diff --git a/libavfilter/vf_hwupload.c b/libavfilter/vf_hwupload.c
 index ef61bb4137..75fd2db5ee 100644
 --- a/libavfilter/vf_hwupload.c
