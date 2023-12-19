@@ -161,20 +161,22 @@ RUN \
     --enable-shared && \
   make && \
   make install
-RUN \
-  echo "**** grabbing fontconfig ****" && \
-  mkdir -p /tmp/fontconfig && \
-  curl -Lf \
-    https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/fontconfig
-RUN \
-  echo "**** compiling fontconfig ****" && \
-  cd /tmp/fontconfig && \
-  ./configure \
-    --disable-static \
-    --enable-shared && \
-  make && \
-  make install 
+#RUN \
+#  echo "**** grabbing fontconfig ****" && \
+#  mkdir -p /tmp/fontconfig && \
+#  curl -Lf \
+#    https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG}.tar.gz | \
+#    tar -zx --strip-components=1 -C /tmp/fontconfig
+#RUN \
+#  echo "**** compiling fontconfig ****" && \
+#  cd /tmp/fontconfig && \
+#  ./configure \
+#    --disable-static \
+#    --enable-shared && \
+#  make && \
+#  make install 
+#RUN \
+#  apt install -y fontconfig
 RUN \
   echo "**** grabbing fribidi ****" && \
   mkdir -p /tmp/fribidi && \
@@ -239,25 +241,26 @@ RUN \
   ./autogen.sh && \
   ./configure \
     --disable-static \
+    --disable-require-system-font-provider \
     --enable-shared && \
   make && \
   make install
-RUN \
-  echo "**** grabbing libdrm ****" && \
-  mkdir -p /tmp/libdrm && \
-  curl -Lf \
-    https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.xz | \
-    tar -xJ --strip-components=1 -C /tmp/libdrm
-RUN \
-  echo "**** compiling libdrm ****" && \
-  cd /tmp/libdrm && \
-  meson setup \
-    --prefix=/usr --libdir=/usr/local/lib/x86_64-linux-gnu \
-    -Dvalgrind=disabled \
-    . build && \
-  ninja -C build && \
-  ninja -C build install && \
-  strip -d /usr/local/lib/x86_64-linux-gnu/libdrm*.so
+#RUN \
+#  echo "**** grabbing libdrm ****" && \
+#  mkdir -p /tmp/libdrm && \
+#  curl -Lf \
+#    https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.xz | \
+#    tar -xJ --strip-components=1 -C /tmp/libdrm
+#RUN \
+#  echo "**** compiling libdrm ****" && \
+#  cd /tmp/libdrm && \
+#  meson setup \
+#    --prefix=/usr --libdir=/usr/local/lib/x86_64-linux-gnu \
+#    -Dvalgrind=disabled \
+#    . build && \
+#  ninja -C build && \
+#  ninja -C build install && \
+#  strip -d /usr/local/lib/x86_64-linux-gnu/libdrm*.so
 RUN \
   echo "**** grabbing libva ****" && \
   mkdir -p /tmp/libva && \
