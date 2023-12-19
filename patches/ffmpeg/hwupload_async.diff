@@ -1,3 +1,28 @@
+diff --git a/libavfilter/avfilter.c b/libavfilter/avfilter.c
+index ab7782862a..a4092bde61 100644
+--- a/libavfilter/avfilter.c
++++ b/libavfilter/avfilter.c
+@@ -1123,7 +1123,7 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
+     ret = ff_filter_frame_framed(link, frame);
+     if (ret < 0 && ret != link->status_out) {
+         link_set_out_status(link, ret, AV_NOPTS_VALUE);
+-    } else {
++    } else if (!dst->ready) {
+         /* Run once again, to see if several frames were available, or if
+            the input status has also changed, or any other reason. */
+         ff_filter_set_ready(dst, 300);
+@@ -1172,6 +1172,11 @@ static int ff_filter_activate_default(AVFilterContext *filter)
+             return ff_filter_frame_to_filter(filter->inputs[i]);
+         }
+     }
++    for (i = 0; i < filter->nb_inputs; i++) {
++        if (filter->inputs[i]->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++            return filter->inputs[i]->dstpad->filter_frame(filter->inputs[i], NULL);
++        }
++    }
+     for (i = 0; i < filter->nb_inputs; i++) {
+         if (filter->inputs[i]->status_in && !filter->inputs[i]->status_out) {
+             av_assert1(!ff_framequeue_queued_frames(&filter->inputs[i]->fifo));
 diff --git a/libavfilter/internal.h b/libavfilter/internal.h
 index 2dbc5def0a..30f6b6eac9 100644
 --- a/libavfilter/internal.h
