@@ -40,7 +40,7 @@ index 2dbc5def0a..30f6b6eac9 100644
       * A combination of AVFILTERPAD_FLAG_* flags.
       */
 diff --git a/libavfilter/vf_hwupload.c b/libavfilter/vf_hwupload.c
-index ef61bb4137..912f2a2ef3 100644
+index ef61bb4137..e4a3907244 100644
 --- a/libavfilter/vf_hwupload.c
 +++ b/libavfilter/vf_hwupload.c
 @@ -36,6 +36,9 @@ typedef struct HWUploadContext {
@@ -53,15 +53,21 @@ index ef61bb4137..912f2a2ef3 100644
      char *device_type;
  } HWUploadContext;
  
-@@ -176,6 +179,22 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+@@ -176,6 +179,28 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
      AVFrame *output = NULL;
      int err;
  
-+    if (!input) {
++    if (link->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
 +        if (!ctx->output || !ctx->input)
 +            av_log(ctx, AV_LOG_ERROR, "Async operation already completed\n");
 +
-+        av_hwframe_transfer_data(ctx->output, NULL, 0);
++        AVHWFramesContext *frameCtx = (AVHWFramesContext*)ctx->output->hw_frames_ctx->data;
++        err = frameCtx->internal->hw_type->transfer_data_to(frameCtx, ctx->output, ctx->input);
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Delayed sync error.");
++            return AVERROR(ENOSYS);
++        }
++
 +        av_frame_free(&ctx->input);
 +        err = ff_filter_frame(outlink, ctx->output);
 +        if (err < 0)
@@ -76,7 +82,7 @@ index ef61bb4137..912f2a2ef3 100644
      if (input->format == outlink->format)
          return ff_filter_frame(outlink, input);
  
-@@ -190,6 +209,15 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+@@ -190,6 +215,15 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
      output->height = input->height;
  
      err = av_hwframe_transfer_data(output, input, 0);
@@ -92,7 +98,7 @@ index ef61bb4137..912f2a2ef3 100644
      if (err < 0) {
          av_log(ctx, AV_LOG_ERROR, "Failed to upload frame: %d.\n", err);
          goto fail;
-@@ -199,6 +227,11 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+@@ -199,6 +233,11 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
      if (err < 0)
          goto fail;
  
@@ -104,27 +110,6 @@ index ef61bb4137..912f2a2ef3 100644
      av_frame_free(&input);
  
      return ff_filter_frame(outlink, output);
-diff --git a/libavutil/hwcontext.c b/libavutil/hwcontext.c
-index 5fd06016a6..c0fc0b549d 100644
---- a/libavutil/hwcontext.c
-+++ b/libavutil/hwcontext.c
-@@ -468,6 +468,16 @@ int av_hwframe_transfer_data(AVFrame *dst, const AVFrame *src, int flags)
-     AVHWFramesContext *ctx;
-     int ret;
- 
-+    if (!src) {
-+        ctx = (AVHWFramesContext*)dst->hw_frames_ctx->data;
-+        ret = ctx->internal->hw_type->transfer_data_to(ctx, dst, src);
-+        if (ret < 0) {
-+            av_log(ctx, AV_LOG_ERROR, "Delayed sync error.");
-+            return AVERROR(ENOSYS);
-+        }
-+        return 0;
-+    }
-+
-     if (!dst->buf[0])
-         return transfer_data_alloc(dst, src, flags);
- 
 diff --git a/libavutil/hwcontext_qsv.c b/libavutil/hwcontext_qsv.c
 index a29af0005b..d46d61c0c9 100644
 --- a/libavutil/hwcontext_qsv.c
