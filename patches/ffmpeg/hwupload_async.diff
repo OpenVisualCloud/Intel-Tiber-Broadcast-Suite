@@ -40,32 +40,35 @@ index 2dbc5def0a..30f6b6eac9 100644
       * A combination of AVFILTERPAD_FLAG_* flags.
       */
 diff --git a/libavfilter/vf_hwupload.c b/libavfilter/vf_hwupload.c
-index ef61bb4137..75fd2db5ee 100644
+index ef61bb4137..912f2a2ef3 100644
 --- a/libavfilter/vf_hwupload.c
 +++ b/libavfilter/vf_hwupload.c
-@@ -36,6 +36,8 @@ typedef struct HWUploadContext {
+@@ -36,6 +36,9 @@ typedef struct HWUploadContext {
      AVBufferRef       *hwframes_ref;
      AVHWFramesContext *hwframes;
  
 +    AVFrame *output;
++    AVFrame *input;
 +
      char *device_type;
  } HWUploadContext;
  
-@@ -176,6 +178,20 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+@@ -176,6 +179,22 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
      AVFrame *output = NULL;
      int err;
  
 +    if (!input) {
-+        if (!ctx->output)
++        if (!ctx->output || !ctx->input)
 +            av_log(ctx, AV_LOG_ERROR, "Async operation already completed\n");
 +
-+        av_hwframe_transfer_data(ctx->output, input, 0);
++        av_hwframe_transfer_data(ctx->output, NULL, 0);
++        av_frame_free(&ctx->input);
 +        err = ff_filter_frame(outlink, ctx->output);
 +        if (err < 0)
 +            av_log(ctx, AV_LOG_ERROR, "Failed to complete async upload: %d.\n", err);
 +
 +        ctx->output = NULL;
++        ctx->input = NULL;
 +        link->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
 +        return err;
 +    }
@@ -73,7 +76,7 @@ index ef61bb4137..75fd2db5ee 100644
      if (input->format == outlink->format)
          return ff_filter_frame(outlink, input);
  
-@@ -190,6 +206,14 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+@@ -190,6 +209,15 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
      output->height = input->height;
  
      err = av_hwframe_transfer_data(output, input, 0);
@@ -82,24 +85,25 @@ index ef61bb4137..75fd2db5ee 100644
 +        link->dst->ready = 200;
 +        link->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
 +        ctx->output = output;
++        ctx->input = input;
 +        err = 0;
 +    }
 +
      if (err < 0) {
          av_log(ctx, AV_LOG_ERROR, "Failed to upload frame: %d.\n", err);
          goto fail;
-@@ -201,6 +225,11 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
- 
-     av_frame_free(&input);
+@@ -199,6 +227,11 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+     if (err < 0)
+         goto fail;
  
 +    if (link->dst->ready) {
 +        // call again to complete frame filtering
 +        return 0;
 +    }
 +
-     return ff_filter_frame(outlink, output);
+     av_frame_free(&input);
  
- fail:
+     return ff_filter_frame(outlink, output);
 diff --git a/libavutil/hwcontext.c b/libavutil/hwcontext.c
 index 5fd06016a6..c0fc0b549d 100644
 --- a/libavutil/hwcontext.c
