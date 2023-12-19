@@ -1,6 +1,6 @@
 # Video Production Pipelines
 
-There are 3 reference pipelines planned to be delivered as part of thsi project. 
+The following reference pipelines are delivered as part of this project. 
 
 ## 1. Multiviewer pipeline 
 
@@ -16,7 +16,7 @@ Example usage (single machine):
 ![Multiviewer](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
 
 Known restrictions in the first release:
-- 4 input streams are supported
+- 4 input streams are supported for performance testing
 - simultaneous receive and transmit is not supported in IMTL plugin
 - no integration with visualization app
 
@@ -27,7 +27,7 @@ Input stream from an ST2110 camera is scaled down, tone mapped, encoded to AVC/H
 ![Replay 1](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/replay1.png)
 
 Known restrictions in the first release:
-- TODO
+- custom 3D/LUT not available
 
 ## 3. Replay pipeline 2
 
@@ -36,4 +36,4 @@ Input stream is decoded from AVC/HEVC stored in a file and blended with a live i
 ![Replay 2](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/replay2.png)
 
 Known restrictions in the first release:
-- TODO
+- custom blend filter not available
