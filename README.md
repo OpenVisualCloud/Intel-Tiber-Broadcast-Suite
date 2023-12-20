@@ -2,46 +2,46 @@
 
 ## 1. Overview
 
-The Intel® Video Production Pipeline is a software based solution designed for creation of video processing pipeliens useed in live video production. 
-The pipelines are built using Intel-optimized version of FFMpeg and combine: media transport protocols (SMPTE ST 2110-compliant), JPEG-XS encoding/decoding, GPU media processing and rendering. 
+The Intel® Video Production Pipeline is a software-based package designed for creation of high-perofrmance and high-quality solutions used in live video production. 
+The video pipelines are built using Intel-optimized version of FFmpeg and combine: media transport protocols (SMPTE ST 2110-compliant), JPEG-XS encoding/decoding, GPU media processing and rendering. 
 
 The diagram below illustrates an example pipeline created with this software package:  
 ![Multiviewer](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
 
 ## 2. Software Architecture 
 
-The Intel® Video Production Pipeline uses open-source FFMpeg framework as a baseline, and enhances it with: 
+The Intel® Video Production Pipeline uses open-source FFmpeg framework as a baseline, and enhances it with: 
 - Intel® Media Transport Library (IMTL) with SMPTE 2110 transport protocols and yuv422p10le and y210le pixel formats. 
 - Intel® QSV and OneVPL libraries to support hardware-accelerated media processing with Intel Flex GPU cards. 
-- DPC++ kernels with custom color-space-conversion filters suitable for video production (not supported in this release).
-- OpenGL/Vulkan integration to allow custom rendering effects (not supported in this release).
+- DPC++ kernels to enable custom effect filters used in video production (not supported in this release).
+- OpenGL/Vulkan integration to display rendering effects (not supported in this release).
 
-The software package includes performance features on to of regular Intel® FFMpeg-Carthweel releases:
+The software package includes several performance features on to of regular Intel® FFMpeg-Carthweel releases:
 - memory management optimizations for page-aligned surface allocations
 - asynchronous execution of video pipeline filters to maximise GPU utilization
-- high-throuthput GPU-CPU memory copy 
+- high-throuthput GPU-CPU memory data transfers 
 
 ![Architecture](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/architecture.png)
 
 ## 3. Build Instructions 
 
-Before using IMTL in Docker please install required packages on host machine:
-[Build_instruction](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md)
+Step 1. Please install required IMTL packages on the host machine:
+[IMTL build instruction](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md)
 
-To run ffmpeg in Docker please run command which creates docker image:
+Step 2. Pleaes create a docker image shared by all video pipelines:
 
 ```
 docker build -t my_ffmpeg .
 ```
 
-Step 1. If IMTL plugin support is needed then please run commands on host as a root:
+Step 3. Please setup IMTL environment running the following command on the host machine as a root user:
 
 ```
 ./first_run.sh
 ```
 
-Steps 1 is required each time host is restarted and IMTL is needed.
+Step 3 is required each time host is restarted and IMTL is needed.
 
-Step 2. Run .sh script with ffmpeg parameters. Examples are in [test_scripts](./test_scripts) directory.
+Step 4. Run .sh pipeline scripts to execute video pipelines. Reference pipeliines can be found in [pipelines](./pipelines) directory.
 
 

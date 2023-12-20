@@ -10,8 +10,10 @@ Note that both input and output are expected to use Y’CRCB 10b BT2110 HLG with
 
 For development and integration ease, input/output to support either input from file or from network. 
 
-Example usage (single machine): 
->docker_camera.sh & docker_receiver.sh
+There are separate docker files for camera and multiviewer pipelines. The pipelines should be run on separate nodes for performance testing. Alternatively, one can launch both pipelines on a single node using the following command line: 
+```
+docker_camera.sh & docker_multiviewer.sh
+```
 
 ![Multiviewer](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
 
