@@ -2,6 +2,20 @@
 NIC_PORT="0000:b1:01.1"
 LOCAL_IP_ADDRESS="192.168.2.1"
 DEST_IP_ADDRESS="192.168.2.2"
+INPUT_FILE_NAME="input_test_4k.mkv"
+
+if [ ! -e $INPUT_FILE_NAME ]; then
+  docker run -it \
+    --user root\
+    --privileged \
+    --device=/dev/dri:/dev/dri \
+    -v $(pwd):/config \
+    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
+    my_ffmpeg \
+    -hwaccel qsv -hwaccel_device /dev/dri/renderD128 \
+    -y -f lavfi -i testsrc=d=10:s=3840x2160:r=50,format=y210le \
+    -c:v libx265 -an -x265-params crf=25 /config/$INPUT_FILE_NAME
+fi
 
 docker run -it \
   --user root\
@@ -25,7 +39,7 @@ docker run -it \
   my_ffmpeg \
   -y \
   -an \
-  -i /config/test0_4k.mkv \
+  -i /config/$INPUT_FILE_NAME \
   -filter_complex "[0:v]format=yuv422p10le,fps=50,split=4[in1][in2][in3][in4]" \
   -map "[in1]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20000 -total_sessions 4 -f kahawai_mux -\
   -map "[in2]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai_mux -\
