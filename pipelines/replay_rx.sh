@@ -2,6 +2,8 @@
 RECV_NIC_PORT="0000:b1:01.2"
 RECV_LOCAL_IP_ADDRESS="192.168.2.2"
 RECV_SOURCE_IP_ADDRESS="192.168.2.1"
+OUTPUT_FILE_NAME="output_test"
+
 
 docker run \
   --user root\
@@ -22,8 +24,9 @@ docker run \
   -e MTL_PARAM_LCORES="84-111" \
   -e MTL_PARAM_DATA_QUOTA=2589 \
   my_ffmpeg \
-  -an \
-  -pix_fmt yuv422p10le -width 1920 -height 1080 -port $RECV_NIC_PORT -local_addr $RECV_LOCAL_IP_ADDRESS -src_addr $RECV_SOURCE_IP_ADDRESS -udp_port 20000 -total_sessions 1 -f kahawai -i "0" \
-  -map 0:v -vframes 500 -r 50 -vf scale=960:540 -c:v libx265 -an -x265-params crf=25 /videos/received_540p.mov \
-  -map 0:v -vframes 500 -r 50 -vf scale=480:270 -c:v libx265 -an -x265-params crf=25 /videos/received_270p.mov 
+  -y -an \
+  -pixel_format y210le -width 3840 -height 2160 -port $RECV_NIC_PORT -local_addr $RECV_LOCAL_IP_ADDRESS -src_addr $RECV_SOURCE_IP_ADDRESS \
+    -udp_port 20000 -total_sessions 1 -f kahawai -i "0" \
+  -map 0:v -vframes 500 -r 50 -vf scale=960:540 -c:v libx265 -an -x265-params crf=25 /videos/$OUTPUT_FILE_NAME"_540p.mkv" \
+  -map 0:v -vframes 500 -r 50 -vf scale=480:270 -c:v libx265 -an -x265-params crf=25 /videos/$OUTPUT_FILE_NAME"_270p.mkv" 
 

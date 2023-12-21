@@ -9,12 +9,12 @@ if [ ! -e $INPUT_FILE_NAME ]; then
     --user root\
     --privileged \
     --device=/dev/dri:/dev/dri \
-    -v $(pwd):/config \
+    -v $(pwd):/videos \
     -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
     my_ffmpeg \
     -hwaccel qsv -hwaccel_device /dev/dri/renderD128 \
     -y -f lavfi -i testsrc=d=10:s=3840x2160:r=50,format=y210le \
-    -c:v libx265 -an -x265-params crf=25 /config/$INPUT_FILE_NAME
+    -c:v libx265 -an -x265-params crf=25 /videos/$INPUT_FILE_NAME
 fi
 
 docker run -it \
@@ -23,7 +23,7 @@ docker run -it \
   --device=/dev/vfio:/dev/vfio \
   --device=/dev/dri:/dev/dri \
   --cap-add ALL \
-  -v $(pwd):/config \
+  -v $(pwd):/videos \
   -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
   -v /dev/null:/dev/null \
@@ -39,9 +39,9 @@ docker run -it \
   my_ffmpeg \
   -y \
   -an \
-  -i /config/$INPUT_FILE_NAME \
+  -i /videos/$INPUT_FILE_NAME \
   -filter_complex "[0:v]format=yuv422p10le,fps=50,split=4[in1][in2][in3][in4]" \
-  -map "[in1]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20000 -total_sessions 4 -f kahawai_mux -\
-  -map "[in2]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai_mux -\
-  -map "[in3]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20002 -total_sessions 4 -f kahawai_mux -\
-  -map "[in4]" -vframes 4000 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20003 -total_sessions 4 -f kahawai_mux -
+  -map "[in1]" -vframes 500 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20000 -total_sessions 4 -f kahawai_mux -\
+  -map "[in2]" -vframes 500 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20001 -total_sessions 4 -f kahawai_mux -\
+  -map "[in3]" -vframes 500 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20002 -total_sessions 4 -f kahawai_mux -\
+  -map "[in4]" -vframes 500 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -dst_addr $DEST_IP_ADDRESS -udp_port 20003 -total_sessions 4 -f kahawai_mux -
