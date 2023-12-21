@@ -10,9 +10,10 @@ Note that both input and output are expected to use Y’CRCB 10b BT2110 HLG with
 
 For development and integration ease, input/output to support either input from file or from network. 
 
-There are separate docker files for camera and multiviewer pipelines. The pipelines should be run on separate nodes for performance testing. Alternatively, one can launch both pipelines on a single node using the following command line: 
+There are separate docker files for camera (TX) and multiviewer (RX) pipelines. The TX/RX pipelines should be executed on separate nodes for performance testing. Alternatively, one can launch both pipelines on a single node using two terminals and the following command lines: 
 ```
-docker_camera.sh & docker_multiviewer.sh
+terminalA>multiviewer_tx.sh
+terminalB>multiviewer_rx.sh
 ```
 
 ![Multiviewer](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/multiviewer.png)
@@ -25,6 +26,12 @@ Known restrictions in the first release:
 ## 2. Replay pipeline 1
 
 Input stream from an ST2110 camera is scaled down, tone mapped, encoded to AVC/HEVC and stored in a file for future use. There are two different resolutions stored. For performance it is allowed to cascade scale operations (scaling to 270p can use 540p as input instead of the original stream). Note that input is expected to use Y’CRCB 10b BT2110 HLG with BT2020 Colour Gamut. Output could use either 422 or 420 sampling. 
+
+There are separate docker files for camera (TX) and replay (RX) pipelines. The TX/RX pipelines should be executed on separate nodes for performance testing. Alternatively, one can launch both pipelines on a single node using two terminals and the following command lines: 
+```
+terminalA>replay_tx.sh
+terminalB>replay_rx.sh
+```
 
 ![Replay 1](https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline/blob/main/doc/png/replay1.png)
 
