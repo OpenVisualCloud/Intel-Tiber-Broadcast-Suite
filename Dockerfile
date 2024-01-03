@@ -703,8 +703,8 @@ RUN cd $MTL_REPO && \
     
 # add ffmpeg patches
 ENV \
-  CARTWHEEL=2023q3 \
-  FFMPEG_COMMIT_ID=9e1ea3caba5effaf9c7596dc178bd457439d638f
+  CARTWHEEL_COMMIT_ID=ad404d5a2bebd4552040c976faf95bce0a76d0c2 \
+  FFMPEG_COMMIT_ID=89215237dd6ac64f94e14aa20a000e0440a00aac
 
 RUN \
   echo "**** Get FFMPEG from git branch ****" && \
@@ -716,7 +716,7 @@ RUN \
   echo "**** Cartwheel patch ****" && \
   mkdir -p /tmp/cartwheel && \
   curl -Lf \
-    https://github.com/intel/cartwheel-ffmpeg/archive/${CARTWHEEL}.tar.gz | \
+    https://github.com/intel/cartwheel-ffmpeg/archive/${CARTWHEEL_COMMIT_ID}.tar.gz | \
     tar -zx --strip-components=1 -C /tmp/cartwheel && \
   cd /tmp/ffmpeg && \
   git init && \

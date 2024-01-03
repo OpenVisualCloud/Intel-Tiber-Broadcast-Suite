@@ -1,119 +1,503 @@
-diff --git a/fftools/ffmpeg.c b/fftools/ffmpeg.c
-index 34ccaa6491..c560a07ffd 100644
---- a/fftools/ffmpeg.c
-+++ b/fftools/ffmpeg.c
-@@ -1146,24 +1146,30 @@ static int process_input(int file_index)
-  */
- static int transcode_step(OutputStream *ost)
- {
--    InputStream  *ist = NULL;
-+    InputStream  **ist = NULL;
-+    int ist_num;
-     int ret;
- 
-+    ist = malloc(sizeof(struct InputStream*) * nb_input_files);
-+    ist_num = 0;
-+
-     if (ost->filter) {
--        if ((ret = fg_transcode_step(ost->filter->graph, &ist)) < 0)
-+        if ((ret = fg_transcode_step(ost->filter->graph, ist, &ist_num)) < 0)
-             return ret;
-         if (!ist)
-             return 0;
-     } else {
--        ist = ost->ist;
--        av_assert0(ist);
-+        ist[0] = ost->ist;
-+        av_assert0(ist[0]);
-     }
- 
--    ret = process_input(ist->file_index);
--    if (ret == AVERROR(EAGAIN)) {
--        if (input_files[ist->file_index]->eagain)
--            ost->unavailable = 1;
--        return 0;
-+    for (int i = 0; i<ist_num; i++) {
-+        ret = process_input(ist[i]->file_index);
-+        if (ret == AVERROR(EAGAIN)) {
-+            if (input_files[ist[i]->file_index]->eagain)
-+                ost->unavailable = 1;
-+            return 0;
-+        }
-     }
- 
-     if (ret < 0)
-diff --git a/fftools/ffmpeg.h b/fftools/ffmpeg.h
-index 55395f48a9..8f6be50f75 100644
---- a/fftools/ffmpeg.h
-+++ b/fftools/ffmpeg.h
-@@ -758,7 +758,7 @@ void fg_free(FilterGraph **pfg);
-  * @param[out] best_ist  input stream where a frame would allow to continue
-  * @return  0 for success, <0 for error
-  */
--int fg_transcode_step(FilterGraph *graph, InputStream **best_ist);
-+int fg_transcode_step(FilterGraph *graph, InputStream **best_ist, int *ist_num);
- 
- void fg_send_command(FilterGraph *fg, double time, const char *target,
-                      const char *command, const char *arg, int all_filters);
 diff --git a/fftools/ffmpeg_filter.c b/fftools/ffmpeg_filter.c
-index b7da105141..e8c1553485 100644
+index 9fc877b437..3140295fd9 100644
 --- a/fftools/ffmpeg_filter.c
 +++ b/fftools/ffmpeg_filter.c
-@@ -2446,7 +2446,8 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
- #endif
+@@ -90,11 +90,13 @@ typedef struct FilterGraphThread {
+     // The output index is stored in frame opaque.
+     AVFifo  *frame_queue_out;
+ 
+-    // index of the next input to request from the scheduler
+-    unsigned next_in;
+     // set to 1 after at least one frame passed through this output
+     int      got_frame;
+ 
++    // index of the next inputs to request from the scheduler
++    unsigned *inputs;
++    int      count;
++
+     // EOF status of each input/output, as received by the thread
+     uint8_t *eof_in;
+     uint8_t *eof_out;
+@@ -1924,10 +1926,10 @@ static void send_command(FilterGraph *fg, AVFilterGraph *graph,
+     }
+ }
+ 
+-static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
++static void choose_input(const FilterGraph *fg, const FilterGraphThread *fgt, int* inputs, int* count)
+ {
+-    int nb_requests, nb_requests_max = 0;
+-    int best_input = -1;
++    int nb_requests;
++    *count = 0;
+ 
+     for (int i = 0; i < fg->nb_inputs; i++) {
+         InputFilter *ifilter = fg->inputs[i];
+@@ -1937,15 +1939,13 @@ static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
+             continue;
+ 
+         nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
+-        if (nb_requests > nb_requests_max) {
+-            nb_requests_max = nb_requests;
+-            best_input = i;
++        if (nb_requests > 0) {
++            inputs[*count] = i;
++            (*count)++;
+         }
+     }
++    return;
+ 
+-    av_assert0(best_input >= 0);
+-
+-    return best_input;
+ }
+ 
+ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
+@@ -2410,13 +2410,15 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+ 
+     // graph not configured, just select the input to request
+     if (!fgt->graph) {
++        fgt->count = 0;
+         for (int i = 0; i < fg->nb_inputs; i++) {
+             InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+             if (ifp->format < 0 && !fgt->eof_in[i]) {
+-                fgt->next_in = i;
+-                return 0;
++                fgt->inputs[fgt->count] = i;
++                fgt->count++;
+             }
+         }
++        return 0;
+ 
+         // This state - graph is not configured, but all inputs are either
+         // initialized or EOF - should be unreachable because sending EOF to a
+@@ -2430,7 +2432,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+ 
+         ret = avfilter_graph_request_oldest(fgt->graph);
+         if (ret == AVERROR(EAGAIN)) {
+-            fgt->next_in = choose_input(fg, fgt);
++            choose_input(fg, fgt, fgt->inputs, &fgt->count);
+             break;
+         } else if (ret < 0) {
+             if (ret == AVERROR_EOF)
+@@ -2441,7 +2443,6 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+                        av_err2str(ret));
+             return ret;
+         }
+-        fgt->next_in = fg->nb_inputs;
+ 
+         // return after one iteration, so that scheduler can rate-control us
+         if (did_step && fgp->have_sources)
+@@ -2671,7 +2672,8 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
+     fd->wallclock[LATENCY_PROBE_FILTER_PRE] = av_gettime_relative();
  
      ret = av_buffersrc_add_frame_flags(ifp->filter, frame,
 -                                       AV_BUFFERSRC_FLAG_PUSH);
-+    //                                   AV_BUFFERSRC_FLAG_PUSH);
++//                                       AV_BUFFERSRC_FLAG_PUSH);
 +                                        0);
      if (ret < 0) {
          av_frame_unref(frame);
          if (ret != AVERROR_EOF)
-@@ -2457,11 +2458,12 @@ int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference)
+@@ -2735,6 +2737,9 @@ static int fg_thread_init(FilterGraphThread *fgt, const FilterGraph *fg)
+     if (!fgt->frame_queue_out)
+         goto fail;
+ 
++    fgt->count = 0;
++    fgt->inputs = malloc(sizeof(unsigned int) * fg->nb_inputs);
++
+     return 0;
+ 
+ fail:
+@@ -2770,53 +2775,60 @@ static void *filter_thread(void *arg)
+         InputFilter *ifilter;
+         InputFilterPriv *ifp;
+         enum FrameOpaque o;
+-        unsigned input_idx = fgt.next_in;
+ 
+-        input_status = sch_filter_receive(fgp->sch, fgp->sch_idx,
+-                                          &input_idx, fgt.frame);
+-        if (input_status == AVERROR_EOF) {
+-            av_log(fg, AV_LOG_VERBOSE, "Filtering thread received EOF\n");
+-            break;
+-        } else if (input_status == AVERROR(EAGAIN)) {
+-            // should only happen when we didn't request any input
+-            av_assert0(input_idx == fg->nb_inputs);
+-            goto read_frames;
+-        }
+-        av_assert0(input_status >= 0);
++        for (int i = 0; i < fgt.count; i++) {
+ 
+-        o = (intptr_t)fgt.frame->opaque;
++            unsigned input_idx = fgt.inputs[i];    
+ 
+-        o = (intptr_t)fgt.frame->opaque;
++            input_status = sch_filter_receive(fgp->sch, fgp->sch_idx,
++                                              &input_idx, fgt.frame);
++            if (input_status == AVERROR_EOF) {
++                av_log(fg, AV_LOG_VERBOSE, "Filtering thread received EOF\n");
++                break;
++            } else if (input_status == AVERROR(EAGAIN)) {
++                // should only happen when we didn't request any input
++                av_assert0(input_idx == fg->nb_inputs);
++                goto read_frames;
++            }
++            av_assert0(input_status >= 0);
+ 
+-        // message on the control stream
+-        if (input_idx == fg->nb_inputs) {
+-            FilterCommand *fc;
++            o = (intptr_t)fgt.frame->opaque;
+ 
+-            av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
++            o = (intptr_t)fgt.frame->opaque;
+ 
+-            fc = (FilterCommand*)fgt.frame->buf[0]->data;
+-            send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
+-                         fc->all_filters);
+-            av_frame_unref(fgt.frame);
+-            continue;
+-        }
++            // message on the control stream
++            if (input_idx == fg->nb_inputs) {
++                FilterCommand *fc;
+ 
+-        // we received an input frame or EOF
+-        ifilter   = fg->inputs[input_idx];
+-        ifp       = ifp_from_ifilter(ifilter);
++                av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
+ 
+-        if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
+-            int hb_frame = input_status >= 0 && o == FRAME_OPAQUE_SUB_HEARTBEAT;
+-            ret = sub2video_frame(ifilter, (fgt.frame->buf[0] || hb_frame) ? fgt.frame : NULL,
+-                                  !fgt.graph);
+-        } else if (fgt.frame->buf[0]) {
+-            ret = send_frame(fg, &fgt, ifilter, fgt.frame);
+-        } else {
+-            av_assert1(o == FRAME_OPAQUE_EOF);
+-            ret = send_eof(&fgt, ifilter, fgt.frame->pts, fgt.frame->time_base);
++                fc = (FilterCommand*)fgt.frame->buf[0]->data;
++                send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
++                             fc->all_filters);
++                av_frame_unref(fgt.frame);
++                continue;
++            }
++
++            // we received an input frame or EOF
++            ifilter   = fg->inputs[input_idx];
++            ifp       = ifp_from_ifilter(ifilter);
++
++            if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
++                int hb_frame = input_status >= 0 && o == FRAME_OPAQUE_SUB_HEARTBEAT;
++                ret = sub2video_frame(ifilter, (fgt.frame->buf[0] || hb_frame) ? fgt.frame : NULL,
++                                      !fgt.graph);
++            } else if (fgt.frame->buf[0]) {
++                ret = send_frame(fg, &fgt, ifilter, fgt.frame);
++            } else {
++                av_assert1(o == FRAME_OPAQUE_EOF);
++                ret = send_eof(&fgt, ifilter, fgt.frame->pts, fgt.frame->time_base);
++            }
++            av_frame_unref(fgt.frame);
++            if (ret < 0)
++                break;
+         }
+-        av_frame_unref(fgt.frame);
+-        if (ret < 0)
++
++        if (ret < 0)        
+             goto finish;
+ 
+ read_frames:
+diff --git a/fftools/ffmpeg_sched.c b/fftools/ffmpeg_sched.c
+index 4fc5a33941..66eed1c7bd 100644
+--- a/fftools/ffmpeg_sched.c
++++ b/fftools/ffmpeg_sched.c
+@@ -353,7 +353,7 @@ static void waiter_uninit(SchWaiter *w)
+ }
+ 
+ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_size,
+-                       enum QueueType type)
++                       enum QueueType type, enum QueuePolicy policy)
+ {
+     ThreadQueue *tq;
+     ObjPool *op;
+@@ -364,7 +364,7 @@ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_si
+         return AVERROR(ENOMEM);
+ 
+     tq = tq_alloc(nb_streams, queue_size, op,
+-                  (type == QUEUE_PACKETS) ? pkt_move : frame_move);
++                  (type == QUEUE_PACKETS) ? pkt_move : frame_move, policy);
+     if (!tq) {
+         objpool_free(&op);
+         return AVERROR(ENOMEM);
+@@ -773,7 +773,7 @@ int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx,
+     if (!dec->send_frame)
+         return AVERROR(ENOMEM);
+ 
+-    ret = queue_alloc(&dec->queue, 1, 1, QUEUE_PACKETS);
++    ret = queue_alloc(&dec->queue, 1, 1, QUEUE_PACKETS, POLICY_DYNAMIC);
+     if (ret < 0)
+         return ret;
+ 
+@@ -813,7 +813,7 @@ int sch_add_enc(Scheduler *sch, SchThreadFunc func, void *ctx,
+ 
+     task_init(sch, &enc->task, SCH_NODE_TYPE_ENC, idx, func, ctx);
+ 
+-    ret = queue_alloc(&enc->queue, 1, 1, QUEUE_FRAMES);
++    ret = queue_alloc(&enc->queue, 1, 1, QUEUE_FRAMES, POLICY_DYNAMIC);
+     if (ret < 0)
+         return ret;
+ 
+@@ -861,7 +861,7 @@ int sch_add_filtergraph(Scheduler *sch, unsigned nb_inputs, unsigned nb_outputs,
+     if (ret < 0)
+         return ret;
+ 
+-    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, 1, QUEUE_FRAMES);
++    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, 1, QUEUE_FRAMES, POLICY_ROUNDROBIN);
+     if (ret < 0)
+         return ret;
+ 
+@@ -1313,7 +1313,7 @@ int sch_start(Scheduler *sch)
+             }
+         }
+ 
+-        ret = queue_alloc(&mux->queue, mux->nb_streams, 1, QUEUE_PACKETS);
++        ret = queue_alloc(&mux->queue, mux->nb_streams, 1, QUEUE_PACKETS, POLICY_DYNAMIC);
+         if (ret < 0)
+             return ret;
+ 
+diff --git a/fftools/thread_queue.c b/fftools/thread_queue.c
+index fd73cc0a9b..4a2406891b 100644
+--- a/fftools/thread_queue.c
++++ b/fftools/thread_queue.c
+@@ -43,6 +43,9 @@ struct ThreadQueue {
+     int              *finished;
+     unsigned int    nb_streams;
+ 
++    enum QueuePolicy policy;
++    int next_stream;
++
+     AVFifo  *fifo;
+ 
+     ObjPool *obj_pool;
+@@ -77,7 +80,8 @@ void tq_free(ThreadQueue **ptq)
+ }
+ 
+ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
+-                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src))
++                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src), 
++                      enum QueuePolicy policy)
+ {
+     ThreadQueue *tq;
+     int ret;
+@@ -111,6 +115,9 @@ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
+     tq->obj_pool = obj_pool;
+     tq->obj_move = obj_move;
+ 
++    tq->policy = policy;
++    tq->next_stream = 0;
++
+     return tq;
+ fail:
+     tq_free(&tq);
+@@ -132,6 +139,9 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
+         goto finish;
+     }
+ 
++    while ((tq->policy == POLICY_ROUNDROBIN) && (tq->next_stream != stream_idx))
++        pthread_cond_wait(&tq->cond, &tq->lock);
++
+     while (!(*finished & FINISHED_RECV) && !av_fifo_can_write(tq->fifo))
+         pthread_cond_wait(&tq->cond, &tq->lock);
+ 
+@@ -149,6 +159,10 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
+ 
+         ret = av_fifo_write(tq->fifo, &elem, 1);
+         av_assert0(ret >= 0);
++
++        if (tq->policy == POLICY_ROUNDROBIN)
++            tq->next_stream = (tq->next_stream + 1) % (tq->nb_streams-1);
++
+         pthread_cond_broadcast(&tq->cond);
+     }
+ 
+diff --git a/fftools/thread_queue.h b/fftools/thread_queue.h
+index 0cc8c71ebd..e6b25dca4c 100644
+--- a/fftools/thread_queue.h
++++ b/fftools/thread_queue.h
+@@ -25,6 +25,11 @@
+ 
+ typedef struct ThreadQueue ThreadQueue;
+ 
++enum QueuePolicy {
++    POLICY_DYNAMIC,
++    POLICY_ROUNDROBIN,
++};
++
+ /**
+  * Allocate a queue for sending data between threads.
+  *
+@@ -37,7 +42,8 @@ typedef struct ThreadQueue ThreadQueue;
+  * @param callback that moves the contents between two data pointers
+  */
+ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
+-                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src));
++                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src),
++                      enum QueuePolicy policy);
+ void         tq_free(ThreadQueue **tq);
+ 
+ /**
+diff --git a/libavfilter/avfilter.c b/libavfilter/avfilter.c
+index bde1c33d07..c9f2ce44ce 100644
+--- a/libavfilter/avfilter.c
++++ b/libavfilter/avfilter.c
+@@ -242,6 +242,7 @@ void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
+     link->frame_blocked_in = 0;
+     filter_unblock(link->dst);
+     ff_filter_set_ready(link->dst, 200);
++    //av_log(link->src, AV_LOG_WARNING, "link_set_in_status %s, %d, frames:%ld\n", link->dst->name, link->dst->ready, link->fifo.queued);
+ }
+ 
+ /**
+@@ -257,7 +258,8 @@ static void link_set_out_status(AVFilterLink *link, int status, int64_t pts)
+         update_link_current_pts(link, pts);
+     filter_unblock(link->dst);
+     ff_filter_set_ready(link->src, 200);
+-}
++    //av_log(link->dst, AV_LOG_WARNING, "link_set_out_status %s, %d, frames:%ld\n", link->src->name, link->src->ready, link->fifo.queued);
++}   
+ 
+ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
+                            unsigned filt_srcpad_idx, unsigned filt_dstpad_idx)
+@@ -450,6 +452,7 @@ int ff_request_frame(AVFilterLink *link)
+     }
+     link->frame_wanted_out = 1;
+     ff_filter_set_ready(link->src, 100);
++    //av_log(link->dst, AV_LOG_WARNING, "ff_request_frame %s, %d, frames:%ld\n", link->src->name, link->src->ready, link->fifo.queued);
      return 0;
  }
  
--int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
-+int fg_transcode_step(FilterGraph *graph, InputStream **best_ist, int *ist_num)
- {
-     FilterGraphPriv *fgp = fgp_from_fg(graph);
-     int i, ret;
--    int nb_requests, nb_requests_max = 0;
-+    //int nb_requests, nb_requests_max = 0;
-+    int nb_requests;
-     InputStream *ist;
+@@ -1025,7 +1028,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
+         av_frame_free(&frame);
+         return ret;
+     }
+-    ff_filter_set_ready(link->dst, 300);
++    if (link->dst->ready != 150) {
++        ff_filter_set_ready(link->dst, 300);
++    }
++    //av_log(link->src, AV_LOG_WARNING, "ff_filter_frame %s, %d, frames:%ld\n", link->dst->name, link->dst->ready, link->fifo.queued);
+     return 0;
  
-     if (!graph->graph) {
-@@ -2469,7 +2471,8 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
-             InputFilter *ifilter = graph->inputs[i];
-             InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-             if (ifp->format < 0 && !ifp->eof) {
--                *best_ist = ifp->ist;
-+                best_ist[*ist_num] = ifp->ist;
-+                (*ist_num)++;
-                 return 0;
-             }
-         }
-@@ -2543,9 +2546,11 @@ int fg_transcode_step(FilterGraph *graph, InputStream **best_ist)
-         if (input_files[ist->file_index]->eagain || ifp->eof)
-             continue;
-         nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
--        if (nb_requests > nb_requests_max) {
--            nb_requests_max = nb_requests;
--            *best_ist = ist;
-+        //if (nb_requests > nb_requests_max) {
-+        //    nb_requests_max = nb_requests;
-+        if (nb_requests > 0) {
-+            best_ist[*ist_num] = ist;
-+            (*ist_num)++;
+ error:
+@@ -1123,10 +1129,11 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
+     ret = ff_filter_frame_framed(link, frame);
+     if (ret < 0 && ret != link->status_out) {
+         link_set_out_status(link, ret, AV_NOPTS_VALUE);
+-    } else {
++    } else if (!dst->ready) {
+         /* Run once again, to see if several frames were available, or if
+            the input status has also changed, or any other reason. */
+         ff_filter_set_ready(dst, 300);
++        //av_log(link->src, AV_LOG_WARNING, "ff_filter_frame_to_filter %s, %d, frames:%ld\n", link->dst->name, link->dst->ready, link->fifo.queued);
+     }
+     return ret;
+ }
+@@ -1159,6 +1166,7 @@ static int forward_status_change(AVFilterContext *filter, AVFilterLink *in)
+             out = 0;
          }
      }
++    //av_log(in->src, AV_LOG_WARNING, "forward_status_change %s, %d, frames:%ld\n", in->dst->name, in->dst->ready, in->fifo.queued);
+     ff_filter_set_ready(filter, 200);
+     return 0;
+ }
+@@ -1176,7 +1184,11 @@ static int ff_filter_activate_default(AVFilterContext *filter)
+             return 0;
+         }
+     }
+-
++    for (i = 0; i < filter->nb_inputs; i++) {
++        if (filter->inputs[i]->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++            return filter->inputs[i]->dstpad->filter_frame(filter->inputs[i], NULL);
++        }
++    }
+     for (i = 0; i < filter->nb_inputs; i++) {
+         if (samples_ready(filter->inputs[i], filter->inputs[i]->min_samples)) {
+             return ff_filter_frame_to_filter(filter->inputs[i]);
+@@ -1519,6 +1531,7 @@ void ff_inlink_request_frame(AVFilterLink *link)
+     av_assert1(!link->status_out);
+     link->frame_wanted_out = 1;
+     ff_filter_set_ready(link->src, 100);
++    //av_log(link->dst, AV_LOG_WARNING, "inlink_request_frame %s, %d, frames:%ld\n", link->src->name, link->src->ready, link->fifo.queued);
+ }
  
+ void ff_inlink_set_status(AVFilterLink *link, int status)
+diff --git a/libavfilter/avfiltergraph.c b/libavfilter/avfiltergraph.c
+index bd37fb28d2..f459262a5b 100644
+--- a/libavfilter/avfiltergraph.c
++++ b/libavfilter/avfiltergraph.c
+@@ -1402,6 +1402,22 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
+     AVFilterContext *filter;
+     unsigned i;
+ 
++    for (i = 0; i < graph->nb_filters; i++) {
++        filter = graph->filters[i];
++        int log = 0; 
++        if (filter->ready)
++            log = 1; 
++        for (int j = 0; j < filter->nb_inputs; j++)
++            if (filter->inputs[j]->fifo.queued || filter->inputs[j]->status_in || filter->inputs[j]->status_out) 
++                log = 1; 
++        //if (log) {
++            //av_log(graph, AV_LOG_WARNING, "%s ready:%d ", filter->name, filter->ready);
++            //for (int j = 0; j < filter->nb_inputs; j++)            
++                //av_log(graph, AV_LOG_WARNING, "i%d=<%ld,%d,%d> ",  j, filter->inputs[j]->fifo.queued, filter->inputs[j]->status_in, filter->inputs[j]->status_out);
++            //av_log(graph, AV_LOG_WARNING, "\n");
++        //}
++    }
++
+     av_assert0(graph->nb_filters);
+     filter = graph->filters[0];
+     for (i = 1; i < graph->nb_filters; i++)
+@@ -1409,5 +1425,19 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
+             filter = graph->filters[i];
+     if (!filter->ready)
+         return AVERROR(EAGAIN);
+-    return ff_filter_activate(filter);
++
++    if (filter->ready == 50) {
++        filter->ready++;
++        return AVERROR(EAGAIN);
++    }
++
++    int readyPre = filter->ready;
++    int ret = ff_filter_activate(filter);
++    
++//    av_log(graph, AV_LOG_WARNING, "ACTIVATE %s, ready-pre: %d ret: %d, ready-post: %d ", filter->name, readyPre, ret, filter->ready);
++//    for (int j = 0; j < filter->nb_inputs; j++)            
++//        av_log(graph, AV_LOG_WARNING, "i%d=<%ld,%d,%d> ",  j, filter->inputs[j]->fifo.queued, filter->inputs[j]->status_in, filter->inputs[j]->status_out);
++//    av_log(graph, AV_LOG_WARNING, "\n");
++
++    return ret;
+ }
+diff --git a/libavfilter/internal.h b/libavfilter/internal.h
+index 2dbc5def0a..30f6b6eac9 100644
+--- a/libavfilter/internal.h
++++ b/libavfilter/internal.h
+@@ -70,6 +70,11 @@ struct AVFilterPad {
+      */
+ #define AVFILTERPAD_FLAG_FREE_NAME                       (1 << 1)
+ 
++    /**
++     * The filter executes asynchronous operation.
++     */
++#define AVFILTERPAD_FLAG_ASYNC                           (1 << 2)
++
+     /**
+      * A combination of AVFILTERPAD_FLAG_* flags.
+      */
 diff --git a/libavfilter/qsvvpp.c b/libavfilter/qsvvpp.c
-index 2c8e73e87d..f58a66bff9 100644
+index 2c8e73e87d..f31ef4d24d 100644
 --- a/libavfilter/qsvvpp.c
 +++ b/libavfilter/qsvvpp.c
-@@ -972,7 +972,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+@@ -972,10 +972,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
      QSVFrame         *in_frame, *out_frame;
      int               ret, ret1, filter_ret;
  
@@ -122,26 +506,110 @@ index 2c8e73e87d..f58a66bff9 100644
          if (MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000) < 0)
              av_log(ctx, AV_LOG_WARNING, "Sync failed.\n");
  
-@@ -1048,6 +1048,9 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
++        //av_log(ctx, AV_LOG_WARNING, "SyncOperation-early.\n");
++
+         filter_ret = s->filter_frame(outlink, aframe.frame->frame);
+         if (filter_ret < 0) {
+             av_frame_free(&aframe.frame->frame);
+@@ -984,6 +986,11 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+         aframe.frame->queued--;
+         s->got_frame = 1;
+         aframe.frame->frame = NULL;
++
++        if (!av_fifo_can_read(s->async_fifo)) {
++            inlink->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
++            inlink->dst->ready = 50; // mark as ready (low priority) to check if more input frames are available            
++        }
+     };
+ 
+     if (!picref)
+@@ -1013,6 +1020,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+             if (ret == MFX_WRN_DEVICE_BUSY)
+                 av_usleep(500);
+         } while (ret == MFX_WRN_DEVICE_BUSY);
++        //av_log(ctx, AV_LOG_WARNING, "RunFrameVPPAsync.\n");
+ 
+         if (ret < 0 && ret != MFX_ERR_MORE_SURFACE) {
+             /* Ignore more_data error */
+@@ -1033,6 +1041,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+             do {
+                 ret1 = MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000);
+             } while (ret1 == MFX_WRN_IN_EXECUTION);
++            //av_log(ctx, AV_LOG_WARNING, "SyncOperation-late.\n");
+ 
+             if (ret1 < 0) {
+                 ret = ret1;
+@@ -1048,6 +1057,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
              aframe.frame->queued--;
              s->got_frame = 1;
              aframe.frame->frame = NULL;
-+        } else {
-+            // request call again
-+            inlink->dst->ready = 200;
++        } 
++
++        if (av_fifo_can_read(s->async_fifo)) {
++            // request sync call
++            inlink->dst->ready = 150;
++            inlink->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
          }
      } while(ret == MFX_ERR_MORE_SURFACE);
  
-diff --git a/libavfilter/vf_vpp_qsv.c b/libavfilter/vf_vpp_qsv.c
-index c07b45fedb..ee9c4680e0 100644
---- a/libavfilter/vf_vpp_qsv.c
-+++ b/libavfilter/vf_vpp_qsv.c
-@@ -747,9 +747,10 @@ static int activate(AVFilterContext *ctx)
+diff --git a/libavfilter/vf_stack_qsv.c b/libavfilter/vf_stack_qsv.c
+index 3e6aefe44b..72ab74e5ab 100644
+--- a/libavfilter/vf_stack_qsv.c
++++ b/libavfilter/vf_stack_qsv.c
+@@ -73,6 +73,15 @@ static int process_frame(FFFrameSync *fs)
+     AVFrame *frame = NULL;
+     int ret = 0;
+ 
++    if (ctx->inputs[ctx->nb_inputs-1]->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++        ret = ff_qsvvpp_filter_frame(qsv, ctx->inputs[ctx->nb_inputs-1], NULL);
++        ctx->inputs[ctx->nb_inputs-1]->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
++        ctx->inputs[ctx->nb_inputs-1]->dst->ready = 50; // mark as ready (low priority) to check if more input frames are available
++        if (qsv->got_frame)
++            qsv->got_frame = 0;
++        return ret;
++    }
++
+     for (int i = 0; i < ctx->nb_inputs; i++) {
+         ret = ff_framesync_get_frame(fs, i, &frame, 0);
+         if (ret == 0)
+@@ -83,7 +92,9 @@ static int process_frame(FFFrameSync *fs)
+ 
+     if (ret == 0 && qsv->got_frame == 0) {
+         for (int i = 0; i < ctx->nb_inputs; i++)
+-            FF_FILTER_FORWARD_WANTED(ctx->outputs[0], ctx->inputs[i]);
++            if (ff_outlink_frame_wanted(ctx->outputs[0]))
++                ff_inlink_request_frame(ctx->inputs[i]); 
++            //FF_FILTER_FORWARD_WANTED(ctx->outputs[0], ctx->inputs[i]);
+ 
+         ret = FFERROR_NOT_READY;
+     }
+@@ -156,6 +167,7 @@ static int config_output(AVFilterLink *outlink)
+         is[i].PixelAlphaEnable = 0;
      }
  
++    sctx->base.hwctx.async_depth = 1; // TODO: make configurable
+     return ff_qsvvpp_init(ctx, &sctx->qsv_param);
+ }
+ 
+diff --git a/libavfilter/vf_vpp_qsv.c b/libavfilter/vf_vpp_qsv.c
+index 5356103e00..7c13fc3f43 100644
+--- a/libavfilter/vf_vpp_qsv.c
++++ b/libavfilter/vf_vpp_qsv.c
+@@ -734,6 +734,11 @@ static int activate(AVFilterContext *ctx)
+ 
+     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+ 
++    if (inlink->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++        ret = ff_qsvvpp_filter_frame(qsv, inlink, NULL);
++        return ret;
++    }
++
+     if (!qsv->eof) {
+         ret = ff_inlink_consume_frame(inlink, &in);
+         if (ret < 0)
+@@ -749,7 +754,8 @@ static int activate(AVFilterContext *ctx)
      if (qsv->session) {
--        if (in || qsv->eof) {
-+        if (in || qsv->eof || qsv->async_depth>0) {
+         if (in || qsv->eof) {
              ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
 -            av_frame_free(&in);
 +            if (in)
@@ -149,7 +617,7 @@ index c07b45fedb..ee9c4680e0 100644
              if (ret == AVERROR(EAGAIN))
                  goto not_ready;
              else if (ret < 0)
-@@ -977,7 +978,7 @@ static const AVOption qsvscale_options[] = {
+@@ -977,7 +983,7 @@ static const AVOption qsvscale_options[] = {
      { "w",      "Output video width(0=input video width, -1=keep input video aspect)",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str = "iw"   }, .flags = FLAGS },
      { "h",      "Output video height(0=input video height, -1=keep input video aspect)", OFFSET(oh), AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
      { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
