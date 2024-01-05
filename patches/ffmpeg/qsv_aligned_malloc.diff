@@ -6,7 +6,7 @@ index 36b8940..6785701 100644
  void *av_malloc(size_t size)
  {
      void *ptr = NULL;
-+    size_t alignment = ALIGN; 
++    size_t alignment = ALIGN;
  
      if (size > atomic_load_explicit(&max_alloc_size, memory_order_relaxed))
          return NULL;
