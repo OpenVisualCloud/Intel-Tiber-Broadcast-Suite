@@ -29,6 +29,8 @@ docker run \
   -hwaccel qsv -f rawvideo -pix_fmt y210le -s:v 3840x2160 -r 25 -i /videos/gradients2.yuv \
   -hwaccel qsv -f rawvideo -pix_fmt y210le -s:v 3840x2160 -r 25 -i /videos/gradients3.yuv \
   -noauto_conversion_filters \
+  -filter_complex_frames 2 \
+  -filter_complex_policy 1 \
   -filter_complex "
     [0:v]scale_qsv=w=iw/2:h=ih/2[tile0];
     [1:v]scale_qsv=w=iw/2:h=ih/2[tile1];

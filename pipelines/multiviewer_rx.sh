@@ -36,14 +36,12 @@ docker run -it \
   -framerate 50 -pixel_format y210le -width 3840 -height 2160 -port $NIC_PORT -local_addr $LOCAL_IP_ADDRESS -src_addr $SOURCE_IP_ADDRESS \
     -udp_port 20003 -total_sessions 4 -ext_frames_mode 1 -f kahawai -i "3" \
   -noauto_conversion_filters \
+  -filter_complex_frames 2 \
+  -filter_complex_policy 1 \
   -filter_complex "\
-    [0:v]hwupload=extra_hw_frames=4[t0];\
-    [1:v]hwupload[t1];\
-    [2:v]hwupload[t2];\
-    [3:v]hwupload[t3];\
-    [t0]scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile0];\
-    [t1]scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile1];\
-    [t2]scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile2];\
-    [t3]scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile3];\
+    [0:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile0];\
+    [1:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile1];\
+    [2:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile2];\
+    [3:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile3];\
     [tile0][tile1][tile2][tile3]xstack_qsv=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[multiview]" \
-    -map "[multiview]" -vframes 500 -c:v hevc_qsv /videos/$OUTPUT_FILE_NAME
+  -map "[multiview]" -vframes 500 -c:v hevc_qsv /videos/$OUTPUT_FILE_NAME
