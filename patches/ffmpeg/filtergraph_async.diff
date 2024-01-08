@@ -81,19 +81,29 @@ index bde1c33d07..78fcba815c 100644
  
  void ff_inlink_set_status(AVFilterLink *link, int status)
 diff --git a/libavfilter/avfilter.h b/libavfilter/avfilter.h
-index d69381aed4..c9266be686 100644
+index d69381aed4..330c57b7ea 100644
 --- a/libavfilter/avfilter.h
 +++ b/libavfilter/avfilter.h
-@@ -928,6 +928,8 @@ typedef struct AVFilterGraph {
+@@ -36,6 +36,7 @@
+  */
+ 
+ #include <stddef.h>
++#include <sys/time.h>
+ 
+ #include "libavutil/attributes.h"
+ #include "libavutil/avutil.h"
+@@ -928,6 +929,10 @@ typedef struct AVFilterGraph {
      int sink_links_count;
  
      unsigned disable_auto_convert;
 +    unsigned max_frames_in_flight;
 +    unsigned input_policy;
++
++    struct timeval timestamp;
  } AVFilterGraph;
  
  /**
-@@ -997,6 +999,20 @@ enum {
+@@ -997,6 +1002,20 @@ enum {
      AVFILTER_AUTO_CONVERT_NONE = -1, /**< all automatic conversions disabled */
  };
  
@@ -115,7 +125,7 @@ index d69381aed4..c9266be686 100644
   * Check validity and configure all the links and formats in the graph.
   *
 diff --git a/libavfilter/avfiltergraph.c b/libavfilter/avfiltergraph.c
-index bd37fb28d2..3e1f987580 100644
+index bd37fb28d2..f0cdadea06 100644
 --- a/libavfilter/avfiltergraph.c
 +++ b/libavfilter/avfiltergraph.c
 @@ -162,6 +162,16 @@ void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags)
@@ -189,7 +199,7 @@ index bd37fb28d2..3e1f987580 100644
      av_assert0(graph->nb_filters);
      filter = graph->filters[0];
      for (i = 1; i < graph->nb_filters; i++)
-@@ -1409,5 +1466,20 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
+@@ -1409,5 +1466,34 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
              filter = graph->filters[i];
      if (!filter->ready)
          return AVERROR(EAGAIN);
@@ -199,15 +209,29 @@ index bd37fb28d2..3e1f987580 100644
 +        return AVERROR(EAGAIN);
 +    }
 +
-+    int readyPre = filter->ready;
++    // int readyPre = filter->ready;
++    // struct timeval start, end;
++
++    // gettimeofday(&start, 0);
 +    int ret = ff_filter_activate(filter);
++    // gettimeofday(&end, 0);
++
++    // long gap, duration, s, us;
++    // s = start.tv_sec - graph->timestamp.tv_sec;
++    // us = start.tv_usec - graph->timestamp.tv_usec;
++    // gap = (s*1000000 + us);
++    // s = end.tv_sec - start.tv_sec;
++    // us = end.tv_usec - start.tv_usec;
++    // duration = (s*1000000 + us);
++    // graph->timestamp.tv_sec = end.tv_sec;
++    // graph->timestamp.tv_usec = end.tv_usec;
 +
 +    // av_log(graph, AV_LOG_WARNING, "ACTIVATE %s, ready-pre: %d, ready-post: %d, ret: %d ", filter->name, readyPre, filter->ready, ret);
 +    // for (int j = 0; j < filter->nb_inputs; j++)
 +    //     av_log(graph, AV_LOG_WARNING, "i%d=<%ld:%ld%s%s> ", j, filter->inputs[j]->frame_count_out, filter->inputs[j]->fifo.queued, filter->inputs[j]->frame_wanted_out ? "w" : "", filter->inputs[j]->frame_blocked_in ? "b" : "");
 +    // for (int j = 0; j < filter->nb_outputs; j++)
 +    //     av_log(graph, AV_LOG_WARNING, "o%d=<%ld:%ld%s%s> ", j, filter->outputs[j]->frame_count_out, filter->outputs[j]->fifo.queued, filter->outputs[j]->frame_wanted_out ? "w" : "", filter->outputs[j]->frame_blocked_in ? "b" : "");
-+    // av_log(graph, AV_LOG_WARNING, "\n");
++    // av_log(graph, AV_LOG_WARNING, "] %ld ] %ld:%ld ] %ld\n", gap, start.tv_sec, start.tv_usec, duration);
 +
 +    return ret;
  }
