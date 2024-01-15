@@ -1,5 +1,5 @@
 diff --git a/libavfilter/qsvvpp.c b/libavfilter/qsvvpp.c
-index 2c8e73e87d..d1e2a3c349 100644
+index 2c8e73e87d..973fe44381 100644
 --- a/libavfilter/qsvvpp.c
 +++ b/libavfilter/qsvvpp.c
 @@ -972,10 +972,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
@@ -44,21 +44,21 @@ index 2c8e73e87d..d1e2a3c349 100644
  
              if (ret1 < 0) {
                  ret = ret1;
-@@ -1048,6 +1057,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
-             aframe.frame->queued--;
+@@ -1049,6 +1058,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
              s->got_frame = 1;
              aframe.frame->frame = NULL;
-+        }
+         }
 +
 +        if (av_fifo_can_read(s->async_fifo)) {
 +            // request sync call
 +            inlink->dst->ready = 50;
 +            inlink->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
-         }
++        }
      } while(ret == MFX_ERR_MORE_SURFACE);
  
+     if (ret < 0)
 diff --git a/libavfilter/vf_stack_qsv.c b/libavfilter/vf_stack_qsv.c
-index 3e6aefe44b..e1fa3fd073 100644
+index 3e6aefe44b..7679e8099e 100644
 --- a/libavfilter/vf_stack_qsv.c
 +++ b/libavfilter/vf_stack_qsv.c
 @@ -73,6 +73,15 @@ static int process_frame(FFFrameSync *fs)
@@ -97,7 +97,7 @@ index 3e6aefe44b..e1fa3fd073 100644
  }
  
 diff --git a/libavfilter/vf_vpp_qsv.c b/libavfilter/vf_vpp_qsv.c
-index 5356103e00..7c13fc3f43 100644
+index 5356103e00..750fc19ab5 100644
 --- a/libavfilter/vf_vpp_qsv.c
 +++ b/libavfilter/vf_vpp_qsv.c
 @@ -734,6 +734,11 @@ static int activate(AVFilterContext *ctx)
@@ -112,17 +112,7 @@ index 5356103e00..7c13fc3f43 100644
      if (!qsv->eof) {
          ret = ff_inlink_consume_frame(inlink, &in);
          if (ret < 0)
-@@ -749,7 +754,8 @@ static int activate(AVFilterContext *ctx)
-     if (qsv->session) {
-         if (in || qsv->eof) {
-             ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
--            av_frame_free(&in);
-+            if (in)
-+                av_frame_free(&in);
-             if (ret == AVERROR(EAGAIN))
-                 goto not_ready;
-             else if (ret < 0)
-@@ -977,7 +983,7 @@ static const AVOption qsvscale_options[] = {
+@@ -977,7 +982,7 @@ static const AVOption qsvscale_options[] = {
      { "w",      "Output video width(0=input video width, -1=keep input video aspect)",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str = "iw"   }, .flags = FLAGS },
      { "h",      "Output video height(0=input video height, -1=keep input video aspect)", OFFSET(oh), AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
      { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },

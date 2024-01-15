@@ -703,8 +703,8 @@ RUN cd $MTL_REPO && \
     
 # add ffmpeg patches
 ENV \
-  CARTWHEEL_COMMIT_ID=ad404d5a2bebd4552040c976faf95bce0a76d0c2 \
-  FFMPEG_COMMIT_ID=89215237dd6ac64f94e14aa20a000e0440a00aac
+  CARTWHEEL_COMMIT_ID=ad87b27fcaf030391b18a4f1ac651c6abf9cae9d \
+  FFMPEG_COMMIT_ID=90bef6390fba02472141f299264331f68018a992
 
 RUN \
   echo "**** Get FFMPEG from git branch ****" && \

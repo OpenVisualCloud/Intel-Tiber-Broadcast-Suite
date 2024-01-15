@@ -247,10 +247,10 @@ index 9fc877b437..c507c7cb3e 100644
              goto finish;
  
 diff --git a/fftools/ffmpeg_opt.c b/fftools/ffmpeg_opt.c
-index 91ae71ff27..e282b66295 100644
+index c189cf373b..81a673cf00 100644
 --- a/fftools/ffmpeg_opt.c
 +++ b/fftools/ffmpeg_opt.c
-@@ -86,6 +86,8 @@ int stdin_interaction = 1;
+@@ -81,6 +81,8 @@ int stdin_interaction = 1;
  float max_error_rate  = 2.0/3;
  char *filter_nbthreads;
  int filter_complex_nbthreads = 0;
@@ -259,17 +259,17 @@ index 91ae71ff27..e282b66295 100644
  int vstats_version = 2;
  int auto_conversion_filters = 1;
  int64_t stats_period = 500000;
-@@ -1592,6 +1594,10 @@ const OptionDef options[] = {
-         "create a complex filtergraph", "graph_description" },
-     { "filter_complex_threads", HAS_ARG | OPT_INT,                   { &filter_complex_nbthreads },
+@@ -1652,6 +1654,10 @@ const OptionDef options[] = {
+     { "filter_complex_threads", OPT_TYPE_INT, OPT_EXPERT,
+         { &filter_complex_nbthreads },
          "number of threads for -filter_complex" },
-+    { "filter_complex_frames", HAS_ARG | OPT_INT,                    { &filter_complex_frames },
++    { "filter_complex_frames", OPT_TYPE_INT, OPT_EXPERT,                    { &filter_complex_frames },
 +        "max number of frames in flight inside filter complex" },
-+    { "filter_complex_policy", HAS_ARG | OPT_INT,                    { &filter_complex_policy },
++    { "filter_complex_policy", OPT_TYPE_INT, OPT_EXPERT,                    { &filter_complex_policy },
 +        "scheduling policy for filter complex inputs" },
-     { "lavfi",          HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
+     { "lavfi",               OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
+         { .func_arg = opt_filter_complex },
          "create a complex filtergraph", "graph_description" },
-     { "filter_complex_script", HAS_ARG | OPT_EXPERT,                 { .func_arg = opt_filter_complex_script },
 diff --git a/fftools/ffmpeg_sched.c b/fftools/ffmpeg_sched.c
 index 4fc5a33941..6af4ff37f1 100644
 --- a/fftools/ffmpeg_sched.c
@@ -324,7 +324,7 @@ index 4fc5a33941..6af4ff37f1 100644
          return ret;
  
 -    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, 1, QUEUE_FRAMES);
-+    if ((filter_complex_policy != POLICY_DYNAMIC) || (filter_complex_policy > POLICY_ROUNDROBIN))
++    if ((filter_complex_policy != POLICY_DYNAMIC) || (filter_complex_policy != POLICY_ROUNDROBIN))
 +        av_log(sch, AV_LOG_ERROR, "Unsupported filter complex scheduling policy: %d.\n", filter_complex_policy);
 +
 +    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, filter_complex_policy == POLICY_ROUNDROBIN ? fg->nb_inputs : 1, QUEUE_FRAMES, filter_complex_policy);
