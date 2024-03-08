@@ -9,7 +9,7 @@ ARG FFMPEG_VERSION
 # common env
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
-  MAKEFLAGS="-j16"
+  MAKEFLAGS="-j100"
 
 # versions
 ENV \
@@ -92,7 +92,8 @@ RUN \
     xserver-xorg-dev \
     xxd \
     yasm \
-    zlib1g-dev && \
+    zlib1g-dev \
+    sudo && \
   python3 -m venv /lsiopy && \
   pip install -U --no-cache-dir \
     pip \
@@ -101,6 +102,7 @@ RUN \
   pip install --no-cache-dir meson cmake
 
 # compile 3rd party libs
+
 RUN \
   echo "**** grabbing aom ****" && \
   mkdir -p /tmp/aom && \
@@ -161,22 +163,6 @@ RUN \
     --enable-shared && \
   make && \
   make install
-#RUN \
-#  echo "**** grabbing fontconfig ****" && \
-#  mkdir -p /tmp/fontconfig && \
-#  curl -Lf \
-#    https://www.freedesktop.org/software/fontconfig/release/fontconfig-${FONTCONFIG}.tar.gz | \
-#    tar -zx --strip-components=1 -C /tmp/fontconfig
-#RUN \
-#  echo "**** compiling fontconfig ****" && \
-#  cd /tmp/fontconfig && \
-#  ./configure \
-#    --disable-static \
-#    --enable-shared && \
-#  make && \
-#  make install 
-#RUN \
-#  apt install -y fontconfig
 RUN \
   echo "**** grabbing fribidi ****" && \
   mkdir -p /tmp/fribidi && \
@@ -245,22 +231,6 @@ RUN \
     --enable-shared && \
   make && \
   make install
-#RUN \
-#  echo "**** grabbing libdrm ****" && \
-#  mkdir -p /tmp/libdrm && \
-#  curl -Lf \
-#    https://dri.freedesktop.org/libdrm/libdrm-${LIBDRM}.tar.xz | \
-#    tar -xJ --strip-components=1 -C /tmp/libdrm
-#RUN \
-#  echo "**** compiling libdrm ****" && \
-#  cd /tmp/libdrm && \
-#  meson setup \
-#    --prefix=/usr --libdir=/usr/local/lib/x86_64-linux-gnu \
-#    -Dvalgrind=disabled \
-#    . build && \
-#  ninja -C build && \
-#  ninja -C build install && \
-#  strip -d /usr/local/lib/x86_64-linux-gnu/libdrm*.so
 RUN \
   echo "**** grabbing libva ****" && \
   mkdir -p /tmp/libva && \
@@ -633,12 +603,12 @@ RUN \
   ./configure && \ 
   make && \
   make install
-  
+
 ######################################################### IMTL
 
 ENV MTL_REPO=Media-Transport-Library
 ENV DPDK_REPO=dpdk
-ENV DPDK_VER=23.07
+ENV DPDK_VER=23.11
 ENV IMTL_USER=imtl
 
 RUN apt-get update -y
@@ -668,20 +638,33 @@ RUN git config --global user.email "you@example.com" && \
 
 RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git && \
     cd $MTL_REPO && \
-    git checkout c3bc6529a77e177bceccc4bd9be1e2ab2faef379 && \
-    git switch -c c3bc6529a77e177bceccc4bd9be1e2ab2faef379
+    git checkout b210f1a85f571507f317d156b105dbe5690a234d && \
+    git switch -c b210f1a85f571507f317d156b105dbe5690a234d
 
 RUN \
-    sed -i '539 d' ./Media-Transport-Library/include/mtl_api.h && \
-    sed -i '539 i char lcores[256];' ./Media-Transport-Library/include/mtl_api.h && \
-    sed -i '252 d' ./Media-Transport-Library/app/src/args.c && \
-    sed -i '252 i strcpy(p->lcores, list);' ./Media-Transport-Library/app/src/args.c && \
-    sed -i '1860 d' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
-    sed -i '1860 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
-    sed -i '130 d' ./Media-Transport-Library/tests/src/tests.cpp && \
-    sed -i '130 i strcpy(p->lcores, optarg);' ./Media-Transport-Library/tests/src/tests.cpp && \
-    sed -i '386 d' ./Media-Transport-Library/tests/src/tests.cpp && \
-    sed -i '386 i strcpy(p->lcores, ctx->lcores_list);' ./Media-Transport-Library/tests/src/tests.cpp
+    sed -i '531 d' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '531 i char lcores[256];' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '261 d' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '261 i strcpy(p->lcores, list);' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '1856 d' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '1856 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '132 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '132 i strcpy(p->lcores, optarg);' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '399 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '399 i strcpy(p->lcores, ctx->lcores_list);' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '75 i if (getenv("MTL_PARAM_LCORES")) {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '76 i sprintf(p.lcores, "%s", getenv("MTL_PARAM_LCORES"));' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '77 i } else {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '78 i   sprintf(p.lcores, "");' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '79 i }' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '80 i if (getenv("MTL_PARAM_DATA_QUOTA")) {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '81 i   uint32_t data_quota_mbs_per_sch = (uint32_t)atol(getenv("MTL_PARAM_DATA_QUOTA"));' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '82 i   av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch = %u", data_quota_mbs_per_sch);' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '83 i       p.data_quota_mbs_per_sch = data_quota_mbs_per_sch;' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '84 i } else {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '85 i   av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch set do default: %lu", 4 * st20_1080p59_yuv422_10bit_bandwidth_mps());' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '86 i   p.data_quota_mbs_per_sch = (uint32_t)(4 * st20_1080p59_yuv422_10bit_bandwidth_mps());' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '87 i } ' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c
 
 RUN git clone https://github.com/DPDK/$DPDK_REPO.git && \
     cd $DPDK_REPO && \
@@ -700,11 +683,33 @@ RUN cd $DPDK_REPO && \
 RUN cd $MTL_REPO && \
     ./build.sh && \
     cd ..
-    
+
+USER root
+WORKDIR /
+
+COPY libraries.media.encoding.svt-jpeg-xs/ /tmp/jpegxs
+
+RUN echo "**** BUILD JPEG-XS ****" && \
+    mkdir /tmp/jpegxs/Build/linux/install && \
+    cd /tmp/jpegxs/Build/linux && \
+    ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
+
+RUN ls -lR /tmp/jpegxs/Build/linux/install
+
+RUN echo "**** BUILD JPEG-XS MTL PLUGIN ****" && \
+    cd /tmp/jpegxs/imtl-plugin && \
+    ./build.sh --prefix=/tmp/jpegxs/Build/linux/install
+
+ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib:${LD_LIBRARY_PATH}"
+ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+
 # add ffmpeg patches
 ENV \
-  CARTWHEEL_COMMIT_ID=ad87b27fcaf030391b18a4f1ac651c6abf9cae9d \
-  FFMPEG_COMMIT_ID=90bef6390fba02472141f299264331f68018a992
+  CARTWHEEL_COMMIT_ID=6.1 \
+  FFMPEG_COMMIT_ID=n6.1.1
+
+RUN git config --global user.email "you@example.com" && \
+    git config --global user.name "Your Name"
 
 RUN \
   echo "**** Get FFMPEG from git branch ****" && \
@@ -734,33 +739,81 @@ RUN \
   sudo make install
 COPY \
   patches/ffmpeg/*.diff /
+# RUN \
+#   echo "**** FFMPEG patches ****" && \
+#   cd /tmp/ffmpeg && \
+#   git apply /*.diff
+
+RUN rm -rf /tmp/jpegxs/ffmpeg-plugin/*.patch
+COPY patches/jpegxs /tmp/jpegxs/ffmpeg-plugin/
+
+
+RUN cp /home/$IMTL_USER/$MTL_REPO/ecosystem/ffmpeg_plugin/mtl_*.c -rf /tmp/ffmpeg/libavdevice/ && \
+    cp /home/$IMTL_USER/$MTL_REPO/ecosystem/ffmpeg_plugin/mtl_*.h -rf /tmp/ffmpeg/libavdevice/
+
+RUN echo "**** APPLY MTL PATCHES ****" && \
+    cd /tmp/ffmpeg/ && \
+    git am /home/$IMTL_USER/$MTL_REPO/ecosystem/ffmpeg_plugin/6.1/*.patch
+
+RUN echo "**** APPLY JPEG-XS PATCHES ****" && \
+    cd /tmp/ffmpeg/ && \
+    git apply -v --whitespace=fix /tmp/jpegxs/ffmpeg-plugin/*.patch
+
 RUN \
-  echo "**** FFMPEG patches ****" && \
+  echo "**** FFMPEG 1 patches ****" && \
   cd /tmp/ffmpeg && \
-  git apply /*.diff
-
-# main ffmpeg build
-#RUN \
-#  echo "**** Versioning ****" && \
-#  if [ -z ${FFMPEG_VERSION+x} ]; then \
-#    FFMPEG=${FFMPEG_HARD}; \
-#  else \
-#    FFMPEG=${FFMPEG_VERSION%-cli}; \
-#  fi && \
-#  echo "**** grabbing ffmpeg ****" && \
-#  mkdir -p /tmp/ffmpeg && \
-#  echo "https://ffmpeg.org/releases/ffmpeg-${FFMPEG}.tar.bz2" && \
-#  curl -Lf \
-#    https://ffmpeg.org/releases/ffmpeg-${FFMPEG}.tar.bz2 | \
-#    tar -jx --strip-components=1 -C /tmp/ffmpeg
+  git apply -v ../../hwupload_async.diff
 
 RUN \
-  echo "**** compiling ffmpeg ****" && \
+  echo "**** FFMPEG 2 patches ****" && \
+  cd /tmp/ffmpeg && \
+  git apply -v ../../qsv_aligned_malloc.diff
+RUN \
+  echo "**** FFMPEG 3 patches ****" && \
+  cd /tmp/ffmpeg && \
+  git apply -v ../../qsvvpp_async.diff
+RUN \
+  echo "**** FFMPEG 4 patches ****" && \
+  cd /tmp/ffmpeg && \
+  git apply -v ../../filtergraph_async.diff
+
+RUN sudo apt-get install wget
+
+RUN wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh
+RUN chmod +x l_ipp_oneapi_p_2021.10.1.16_offline.sh
+RUN ./l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept
+RUN echo "source /opt/intel/oneapi/ipp/latest/env/vars.sh" | tee -a ~/.bash_profile
+ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+RUN echo "**** DOWNLOADING VIDEO SUPER RESOLUTION (VSR) ****" && \
+    git clone https://github.com/OpenVisualCloud/Video-Super-Resolution-Library.git /tmp/vsr && \
+    cd /tmp/vsr/ && \
+    git checkout v23.11
+
+RUN cd /tmp/vsr/ && \
+    sed -i '24 d' ./ffmpeg/vf_raisr_opencl.c && \
+    sed -i '24 i #include "video.h"' ./ffmpeg/vf_raisr_opencl.c && \
+    sed -i '25 d' ./ffmpeg/vf_raisr_opencl.c
+
+RUN echo "**** BUILD VIDEO SUPER RESOLUTION (VSR) ****" && \
+    cd /tmp/vsr/ && . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
+    ./build.sh -DCMAKE_INSTALL_PREFIX="$PWD/install" -DENABLE_RAISR_OPENCL=ON
+
+COPY patches/vsr/*.patch /vsr_patches/
+
+RUN echo "**** APPLY VSR PATCHES ****" && \
+    cd tmp/ffmpeg/ && \
+    git apply -v /vsr_patches/*.patch
+
+RUN cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
+
+RUN \
+  echo "**** compiling ffmpeg ****" && . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
   cd /tmp/ffmpeg && \
     ./configure \
     --disable-debug \
     --disable-doc \
-    --disable-static \
+    --enable-static \
     --enable-cuvid \
     --enable-encoder=libopenh264 \
     --enable-ffprobe \
@@ -801,7 +854,13 @@ RUN \
     --enable-vaapi \
     --enable-vdpau \
     --enable-version3 \
-    --enable-vulkan && \
+    --enable-vulkan \
+    --enable-libsvtjpegxs \
+    --enable-libipp \
+    --extra-cflags="-fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/" \
+    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib" \
+    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lm' \
+    --enable-cross-compile && \
   make
 
 RUN \
@@ -862,12 +921,24 @@ RUN \
   sudo cp -a \
     /tmp/ffmpeg/libswresample/* \
     /buildout/usr/local/lib/ && \
+  sudo cp -a \
+    /tmp/jpegxs/Build/linux/install/lib/* \
+    /buildout/usr/local/lib/ && \
+  sudo cp -a \
+    /tmp/vsr/install/lib/* \
+    /buildout/usr/local/lib/ && \
+  sudo cp -a \
+    /tmp/vsr/filters* \
+    /buildout/ && \
+  sudo cp -a \
+    /opt/intel/oneapi/ipp/2021.10/lib/libipp* \
+    /buildout/usr/local/lib/ && \
   sudo echo \
     'libnvidia-opencl.so.1' | sudo tee \
     /buildout/etc/OpenCL/vendors/nvidia.icd
 
 # runtime stage
-FROM ubuntu
+FROM ubuntu as finalstage
 
 # Add files from binstage
 COPY --from=buildstage /buildout/ /
@@ -914,7 +985,7 @@ RUN \
 ############################# IMTL
 ENV MTL_REPO=Media-Transport-Library
 ENV DPDK_REPO=dpdk
-ENV DPDK_VER=23.07
+ENV DPDK_VER=23.11
 ENV IMTL_USER=imtl
 
 RUN apt-get update -y
@@ -954,20 +1025,33 @@ RUN git config --global user.email "you@example.com" && \
     
 RUN git clone https://github.com/OpenVisualCloud/$MTL_REPO.git && \
     cd $MTL_REPO && \
-    git checkout c3bc6529a77e177bceccc4bd9be1e2ab2faef379 && \
-    git switch -c c3bc6529a77e177bceccc4bd9be1e2ab2faef379
+    git checkout b210f1a85f571507f317d156b105dbe5690a234d && \
+    git switch -c b210f1a85f571507f317d156b105dbe5690a234d
 
 RUN \
-    sed -i '539 d' ./Media-Transport-Library/include/mtl_api.h && \
-    sed -i '539 i char lcores[256];' ./Media-Transport-Library/include/mtl_api.h && \
-    sed -i '252 d' ./Media-Transport-Library/app/src/args.c && \
-    sed -i '252 i strcpy(p->lcores, list);' ./Media-Transport-Library/app/src/args.c && \
-    sed -i '1860 d' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
-    sed -i '1860 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
-    sed -i '130 d' ./Media-Transport-Library/tests/src/tests.cpp && \
-    sed -i '130 i strcpy(p->lcores, optarg);' ./Media-Transport-Library/tests/src/tests.cpp && \
-    sed -i '386 d' ./Media-Transport-Library/tests/src/tests.cpp && \
-    sed -i '386 i strcpy(p->lcores, ctx->lcores_list);' ./Media-Transport-Library/tests/src/tests.cpp
+    sed -i '531 d' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '531 i char lcores[256];' ./Media-Transport-Library/include/mtl_api.h && \
+    sed -i '261 d' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '261 i strcpy(p->lcores, list);' ./Media-Transport-Library/app/src/args.c && \
+    sed -i '1856 d' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '1856 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' ./Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
+    sed -i '132 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '132 i strcpy(p->lcores, optarg);' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '399 d' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '399 i strcpy(p->lcores, ctx->lcores_list);' ./Media-Transport-Library/tests/src/tests.cpp && \
+    sed -i '75 i if (getenv("MTL_PARAM_LCORES")) {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '76 i sprintf(p.lcores, "%s", getenv("MTL_PARAM_LCORES"));' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '77 i } else {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '78 i   sprintf(p.lcores, "");' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '79 i }' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '80 i if (getenv("MTL_PARAM_DATA_QUOTA")) {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '81 i   uint32_t data_quota_mbs_per_sch = (uint32_t)atol(getenv("MTL_PARAM_DATA_QUOTA"));' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '82 i   av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch = %u", data_quota_mbs_per_sch);' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '83 i       p.data_quota_mbs_per_sch = data_quota_mbs_per_sch;' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '84 i } else {' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '85 i   av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch set do default: %lu", 4 * st20_1080p59_yuv422_10bit_bandwidth_mps());' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '86 i   p.data_quota_mbs_per_sch = (uint32_t)(4 * st20_1080p59_yuv422_10bit_bandwidth_mps());' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \ 
+    sed -i '87 i } ' ./Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c
 
 RUN git clone https://github.com/DPDK/$DPDK_REPO.git && \
     cd $DPDK_REPO && \
@@ -990,9 +1074,12 @@ RUN cd $MTL_REPO && \
 USER root
 WORKDIR /
 
+RUN apt-get update -y
+RUN apt-get install -y wget cmake make pkg-config intel-opencl-icd opencl-headers ocl-icd-opencl-dev nasm
+
 RUN mkdir /hugetlbfs
 
 RUN \
-  apt-get install -y kmod libkmod-dev pciutils
+  apt-get install -y kmod libkmod-dev pciutils gdb
 
 ENTRYPOINT ["./usr/local/bin/ffmpeg"]

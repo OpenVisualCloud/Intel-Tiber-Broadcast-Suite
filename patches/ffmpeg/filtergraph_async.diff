@@ -1,8 +1,44 @@
 diff --git a/libavfilter/avfilter.c b/libavfilter/avfilter.c
-index bde1c33d07..85e9c24b9d 100644
+index bde1c33d07..78fcba815c 100644
 --- a/libavfilter/avfilter.c
 +++ b/libavfilter/avfilter.c
-@@ -1123,7 +1123,7 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
+@@ -242,6 +242,7 @@ void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
+     link->frame_blocked_in = 0;
+     filter_unblock(link->dst);
+     ff_filter_set_ready(link->dst, 200);
++    //av_log(link->src, AV_LOG_WARNING, "link_set_in_status %s, %d, frames:%ld\n", link->dst->name, link->dst->ready, link->fifo.queued);
+ }
+ 
+ /**
+@@ -257,6 +258,7 @@ static void link_set_out_status(AVFilterLink *link, int status, int64_t pts)
+         update_link_current_pts(link, pts);
+     filter_unblock(link->dst);
+     ff_filter_set_ready(link->src, 200);
++    //av_log(link->dst, AV_LOG_WARNING, "link_set_out_status %s, %d, frames:%ld\n", link->src->name, link->src->ready, link->fifo.queued);
+ }
+ 
+ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
+@@ -450,6 +452,7 @@ int ff_request_frame(AVFilterLink *link)
+     }
+     link->frame_wanted_out = 1;
+     ff_filter_set_ready(link->src, 100);
++    //av_log(link->dst, AV_LOG_WARNING, "ff_request_frame %s, %d, frames:%ld\n", link->src->name, link->src->ready, link->fifo.queued);
+     return 0;
+ }
+ 
+@@ -1025,7 +1028,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
+         av_frame_free(&frame);
+         return ret;
+     }
+-    ff_filter_set_ready(link->dst, 300);
++    if (link->dst->ready != 150) {
++        ff_filter_set_ready(link->dst, 300);
++    }
++    //av_log(link->src, AV_LOG_WARNING, "ff_filter_frame %s, %d, frames:%ld\n", link->dst->name, link->dst->ready, link->fifo.queued);
+     return 0;
+ 
+ error:
+@@ -1123,10 +1129,11 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
      ret = ff_filter_frame_framed(link, frame);
      if (ret < 0 && ret != link->status_out) {
          link_set_out_status(link, ret, AV_NOPTS_VALUE);
@@ -11,11 +47,22 @@ index bde1c33d07..85e9c24b9d 100644
          /* Run once again, to see if several frames were available, or if
             the input status has also changed, or any other reason. */
          ff_filter_set_ready(dst, 300);
-@@ -1176,7 +1176,11 @@ static int ff_filter_activate_default(AVFilterContext *filter)
-             return 0;
++        //av_log(link->src, AV_LOG_WARNING, "ff_filter_frame_to_filter %s, %d, frames:%ld\n", link->dst->name, link->dst->ready, link->fifo.queued);
+     }
+     return ret;
+ }
+@@ -1159,6 +1166,7 @@ static int forward_status_change(AVFilterContext *filter, AVFilterLink *in)
+             out = 0;
          }
      }
--
++    //av_log(in->src, AV_LOG_WARNING, "forward_status_change %s, %d, frames:%ld\n", in->dst->name, in->dst->ready, in->fifo.queued);
+     ff_filter_set_ready(filter, 200);
+     return 0;
+ }
+@@ -1167,6 +1167,11 @@ static int ff_filter_activate_default(AVFilterContext *filter)
+ {
+     unsigned i;
+
 +    for (i = 0; i < filter->nb_inputs; i++) {
 +        if (filter->inputs[i]->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
 +            return filter->inputs[i]->dstpad->filter_frame(filter->inputs[i], NULL);
@@ -24,6 +71,14 @@ index bde1c33d07..85e9c24b9d 100644
      for (i = 0; i < filter->nb_inputs; i++) {
          if (samples_ready(filter->inputs[i], filter->inputs[i]->min_samples)) {
              return ff_filter_frame_to_filter(filter->inputs[i]);
+@@ -1519,6 +1531,7 @@ void ff_inlink_request_frame(AVFilterLink *link)
+     av_assert1(!link->status_out);
+     link->frame_wanted_out = 1;
+     ff_filter_set_ready(link->src, 100);
++    //av_log(link->dst, AV_LOG_WARNING, "inlink_request_frame %s, %d, frames:%ld\n", link->src->name, link->src->ready, link->fifo.queued);
+ }
+ 
+ void ff_inlink_set_status(AVFilterLink *link, int status)
 diff --git a/libavfilter/avfilter.h b/libavfilter/avfilter.h
 index d69381aed4..330c57b7ea 100644
 --- a/libavfilter/avfilter.h
@@ -69,7 +124,7 @@ index d69381aed4..330c57b7ea 100644
   * Check validity and configure all the links and formats in the graph.
   *
 diff --git a/libavfilter/avfiltergraph.c b/libavfilter/avfiltergraph.c
-index bd37fb28d2..620fb45cf3 100644
+index bd37fb28d2..f0cdadea06 100644
 --- a/libavfilter/avfiltergraph.c
 +++ b/libavfilter/avfiltergraph.c
 @@ -162,6 +162,16 @@ void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags)
@@ -89,7 +144,7 @@ index bd37fb28d2..620fb45cf3 100644
  AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
                                               const AVFilter *filter,
                                               const char *name)
-@@ -1402,6 +1412,52 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
+@@ -1402,6 +1412,53 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
      AVFilterContext *filter;
      unsigned i;
  
@@ -103,6 +158,7 @@ index bd37fb28d2..620fb45cf3 100644
 +        if ((filter->nb_inputs == 0) && (filter->nb_outputs == 1)) {
 +            AVFilterLink* link = filter->outputs[0];
 +            if (!link->frame_wanted_out && !link->fifo.queued && (link->frame_count_in < frame_count_out + graph->max_frames_in_flight)) {
++                //av_log(filter, AV_LOG_WARNING, "%s request frame:%d\n", filter->name, frame_count_out);
 +                ff_request_frame(link);
 +            }
 +        }
@@ -142,13 +198,13 @@ index bd37fb28d2..620fb45cf3 100644
      av_assert0(graph->nb_filters);
      filter = graph->filters[0];
      for (i = 1; i < graph->nb_filters; i++)
-@@ -1409,5 +1465,34 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
+@@ -1409,5 +1466,34 @@ int ff_filter_graph_run_once(AVFilterGraph *graph)
              filter = graph->filters[i];
      if (!filter->ready)
          return AVERROR(EAGAIN);
 -    return ff_filter_activate(filter);
 +
-+    if (graph->input_policy && (filter->ready < 100)) {
++    if ((graph->max_frames_in_flight) && (filter->ready < 100)) {
 +        return AVERROR(EAGAIN);
 +    }
 +
