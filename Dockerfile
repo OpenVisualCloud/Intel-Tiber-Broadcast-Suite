@@ -687,7 +687,9 @@ RUN cd $MTL_REPO && \
 USER root
 WORKDIR /
 
-COPY libraries.media.encoding.svt-jpeg-xs/ /tmp/jpegxs
+RUN echo "**** DOWNLOADING JPEG-XS ****" && \
+    git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS.git /tmp/jpegxs && \
+    cd /tmp/jpegxs
 
 RUN echo "**** BUILD JPEG-XS ****" && \
     mkdir /tmp/jpegxs/Build/linux/install && \
@@ -743,10 +745,6 @@ COPY \
 #   echo "**** FFMPEG patches ****" && \
 #   cd /tmp/ffmpeg && \
 #   git apply /*.diff
-
-RUN rm -rf /tmp/jpegxs/ffmpeg-plugin/*.patch
-COPY patches/jpegxs /tmp/jpegxs/ffmpeg-plugin/
-
 
 RUN cp /home/$IMTL_USER/$MTL_REPO/ecosystem/ffmpeg_plugin/mtl_*.c -rf /tmp/ffmpeg/libavdevice/ && \
     cp /home/$IMTL_USER/$MTL_REPO/ecosystem/ffmpeg_plugin/mtl_*.h -rf /tmp/ffmpeg/libavdevice/

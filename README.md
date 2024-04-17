@@ -31,7 +31,7 @@ Step 1. Please install required IMTL packages on the host machine:
 Step 2. Pleaes create a docker image shared by all video pipelines:
 
 ```
-docker build -t my_ffmpeg .
+docker build -t video_production_image -f Dockerfile .
 ```
 
 Step 3. Please setup IMTL environment running the following command on the host machine as a root user:
