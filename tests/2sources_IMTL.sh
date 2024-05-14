@@ -15,7 +15,7 @@ docker run \
   --network=my_net_801f0 \
   --ip=192.168.2.1 \
   --expose=20010-20170 \
-  my_ffmpeg \
+  video_production_image \
   -loglevel debug \
   -framerate 50 \
   -pixel_format yuv422p10le \

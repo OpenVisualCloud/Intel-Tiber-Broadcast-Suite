@@ -22,7 +22,7 @@ docker run \
   --cpuset-cpus="28-55" \
   -e MTL_PARAM_LCORES="28-55" \
   -e MTL_PARAM_DATA_QUOTA=10356 \
-  my_ffmpeg \
+  video_production_image \
   -y \
   -an \
   -video_size 640x480 -framerate 25 -pix_fmt y210le \

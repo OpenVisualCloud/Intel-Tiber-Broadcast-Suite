@@ -10,12 +10,10 @@ cp gradients.yuv gradients3.yuv
 ./multiviewer_compressor.sh outfile_CPU
 ./multiviewer_compressor.sh outfile_GPU
 sha256sum -b *.mp4
+
 if [[ `sha256sum -b outfile_CPU.mp4 | cut -d ' ' -f 1` == `sha256sum -b outfile_GPU.mp4 | cut -d ' ' -f 1` ]]; then
- rm -f gradients*.* outfile*.*
  echo "TEST SUCCEEDED"
 else
- rm -f gradients*.* outfile*.*
  echo "TEST FAILED"
 fi
-
-
+rm -f gradients*.* outfile*.*

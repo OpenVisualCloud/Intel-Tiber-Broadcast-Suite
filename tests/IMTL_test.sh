@@ -7,11 +7,10 @@ rm -f gradients.* received.*
 ./IMTL_compressor_received.sh
 sha256sum -b *.mp4
 if [[ `sha256sum -b gradients.mp4 | cut -d ' ' -f 1` == `sha256sum -b received.mp4 | cut -d ' ' -f 1` ]]; then
- rm -f gradients.* received.*
  echo "TEST SUCCEEDED"
 else
- rm -f gradients.* received.*
  echo "TEST FAILED"
 fi
+rm -f gradients.* received.*
 
 

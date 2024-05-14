@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# USAGE: ./blend_digit_generator.sh [number]
+
 NIC_PORT="0000:b1:01.1"
 LOCAL_IP_ADDRESS="192.168.2.1"
 DST_IP_ADDRESS="192.168.2.2"
@@ -20,5 +23,5 @@ docker run \
   --network=my_net_801f0 \
   --ip=192.168.2.1 \
   --expose=20000-20170 \
-  my_ffmpeg \
+  video_production_image \
    -r 50 -i /videos/digit$1.png -t 2 -pix_fmt y210le -vf "loop=-1:1" /videos/digit$1.yuv

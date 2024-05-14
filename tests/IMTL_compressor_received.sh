@@ -20,5 +20,5 @@ docker run -it \
   --network=my_net_801f0 \
   --ip=192.168.2.1 \
   --expose=20000-20170 \
-  my_ffmpeg \
+  video_production_image \
    -video_size 640x480 -framerate 25 -pix_fmt y210le -i /config/received.yuv /config/received.mp4

@@ -3,7 +3,7 @@ docker run --rm -it \
   --device=/dev/dri:/dev/dri \
   -v $(pwd)/clips:/clips \
   -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-  my_ffmpeg_debug \
+  video_production_image \
   -y \
   -v debug \
   -qsv_device /dev/dri/renderD128 \

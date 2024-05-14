@@ -21,7 +21,7 @@ docker run \
   --cpuset-cpus="84-111" \
   -e MTL_PARAM_LCORES="84-111" \
   -e MTL_PARAM_DATA_QUOTA=10356 \
-  my_ffmpeg \
+  video_production_image \
   -y \
   -an \
   -thread_queue_size 512 \

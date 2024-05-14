@@ -22,7 +22,7 @@ docker run \
   --cpuset-cpus="28-55" \
   -e MTL_PARAM_LCORES="28-55" \
   -e MTL_PARAM_DATA_QUOTA=10356 \
-  my_ffmpeg \
+  video_production_image \
   -f rawvideo -pix_fmt y210le -s:v 3840x2160 -r 25 -i /videos/gradients.yuv \
   -f rawvideo -pix_fmt y210le -s:v 3840x2160 -r 25 -i /videos/gradients1.yuv \
   -f rawvideo -pix_fmt y210le -s:v 3840x2160 -r 25 -i /videos/gradients2.yuv \

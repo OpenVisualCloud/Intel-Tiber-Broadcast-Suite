@@ -21,7 +21,7 @@ docker run \
   --cpuset-cpus="84-111" \
   -e MTL_PARAM_LCORES="84-111" \
   -e MTL_PARAM_DATA_QUOTA=10356 \
-  my_ffmpeg \
+  video_production_image \
   -y \
   -an \
   -thread_queue_size 4096 \
@@ -30,4 +30,3 @@ docker run \
   -video_size 3840x2160 -framerate 50 -t 2 -pix_fmt y210le -i /videos/digit2.yuv \
   -f rawvideo -filter_complex "[0]scale=3840:2160,framerate=50,format=y210le,setpts=PTS-STARTPTS,fps=50[in1];[1]scale=3840:2160,framerate=50,format=y210le,setpts=PTS-STARTPTS,fps=50[in2];[in1]fade=t=out:d=2:alpha=1, setpts=PTS-STARTPTS, fps=50[fade1];[in2]fade=t=in:d=2:alpha=1, setpts=PTS-STARTPTS, fps=50[fade2];[fade1][fade2]overlay, setpts=PTS-STARTPTS, fps=50[out];" \
   -map [out] -f rawvideo -vframes 100 -t 2 -framerate 50 -pixel_format y210le -pix_fmt y210le -width 3840 -height 2160 /videos/blend_output.yuv
-

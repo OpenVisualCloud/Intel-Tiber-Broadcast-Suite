@@ -16,14 +16,14 @@ PSNR_LIM=38
 ########### HELP MESSAGE ###########
 help_message_arg_1 () {
    echo "Please chose one option as first argument:"
-   echo "   imtl           -  IMTL transmition only test"
+   echo "   imtl           -  IMTL transmission only test"
    echo "   qsv            -  QSV filters only test"
    echo "   jxs            -  JPEG-XS codec only test"
    echo "   vsr            -  VSR codec only test"
-   echo "   imtl_qsv       -  IMTL transmition and QSV filters test"
-   echo "   imtl_jxs       -  IMTL transmition and JPEG-XS coding test"
-   echo "   imtl_qsv_vsr   -  IMTL transmition and JPEG-XS coding test"
-   echo "   imtl_qsv_jxs   -  IMTL transmition, QSV filters and JPEG-XS coding test"
+   echo "   imtl_qsv       -  IMTL transmission and QSV filters test"
+   echo "   imtl_jxs       -  IMTL transmission and JPEG-XS coding test"
+   echo "   imtl_qsv_vsr   -  IMTL transmission and JPEG-XS coding test"
+   echo "   imtl_qsv_jxs   -  IMTL transmission, QSV filters and JPEG-XS coding test"
 }
 
 ########### EQUALITY TEST ARGS: 1: resolution | 2: framerate | 3: pixel format | 4: output video ###########

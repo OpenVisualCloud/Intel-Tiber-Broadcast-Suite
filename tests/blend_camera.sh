@@ -22,10 +22,17 @@ docker run \
   --cpuset-cpus="28-55" \
   -e MTL_PARAM_LCORES="28-55" \
   -e MTL_PARAM_DATA_QUOTA=10356 \
-  my_ffmpeg \
+  video_production_image \
   -y \
   -an \
   -video_size 3840x2160 -framerate 50 -pix_fmt y210le \
   -i /videos/digit1.yuv \
-  -map 0 -vframes 100 -pix_fmt yuv422p10le -port $CAM_NIC_PORT -local_addr $CAM_LOCAL_IP_ADDRESS -dst_addr $CAM_DEST_IP_ADDRESS -udp_port 20000 -total_sessions 1 -f kahawai_mux - 
-  
+  -map 0 \
+  -vframes 100 \
+  -pix_fmt yuv422p10le \
+  -port $CAM_NIC_PORT \
+  -local_addr $CAM_LOCAL_IP_ADDRESS \
+  -dst_addr $CAM_DEST_IP_ADDRESS \
+  -udp_port 20000 \
+  -total_sessions 1 \
+  -f kahawai_mux -

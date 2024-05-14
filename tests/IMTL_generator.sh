@@ -20,7 +20,7 @@ docker run \
   --network=my_net_801f0 \
   --ip=192.168.2.1 \
   --expose=20000-20170 \
-  my_ffmpeg \
+  video_production_image \
    -f lavfi -i \
 gradients=duration=10\
 :nb_colors=5:x0=320:y0=240\
