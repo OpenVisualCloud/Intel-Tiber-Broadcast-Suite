@@ -2,6 +2,7 @@
 
 def GitHubStatus = "NEX: SED Visual Solutions/Ci Project Build"
 def GtaStatusCheck = "daily testing"
+def SdlStatusCheck = "SDL scans"
 def relativeDir = 'vp-build'
 pipeline {
     agent {
@@ -91,6 +92,15 @@ pipeline {
                                         description: "GTA tests",
                                         state : "pending"
                                     )
+                                    status_check(
+                                        gh_token : PASSWORD,
+                                        commit : GITHUB_PR_HEAD_SHA,
+                                        pull_request : GITHUB_REPO_STATUS_URL,
+                                        name : SdlStatusCheck,
+                                        message: "SDL scans",
+                                        description: "SDL scans",
+                                        state : "pending"
+                                    )
                                 }
                         }
                         
@@ -148,8 +158,8 @@ pipeline {
                 script {
                     dir(relativeDir){
                         sh """
+                            rm -rf \${UPLOAD_DIR}/
                             mkdir -p \${UPLOAD_DIR}
-                            rm -rf \${UPLOAD_DIR}/*
                             docker save -o \${UPLOAD_DIR}/\"${IMAGE_TAG_NAME}\".tar.gz \"${IMAGE_TAG_NAME}\"
                             tar czf \${UPLOAD_DIR}/tests_repo_${JOB_BUILD_ID}.tar.gz .
                         """
@@ -157,10 +167,50 @@ pipeline {
                 }
             }
         }
+        stage("scans"){
+            parallel {
+                stage("Hadolint"){
+                    steps{
+                        script{
+                            dir(relativeDir){
+                                sh """ 
+                                    jenkins/scripts/hadolint.sh
+                                """
+                                archiveArtifacts allowEmptyArchive: true, artifacts: "Hadolint/hadolint-Dockerfile*"
+                            }
+                        }
+                    } 
+                }
+                stage("Trivy"){
+                    steps{
+                        script{
+                            dir(relativeDir){
+                                sh """ 
+                                    jenkins/scripts/trivy.sh \${UPLOAD_DIR}/\"${IMAGE_TAG_NAME}\".tar.gz
+                                """
+                                archiveArtifacts allowEmptyArchive: true, artifacts: "Trivy/*"
+                            }
+                        }
+                    } 
+                }
+                stage("Schellcheck"){
+                    steps{
+                        script{
+                            dir(relativeDir){
+                                sh """ 
+                                    jenkins/scripts/shellcheck.sh
+                                """
+                                archiveArtifacts allowEmptyArchive: true, artifacts: "shellcheck_logs/*"
+                            }
+                        }
+                    } 
+                }
+            }
+        }
         stage('Upload'){
             steps {
                 script {
-                        def pr_head_sha = (env.GITHUB_PR_HEAD_SHA ? env.GITHUB_PR_HEAD_SHA : "manual_trigger")
+                    def pr_head_sha = (env.GITHUB_PR_HEAD_SHA ? env.GITHUB_PR_HEAD_SHA : "manual_trigger")
                     dir(relativeDir){
                         sh """
                             set -x
@@ -182,7 +232,7 @@ pipeline {
                     }
                 }
             }
-        }
+       }
     }
     post{
         success{
@@ -194,6 +244,24 @@ pipeline {
                             commit : GITHUB_PR_HEAD_SHA,
                             pull_request : GITHUB_REPO_STATUS_URL,
                             name : GitHubStatus,
+                            state : "success"
+                        )
+                        status_check(
+                            gh_token : PASSWORD,
+                            commit : GITHUB_PR_HEAD_SHA,
+                            pull_request : GITHUB_REPO_STATUS_URL,
+                            name : GtaStatusCheck,
+                            message: "GTA tests",
+                            description: "GTA tests",
+                            state : "pending"
+                        )
+                        status_check(
+                            gh_token : PASSWORD,
+                            commit : GITHUB_PR_HEAD_SHA,
+                            pull_request : GITHUB_REPO_STATUS_URL,
+                            name : SdlStatusCheck,
+                            message: "SDL scans",
+                            description: "SDL scans",
                             state : "success"
                         )
                     }
@@ -209,7 +277,25 @@ pipeline {
                             commit : GITHUB_PR_HEAD_SHA,
                             pull_request : GITHUB_REPO_STATUS_URL,
                             name : GitHubStatus,
-                            state : "failure"
+                            state : "fail"
+                        )
+                        status_check(
+                            gh_token : PASSWORD,
+                            commit : GITHUB_PR_HEAD_SHA,
+                            pull_request : GITHUB_REPO_STATUS_URL,
+                            name : GtaStatusCheck,
+                            message: "GTA tests",
+                            description: "GTA tests",
+                            state : "fail"
+                        )
+                        status_check(
+                            gh_token : PASSWORD,
+                            commit : GITHUB_PR_HEAD_SHA,
+                            pull_request : GITHUB_REPO_STATUS_URL,
+                            name : SdlStatusCheck,
+                            message: "SDL scans",
+                            description: "SDL scans",
+                            state : "fail"
                         )
                      }
                  }
@@ -224,6 +310,24 @@ pipeline {
                             commit : GITHUB_PR_HEAD_SHA,
                             pull_request : GITHUB_REPO_STATUS_URL,
                             name : GitHubStatus,
+                            state : "aborted"
+                        )
+                        status_check(
+                            gh_token : PASSWORD,
+                            commit : GITHUB_PR_HEAD_SHA,
+                            pull_request : GITHUB_REPO_STATUS_URL,
+                            name : GtaStatusCheck,
+                            message: "GTA tests",
+                            description: "GTA tests",
+                            state : "aborted"
+                        )
+                        status_check(
+                            gh_token : PASSWORD,
+                            commit : GITHUB_PR_HEAD_SHA,
+                            pull_request : GITHUB_REPO_STATUS_URL,
+                            name : SdlStatusCheck,
+                            message: "SDL scans",
+                            description: "SDL scans",
                             state : "aborted"
                         )
                     }
