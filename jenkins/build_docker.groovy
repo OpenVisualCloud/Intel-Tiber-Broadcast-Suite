@@ -205,6 +205,19 @@ pipeline {
                         }
                     } 
                 }
+                stage("McAfee"){
+                    steps{
+                        script{
+                            dir(relativeDir){
+                                sh """ 
+                                    DOCKER_IMAGE_NAME="amr-registry.caas.intel.com/owr/abi_lnx:3.0.0"
+                                    docker run --rm -v \$(pwd):/opt/ \${DOCKER_IMAGE_NAME} /bin/bash -c "cd /opt/; jenkins/scripts/mcafee_scan.sh"
+                                """
+                                archiveArtifacts allowEmptyArchive: true, artifacts: "Malware/*"
+                            }
+                        }
+                    } 
+                }
             }
         }
         stage('Upload'){
