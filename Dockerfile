@@ -276,8 +276,8 @@ RUN \
   rm -rf /tmp/Media-Transport-Library/Media-Transport-Library-${MTL_VER} && \
   mkdir /tmp/Media-Transport-Library/patches/video_production_image
 
-COPY \
-  /patches/imtl/* /tmp/Media-Transport-Library/patches/video_production_image
+COPY 
+  /patches/imtl/* /tmp/Media-Transport-Library/patches/video_production_image/
 
 RUN \
   echo "**** DOWNLOAD DPDK ****" && \
