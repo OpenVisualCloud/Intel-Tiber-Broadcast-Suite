@@ -1,0 +1,122 @@
+From 85c0b0ae6260738b9a7e5a399302aaa4d9a3fce8 Mon Sep 17 00:00:00 2001
+From: "Wesierski, Dawid" <dawid.wesierski@intel.com>
+Date: Wed, 22 May 2024 10:10:05 +0200
+Subject: [PATCH 1/2] Use env for lcores and data_quota_mbs_per_sch
+
+---
+ app/src/args.c                       |  2 +-
+ app/v4l2_to_ip/v4l2_to_ip.c          |  2 +-
+ ecosystem/ffmpeg_plugin/mtl_common.c | 14 ++++++++++++++
+ include/mtl_api.h                    |  2 +-
+ lib/src/dev/mt_dev.c                 |  8 --------
+ tests/src/tests.cpp                  |  4 ++--
+ 6 files changed, 19 insertions(+), 13 deletions(-)
+
+diff --git a/app/src/args.c b/app/src/args.c
+index f2b54df..b66e0e2 100644
+--- a/app/src/args.c
++++ b/app/src/args.c
+@@ -287,7 +287,7 @@ static int app_args_parse_lcores(struct mtl_init_params* p, char* list) {
+   if (!list) return -EIO;
+ 
+   dbg("%s, lcore list %s\n", __func__, list);
+-  p->lcores = list;
++  strcpy(p->lcores, list);
+   return 0;
+ }
+ 
+diff --git a/app/v4l2_to_ip/v4l2_to_ip.c b/app/v4l2_to_ip/v4l2_to_ip.c
+index 28ac69d..ef9a575 100644
+--- a/app/v4l2_to_ip/v4l2_to_ip.c
++++ b/app/v4l2_to_ip/v4l2_to_ip.c
+@@ -1856,7 +1856,7 @@ int main(int argc, char* argv[]) {
+   st_v4l2_tx->param.tx_queues_cnt[0] = session_num;
+   st_v4l2_tx->param.rx_queues_cnt[0] = 0;
+   // let lib decide to core or user could define it.
+-  st_v4l2_tx->param.lcores = tx_lcore;
++  strcpy(st_v4l2_tx->param.lcores, tx_lcore);
+ 
+   // create device
+   st_v4l2_tx->st = mtl_init(&(st_v4l2_tx->param));
+diff --git a/ecosystem/ffmpeg_plugin/mtl_common.c b/ecosystem/ffmpeg_plugin/mtl_common.c
+index ac7c4ac..137b71d 100644
+--- a/ecosystem/ffmpeg_plugin/mtl_common.c
++++ b/ecosystem/ffmpeg_plugin/mtl_common.c
+@@ -65,6 +65,20 @@ mtl_handle mtl_dev_get(AVFormatContext* ctx, const struct StDevArgs* args, int*
+   p.flags |= MTL_FLAG_DEV_AUTO_START_STOP;
+   p.log_level = MTL_LOG_LEVEL_INFO;  // log level. ERROR, INFO, WARNING
+ 
++  if (getenv("MTL_PARAM_LCORES")) {
++    sprintf(p.lcores, "%s", getenv("MTL_PARAM_LCORES"));
++  } else {
++    sprintf(p.lcores, "");
++  }
++  if (getenv("MTL_PARAM_DATA_QUOTA")) {
++    uint32_t data_quota_mbs_per_sch = (uint32_t)atol(getenv("MTL_PARAM_DATA_QUOTA"));
++    av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch = %u", data_quota_mbs_per_sch);
++    p.data_quota_mbs_per_sch = data_quota_mbs_per_sch;
++  } else {
++    av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch set do default: %lu", 4 * st20_1080p59_yuv422_10bit_bandwidth_mps());
++    p.data_quota_mbs_per_sch = (uint32_t)(4 * st20_1080p59_yuv422_10bit_bandwidth_mps());
++  }
++
+   if (args->dma_dev) {
+     char devs[128] = {0};
+     char* next_dev;
+diff --git a/include/mtl_api.h b/include/mtl_api.h
+index f0b8309..ffbbc29 100644
+--- a/include/mtl_api.h
++++ b/include/mtl_api.h
+@@ -547,7 +547,7 @@ struct mtl_init_params {
+    * Optional. The logical cores list can be used in the MTL, e.g. "28,29,30,31".
+    * If not assigned, the core usage will be determined by MTL itself.
+    */
+-  char* lcores;
++  char lcores[256];
+ 
+   /**
+    * Optional. Dma(CBDMA or DSA) device can be used in the MTL.
+diff --git a/lib/src/dev/mt_dev.c b/lib/src/dev/mt_dev.c
+index d881afc..01bb38d 100644
+--- a/lib/src/dev/mt_dev.c
++++ b/lib/src/dev/mt_dev.c
+@@ -409,14 +409,6 @@ static int dev_eal_init(struct mtl_init_params* p, struct mt_kport_info* kport_i
+     argc++;
+   }
+ 
+-  if (p->lcores) {
+-    argv[argc] = "-l";
+-    argc++;
+-    info("%s, lcores: %s\n", __func__, p->lcores);
+-    argv[argc] = p->lcores;
+-    argc++;
+-  }
+-
+   if (!pci_ports) {
+     argv[argc] = "--no-pci";
+     argc++;
+diff --git a/tests/src/tests.cpp b/tests/src/tests.cpp
+index 1c160c6..a06e6ad 100644
+--- a/tests/src/tests.cpp
++++ b/tests/src/tests.cpp
+@@ -130,7 +130,7 @@ static int test_parse_args(struct st_tests_context* ctx, struct mtl_init_params*
+         p->num_ports++;
+         break;
+       case TEST_ARG_LCORES:
+-        p->lcores = optarg;
++        strcpy(p->lcores, optarg);
+         break;
+       case TEST_ARG_SCH_SESSION_QUOTA: /* unit: 1080p tx */
+         nb = atoi(optarg);
+@@ -397,7 +397,7 @@ static void test_ctx_init(struct st_tests_context* ctx) {
+   }
+   info("lcores_list: %s, max_cpus %d\n", ctx->lcores_list, max_cpus);
+ #endif
+-  p->lcores = ctx->lcores_list;
++  strcpy(p->lcores, ctx->lcores_list);
+ }
+ 
+ static void test_ctx_uinit(struct st_tests_context* ctx) {
+-- 
+2.34.1
+

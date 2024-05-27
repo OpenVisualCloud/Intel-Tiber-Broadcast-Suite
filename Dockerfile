@@ -26,7 +26,7 @@ ENV \
   VSR=v23.11 \
   CARTWHEEL_COMMIT_ID=6.1 \
   FFMPEG_COMMIT_ID=n6.1.1 \
-  MTL_VER=b210f1a85f571507f317d156b105dbe5690a234d \
+  MTL_VER=95673e279cf37e22e664b8b921b7da950976008b \
   DPDK_VER=23.11
 
 # Install dependencies
@@ -72,6 +72,7 @@ RUN \
   wget \
   zip \
   python3-pyelftools \
+  systemtap-sdt-dev \
   sudo
 
 RUN \
@@ -272,40 +273,11 @@ RUN \
   https://github.com/OpenVisualCloud/Media-Transport-Library/archive/${MTL_VER}.zip && \
   unzip ${MTL_VER}.zip -d /tmp/Media-Transport-Library && \
   mv /tmp/Media-Transport-Library/Media-Transport-Library-${MTL_VER}/* /tmp/Media-Transport-Library && \
-  rm -rf /tmp/Media-Transport-Library/Media-Transport-Library-${MTL_VER}
+  rm -rf /tmp/Media-Transport-Library/Media-Transport-Library-${MTL_VER} && \
+  mkdir /tmp/Media-Transport-Library/patches/video_production_image
 
-#WILL BE MOVED TO THE PATCH
-RUN \
-  sed -i '531 d' /tmp/Media-Transport-Library/include/mtl_api.h && \
-  sed -i '531 i char lcores[256];' /tmp/Media-Transport-Library/include/mtl_api.h && \
-  sed -i '261 d' /tmp/Media-Transport-Library/app/src/args.c && \
-  sed -i '261 i strcpy(p->lcores, list);' /tmp/Media-Transport-Library/app/src/args.c && \
-  sed -i '1856 d' /tmp/Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
-  sed -i '1856 i strcpy(st_v4l2_tx->param.lcores, tx_lcore);' /tmp/Media-Transport-Library/app/v4l2_to_ip/v4l2_to_ip.c && \
-  sed -i '132 d' /tmp/Media-Transport-Library/tests/src/tests.cpp && \
-  sed -i '132 i strcpy(p->lcores, optarg);' /tmp/Media-Transport-Library/tests/src/tests.cpp && \
-  sed -i '399 d' /tmp/Media-Transport-Library/tests/src/tests.cpp && \
-  sed -i '399 i strcpy(p->lcores, ctx->lcores_list);' /tmp/Media-Transport-Library/tests/src/tests.cpp && \
-  sed -i '75 i if (getenv("MTL_PARAM_LCORES")) {' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '76 i sprintf(p.lcores, "%s", getenv("MTL_PARAM_LCORES"));' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '77 i } else {' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '78 i   sprintf(p.lcores, "");' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '79 i }' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '80 i if (getenv("MTL_PARAM_DATA_QUOTA")) {' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '81 i   uint32_t data_quota_mbs_per_sch = (uint32_t)atol(getenv("MTL_PARAM_DATA_QUOTA"));' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '82 i   av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch = %u", data_quota_mbs_per_sch);' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '83 i       p.data_quota_mbs_per_sch = data_quota_mbs_per_sch;' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '84 i } else {' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '85 i   av_log(NULL, AV_LOG_DEBUG, "p.data_quota_mbs_per_sch set do default: %lu", 4 * st20_1080p59_yuv422_10bit_bandwidth_mps());' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '86 i   p.data_quota_mbs_per_sch = (uint32_t)(4 * st20_1080p59_yuv422_10bit_bandwidth_mps());' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '87 i } ' /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_common.c && \
-  sed -i '402 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c && \
-  sed -i '401 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c && \
-  sed -i '400 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c && \
-  sed -i '399 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c && \
-  sed -i '398 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c && \
-  sed -i '397 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c && \
-  sed -i '396 d' /tmp/Media-Transport-Library/lib/src/dev/mt_dev.c
+COPY \
+  /patches/imtl/* /tmp/Media-Transport-Library/patches/video_production_image
 
 RUN \
   echo "**** DOWNLOAD DPDK ****" && \
@@ -326,6 +298,7 @@ RUN \
 RUN \
   echo "**** BUILD MTL ****"  && \
   cd /tmp/Media-Transport-Library && \
+  git apply /tmp/Media-Transport-Library/patches/video_production_image/*.patch && \
   ./build.sh && \
   cd ..
 
