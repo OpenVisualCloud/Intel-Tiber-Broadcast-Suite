@@ -1,9 +1,27 @@
 @Library(['jenkins-common-pipelines', 'pact-shared-library']) _
 
-def GitHubStatus = "NEX: SED Visual Solutions/Ci Project Build"
 def GtaStatusCheck = "daily testing"
-def SdlStatusCheck = "SDL scans"
 def relativeDir = 'vp-build'
+
+def setStatusCheck(String status_name, String state){
+    def statusMap = [
+        Build: "NEX: SED Visual Solutions/Ci Project Build",
+        Gta: "daily testing",
+    ]
+    withCredentials([usernamePassword(
+        credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
+        usernameVariable: 'USERNAME',
+        passwordVariable: 'PASSWORD')]){
+            status_check(
+                gh_token : PASSWORD,
+                commit : GITHUB_PR_HEAD_SHA,
+                pull_request : GITHUB_REPO_STATUS_URL,
+                name : statusMap[status_name],
+                state : state
+            )
+    }
+}
+
 pipeline {
     agent {
         label 'video-production-build'
@@ -75,33 +93,8 @@ pipeline {
                         if(env.GITHUB_PR_URL){
                                 currentBuild.description = 'Trigged by <a href="' + GITHUB_PR_URL + '" target="_blank">' + GITHUB_REPO_FULL_NAME + '</a>.'
                                 println 'Trigged by ' + GITHUB_PR_URL + '.'
-                                withCredentials([usernamePassword(credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                                    status_check(
-                                        gh_token : PASSWORD,
-                                        commit : GITHUB_PR_HEAD_SHA,
-                                        pull_request : GITHUB_REPO_STATUS_URL,
-                                        name : GitHubStatus,
-                                        state : "pending"
-                                    )
-                                    status_check(
-                                        gh_token : PASSWORD,
-                                        commit : GITHUB_PR_HEAD_SHA,
-                                        pull_request : GITHUB_REPO_STATUS_URL,
-                                        name : GtaStatusCheck,
-                                        message: "GTA tests",
-                                        description: "GTA tests",
-                                        state : "pending"
-                                    )
-                                    status_check(
-                                        gh_token : PASSWORD,
-                                        commit : GITHUB_PR_HEAD_SHA,
-                                        pull_request : GITHUB_REPO_STATUS_URL,
-                                        name : SdlStatusCheck,
-                                        message: "SDL scans",
-                                        description: "SDL scans",
-                                        state : "pending"
-                                    )
-                                }
+                                setStatusCheck("Build", "pending")
+                                setStatusCheck("Gta", "pending")
                         }
                         
                         def repo = 'https://github.com/intel-innersource/libraries.media.encoding.svt-jpeg-xs.git'
@@ -167,56 +160,17 @@ pipeline {
                 }
             }
         }
-        stage("scans"){
-            parallel {
-                stage("Hadolint"){
-                    steps{
-                        script{
-                            dir(relativeDir){
-                                sh """ 
-                                    jenkins/scripts/hadolint.sh
-                                """
-                                archiveArtifacts allowEmptyArchive: true, artifacts: "Hadolint/hadolint-Dockerfile*"
-                            }
-                        }
-                    } 
-                }
-                stage("Trivy"){
-                    steps{
-                        script{
-                            dir(relativeDir){
-                                sh """ 
-                                    jenkins/scripts/trivy.sh \${UPLOAD_DIR}/\"${IMAGE_TAG_NAME}\".tar.gz
-                                """
-                                archiveArtifacts allowEmptyArchive: true, artifacts: "Trivy/*"
-                            }
-                        }
-                    } 
-                }
-                stage("Schellcheck"){
-                    steps{
-                        script{
-                            dir(relativeDir){
-                                sh """ 
-                                    jenkins/scripts/shellcheck.sh
-                                """
-                                archiveArtifacts allowEmptyArchive: true, artifacts: "shellcheck_logs/*"
-                            }
-                        }
-                    } 
-                }
-                stage("McAfee"){
-                    steps{
-                        script{
-                            dir(relativeDir){
-                                sh """ 
-                                    DOCKER_IMAGE_NAME="amr-registry.caas.intel.com/owr/abi_lnx:3.0.0"
-                                    docker run --rm -v \$(pwd):/opt/ \${DOCKER_IMAGE_NAME} /bin/bash -c "cd /opt/; jenkins/scripts/mcafee_scan.sh"
-                                """
-                                archiveArtifacts allowEmptyArchive: true, artifacts: "Malware/*"
-                            }
-                        }
-                    } 
+        stage("trigger sdl"){
+            steps{
+                script{
+                    def pr_head_sha = (env.GITHUB_PR_HEAD_SHA ? env.GITHUB_PR_HEAD_SHA : "manual_trigger")
+                    def github_repo_status_url = (env.GITHUB_REPO_STATUS_URL ? env.GITHUB_REPO_STATUS_URL : "manual_trigger")
+                    build job: 'sdl-scans' , parameters: [
+                        string(name: 'tar_docker_image', value: "${UPLOAD_DIR}/${IMAGE_TAG_NAME}.tar.gz"),
+                        string(name: 'github_repo_status_url', value:"${github_repo_status_url}" ),
+                        string(name: 'github_pr_head_sha', value: "${pr_head_sha}"),
+                        string(name: 'relative_dir', value: "${WORKSPACE}/${relativeDir}"),
+                    ], wait: false
                 }
             }
         }
@@ -249,101 +203,25 @@ pipeline {
     }
     post{
         success{
-            withCredentials([usernamePassword(credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                script {
-                    if(env.GITHUB_PR_URL){
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : GitHubStatus,
-                            state : "success"
-                        )
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : GtaStatusCheck,
-                            message: "GTA tests",
-                            description: "GTA tests",
-                            state : "pending"
-                        )
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : SdlStatusCheck,
-                            message: "SDL scans",
-                            description: "SDL scans",
-                            state : "success"
-                        )
-                    }
-                   }
+            script {
+                if(env.GITHUB_PR_URL){
+                    setStatusCheck("Build", "success")
+                }
             }
         }
         failure{
-               withCredentials([usernamePassword(credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                script {
-                    if(env.GITHUB_PR_URL){
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : GitHubStatus,
-                            state : "fail"
-                        )
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : GtaStatusCheck,
-                            message: "GTA tests",
-                            description: "GTA tests",
-                            state : "fail"
-                        )
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : SdlStatusCheck,
-                            message: "SDL scans",
-                            description: "SDL scans",
-                            state : "fail"
-                        )
-                     }
-                 }
+            script {
+                if(env.GITHUB_PR_URL){
+                    setStatusCheck("Build", "fail")
+                    setStatusCheck("Gta", "fail")
                 }
+            }
         }
         aborted{
-            withCredentials([usernamePassword(credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                script {
-                    if(env.GITHUB_PR_URL){
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : GitHubStatus,
-                            state : "aborted"
-                        )
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : GtaStatusCheck,
-                            message: "GTA tests",
-                            description: "GTA tests",
-                            state : "aborted"
-                        )
-                        status_check(
-                            gh_token : PASSWORD,
-                            commit : GITHUB_PR_HEAD_SHA,
-                            pull_request : GITHUB_REPO_STATUS_URL,
-                            name : SdlStatusCheck,
-                            message: "SDL scans",
-                            description: "SDL scans",
-                            state : "aborted"
-                        )
-                    }
+            script {
+                if(env.GITHUB_PR_URL){
+                    setStatusCheck("Build", "aborted")
+                    setStatusCheck("Gta", "aborted")
                 }
             }
         }
