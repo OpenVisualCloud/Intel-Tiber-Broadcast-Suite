@@ -11,7 +11,7 @@ IMAGE_TAR=${1}
 # vulnerability scans
 trivy image --no-progress \
             --exit-code 0 \
-            --format table \
+            --format json \
             -o Trivy/Trivy_vulnerability.Dockerfile.log \
             --input ${IMAGE_TAR%%.tar}
 # spdx licence scans 
