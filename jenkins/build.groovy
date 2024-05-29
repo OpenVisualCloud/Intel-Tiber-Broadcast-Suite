@@ -34,7 +34,6 @@ pipeline {
         ARTIFACTORY_SECRET = credentials('ed6200e9-7a86-4cf8-b2f3-2cea840a23f5')
         UPLOAD_DIR = '/tmp/gtax-upload'
         IMAGE_TAG_NAME = "video_production_image_${JOB_BUILD_ID}"
-        JENKINS_INVOKE_TOKEN = credentials('c783a259-c17c-4a89-90e8-61bdfee916a4')
     }
     triggers {
         GenericTrigger(
@@ -72,7 +71,6 @@ pipeline {
             genericHeaderVariables: [
                 [key: 'X-GitHub-Event', regexpFilter: '']
             ],
-            token: '${JENKINS_INVOKE_TOKEN}',
             causeString: 'Triggered on GitHub webhook',
             printContributedVariables: false,
             printPostContent: true,
