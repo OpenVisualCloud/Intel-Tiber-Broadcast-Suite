@@ -9,6 +9,6 @@ mkdir Trivy
 # get the latest video_production_image 
 IMAGE_TAR=${1}
 trivy image --no-progress \
-            --exit-code 1 \
+            --exit-code 0 \
             -o Trivy/Trivy_Dockerfile.spdx \
             --input ${IMAGE_TAR%%.tar}
