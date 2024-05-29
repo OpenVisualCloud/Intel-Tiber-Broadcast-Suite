@@ -10,6 +10,5 @@ mkdir Trivy
 IMAGE_TAR=${1}
 trivy image --no-progress \
             --exit-code 1 \
-            --format spdx \
             -o Trivy/Trivy_Dockerfile.spdx \
             --input ${IMAGE_TAR%%.tar}
