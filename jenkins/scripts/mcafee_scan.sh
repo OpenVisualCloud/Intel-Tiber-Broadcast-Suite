@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -x
 mkdir -p Malware
 touch Malware/malware_clean_reports
 MALWARE_PASS=true
