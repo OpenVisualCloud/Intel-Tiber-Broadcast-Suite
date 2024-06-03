@@ -22,7 +22,6 @@ ENV \
   ONEVPL=23.3.4 \
   SVTAV1=1.7.0 \
   VULKANSDK=vulkan-sdk-1.3.268.0 \
-  X265=3.5 \
   VSR=v23.11 \
   CARTWHEEL_COMMIT_ID=6.1 \
   FFMPEG_COMMIT_ID=n6.1.1 \
@@ -50,6 +49,8 @@ RUN \
   libxext-dev \
   libxfixes-dev \
   libxml2-dev \
+  libx265-dev \
+  libx264-dev \
   git \
   cmake \
   meson \
@@ -58,16 +59,10 @@ RUN \
   nasm \
   autoconf \
   automake \
-  autoconf \
-  automake \
   pkg-config \
   bzip2 \
-  cmake \
-  curl \
   diffutils \
-  g++ \
   gcc \
-  git \
   xxd \
   wget \
   zip \
@@ -236,35 +231,6 @@ RUN \
   cd /tmp/vulkan-headers && \
   cmake -S . -B build/ && \
   cmake --install build --prefix /usr/local
-
-RUN \
-  echo "**** DOWNLOAD x264 ****" && \
-  mkdir -p /tmp/x264 && \
-  curl -Lf \
-    https://code.videolan.org/videolan/x264/-/archive/master/x264-stable.tar.bz2 | \
-    tar -jx --strip-components=1 -C /tmp/x264
-RUN \
-  echo "**** BUILD x264 ****" && \
-  cd /tmp/x264 && \
-  ./configure \
-    --disable-cli \
-    --disable-static \
-    --enable-pic \
-    --enable-shared && \
-  make && \
-  make install
-
-RUN \
-  echo "**** DOWNLOAD x265 ****" && \
-  mkdir -p /tmp/x265 && \
-  curl -Lf \
-    https://bitbucket.org/multicoreware/x265_git/downloads/x265_${X265}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/x265
-RUN \
-  echo "**** BUILD x265 ****" && \
-  cd /tmp/x265/build/linux && \
-  ./multilib.sh && \
-  make -C 8bit install
 
 RUN \
   echo "**** DOWNLOAD MTL ****" && \
@@ -471,6 +437,9 @@ RUN \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri/ && \
   sudo cp -a \
+    /usr/lib/x86_64-linux-gnu/libx26* \
+    /buildout/usr/local/lib/ && \
+  sudo cp -a \
     /tmp/ffmpeg/libavdevice/* \
     /buildout/usr/local/lib/ && \
   sudo cp -a \
@@ -540,12 +509,8 @@ RUN \
   echo "**** INSTALL RUNTIME PACKAGES ****" && \
   apt-get update -y && \
   apt-get install -y \
-  meson \
-  python3-pyelftools \
-  libnuma-dev \
-  sudo \
-  autoconf \
   libtool \
+  libnuma-dev \
   libsdl2-dev \
   libpcap-dev \
   libssl-dev \
