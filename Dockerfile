@@ -49,8 +49,6 @@ RUN \
   libxext-dev \
   libxfixes-dev \
   libxml2-dev \
-  libx265-dev \
-  libx264-dev \
   git \
   cmake \
   meson \
@@ -68,7 +66,8 @@ RUN \
   zip \
   python3-pyelftools \
   systemtap-sdt-dev \
-  sudo
+  sudo \
+  libbsd-dev
 
 RUN \
   echo "**** DOWNLOAD LIBVA ****" && \
@@ -342,7 +341,7 @@ ENV \
   PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
 
 RUN \
-  echo "**** DOWNLOAD VIDEO SUPER RESOLUTION (VSR) ****" && \
+  echo "**** DOWNLOAD VIDEO SUPER RESOLUTION ****" && \
   mkdir -p /tmp/vsr && \
   curl -Lf \
     https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz | \
@@ -354,17 +353,39 @@ COPY \
   patches/vsr/*.patch /vsr_patches/
 
 RUN \
-  echo "**** BUILD VIDEO SUPER RESOLUTION (VSR) ****" && \
+  echo "**** BUILD VIDEO SUPER RESOLUTION ****" && \
   cd /tmp/vsr/ && . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
   git apply /vsr_patches/0003-missing-header-fix.patch && \
   ./build.sh -DCMAKE_INSTALL_PREFIX="$PWD/install" -DENABLE_RAISR_OPENCL=ON
 
 RUN \
-  echo "**** APPLY VSR PATCHES ****" && \
+  echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
   cd tmp/ffmpeg/ && \
   git apply /vsr_patches/0001-ffmpeg-raisr-filter.patch && \
   git apply /vsr_patches/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
   cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
+
+RUN \
+  echo "**** DOWNLOAD MEDIA COMMUNICATIONS MESH ****" && \
+  mkdir -p /tmp/mcm && \
+  curl -LO \
+  https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/heads/main.zip && \
+  unzip main.zip -d /tmp/mcm && \
+  mv /tmp/mcm/Media-Communications-Mesh-main/* /tmp/mcm && \
+  rm -rf /tmp/mcm/Media-Communications-Mesh-main
+
+RUN \
+  echo "**** BUILD MEDIA COMMUNICATIONS MESH ****" && \
+  cd /tmp/mcm/sdk && \
+  cmake -B out . && \
+  cmake --build out && \
+  cmake --install out
+
+RUN \
+  echo "**** APPLY MEDIA COMMUNICATIONS MESH PATCHES ****" && \
+  cd tmp/ffmpeg/ && \
+  git apply -v  --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/6.1/*.patch && \
+  cp -f /tmp/mcm/ffmpeg-plugin/mcm_* ./libavdevice/
 
 RUN \
   echo "**** BUILD FFMPEG ****" && \
@@ -375,13 +396,10 @@ RUN \
     --disable-doc \
     --enable-static \
     --enable-ffprobe \
-    --enable-gpl \
     --enable-libsvtav1 \
     --enable-libvpl \
     --enable-libvmaf \
     --enable-version3 \
-    --enable-libx264 \
-    --enable-libx265 \
     --enable-libxml2 \
     --enable-mtl \
     --enable-opencl \
@@ -391,6 +409,7 @@ RUN \
     --enable-vulkan \
     --enable-libsvtjpegxs \
     --enable-libipp \
+    --enable-mcm \
     --extra-cflags="-fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/" \
     --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib" \
     --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lm' \
@@ -437,9 +456,6 @@ RUN \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri/ && \
   sudo cp -a \
-    /usr/lib/x86_64-linux-gnu/libx26* \
-    /buildout/usr/local/lib/ && \
-  sudo cp -a \
     /tmp/ffmpeg/libavdevice/* \
     /buildout/usr/local/lib/ && \
   sudo cp -a \
@@ -481,9 +497,9 @@ RUN \
   sudo cp -a \
     /tmp/dpdk/buildtools/* \
     /buildout/dpdk/ && \
-  sudo echo \
-    'libnvidia-opencl.so.1' | sudo tee \
-    /buildout/etc/OpenCL/vendors/nvidia.icd
+  sudo cp -a \
+    /tmp/mcm/sdk/out/lib/libmcm_dp.so* \
+     /buildout/usr/local/lib/
 
 # runtime stage
 FROM ubuntu:22.04 as finalstage
