@@ -110,7 +110,6 @@ pipeline {
                 stage("Protex"){
                     steps{
                         script{
-                            de62b8cb-2c0a-4a67-83ea-cc51c7486c05
                             withCredentials([usernamePassword(
                                 credentialsId: 'de62b8cb-2c0a-4a67-83ea-cc51c7486c05',
                                 usernameVariable: 'USERNAME',
