@@ -126,7 +126,7 @@ pipeline {
                                             --report_config obl \
                                             --scan_output ${env.EVIDENCE_FOLDER}\"
                                     """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "${env.EVIDENCE_FOLDER}/*"
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "/opt/OWRBuild/${env.EVIDENCE_FOLDER}/*"
                                 }
                             }
                         }
