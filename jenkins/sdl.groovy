@@ -24,7 +24,6 @@ def scan(String type, String tar_image){
         trivy: "jenkins/scripts/trivy.sh ${env.ABI_IMAGE}",
         schellcheck: "jenkins/scripts/shellcheck.sh",
         mcAffee: "${DOCKER_ABI} jenkins/scripts/mcafee_scan.sh\""
-        protex: "${DOCKER_ABI} jenkins/scripts/protex_scan.sh\""
     ]
     def _artifacts_path =[
         hadolint: "Hadolint/hadolint-Dockerfile*" ,
