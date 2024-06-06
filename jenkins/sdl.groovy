@@ -52,12 +52,11 @@ pipeline {
         GITHUB_PR_HEAD_SHA = "${params.github_pr_head_sha}"
         GITHUB_REPO_STATUS_URL = "${params.github_repo_status_url}"
         PROTEX_SERVER = "gerprotex012.devtools.intel.com"
-        EVIDENCEFOLDER = "InternalEvidence"
+        EVIDENCE_FOLDER = "ProtexEvidence"
         PROTEX_PROJECT = "c_broadcastsuiteformediaentertainment_33366"
         CRED_DEFAULT = "build_sie"
         CRED_DEFAULT_EMAIL = "build_sie-email"
         DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
-        EVIDENCE="protex.log"
     }
     stages {
         stage("set status"){
@@ -125,9 +124,9 @@ pipeline {
                                             --report_type xlsx \
                                             --report_config cos \
                                             --report_config obl \
-                                            --scan_output ${env.WORKSPACE}/${env.EVIDENCE}\"
+                                            --scan_output ${env.WORKSPACE}/${env.EVIDENCE_FOLDER}\"
                                     """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "${env.WORKSPACE}/${env.EVIDENCE}"
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "${env.WORKSPACE}/${env.EVIDENCE_FOLDER}/*"
                                 }
                             }
                         }
