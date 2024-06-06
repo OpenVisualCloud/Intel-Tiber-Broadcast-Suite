@@ -124,9 +124,9 @@ pipeline {
                                             --report_type xlsx \
                                             --report_config cos \
                                             --report_config obl \
-                                            --scan_output ${env.WORKSPACE}/${env.EVIDENCE_FOLDER}\"
+                                            --scan_output ${env.EVIDENCE_FOLDER}\"
                                     """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "${env.WORKSPACE}/${env.EVIDENCE_FOLDER}/*"
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "${env.EVIDENCE_FOLDER}/*"
                                 }
                             }
                         }
