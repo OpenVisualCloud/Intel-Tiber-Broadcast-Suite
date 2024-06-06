@@ -21,7 +21,7 @@ def scan(String type, String tar_image){
         hadolint: "jenkins/scripts/hadolint.sh" ,
         trivy: "jenkins/scripts/trivy.sh ${tar_image}",
         schellcheck: "jenkins/scripts/shellcheck.sh",
-        mcAffee: "${env.DOCKER_ABI} cd /opt/; jenkins/scripts/mcafee_scan.sh"
+        mcAffee: "${env.DOCKER_ABI} \"cd /opt/; jenkins/scripts/mcafee_scan.sh\""
     ]
     def _artifacts_path =[
         hadolint: "Hadolint/hadolint-Dockerfile*" ,
@@ -57,6 +57,7 @@ pipeline {
         CRED_DEFAULT = "build_sie"
         CRED_DEFAULT_EMAIL = "build_sie-email"
         DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
+        EVIDENCE="protex.log"
     }
     stages {
         stage("set status"){
@@ -115,7 +116,7 @@ pipeline {
                                 passwordVariable: 'PASSWORD')]){
                                 dir(params.relative_dir){
                                     sh"""
-                                    ${env.DOCKER_ABI} abi ip_scan scan \
+                                    ${env.DOCKER_ABI} \"cd /opt/ abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
                                             --username ${USERNAME} \
@@ -125,7 +126,7 @@ pipeline {
                                             --report_type xlsx \
                                             --report_config cos \
                                             --report_config obl \
-                                            --scan_output "${env.WORKSPACE}/${env.EVIDENCE}"
+                                            --scan_output ${env.WORKSPACE}/${env.EVIDENCE}\"
                                     """
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "${env.WORKSPACE}/${env.EVIDENCE}"
                                 }
