@@ -15,15 +15,13 @@ def setSdlStatusCheck(String state){
     }
 }
 
-def DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c \"cd /opt/;"
-
 def scan(String type, String tar_image){
 
     def _cmd =[
         hadolint: "jenkins/scripts/hadolint.sh" ,
-        trivy: "jenkins/scripts/trivy.sh ${env.ABI_IMAGE}",
+        trivy: "jenkins/scripts/trivy.sh ${env.tar_image}",
         schellcheck: "jenkins/scripts/shellcheck.sh",
-        mcAffee: "${DOCKER_ABI} jenkins/scripts/mcafee_scan.sh\""
+        mcAffee: "${env.DOCKER_ABI} jenkins/scripts/mcafee_scan.sh\""
     ]
     def _artifacts_path =[
         hadolint: "Hadolint/hadolint-Dockerfile*" ,
@@ -58,6 +56,7 @@ pipeline {
         PROTEX_PROJECT = "c_broadcastsuiteformediaentertainment_33366"
         CRED_DEFAULT = "build_sie"
         CRED_DEFAULT_EMAIL = "build_sie-email"
+        DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c \"cd /opt/;"
     }
     stages {
         stage("set status"){
@@ -116,7 +115,7 @@ pipeline {
                                 passwordVariable: 'PASSWORD')]){
                                 dir(params.relative_dir){
                                     sh"""
-                                    ${DOCKER_ABI} abi ip_scan scan \
+                                    ${env.DOCKER_ABI} abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
                                             --username "${USERNAME}" \
