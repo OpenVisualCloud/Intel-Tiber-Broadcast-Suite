@@ -19,7 +19,7 @@ def scan(String type, String tar_image){
 
     def _cmd =[
         hadolint: "jenkins/scripts/hadolint.sh" ,
-        trivy: "jenkins/scripts/trivy.sh ${env.tar_image}",
+        trivy: "jenkins/scripts/trivy.sh ${tar_image}",
         schellcheck: "jenkins/scripts/shellcheck.sh",
         mcAffee: "${env.DOCKER_ABI} jenkins/scripts/mcafee_scan.sh\""
     ]
@@ -118,14 +118,14 @@ pipeline {
                                     ${env.DOCKER_ABI} abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
-                                            --username "${USERNAME}" \
-                                            --password "${PASSWORD}" \
+                                            --username ${USERNAME} \
+                                            --password ${PASSWORD} \
                                             --root_dir ${WORKSPACE} \
-                                            --ing_path "." \
+                                            --ing_path \".\" \
                                             --report_type xlsx \
                                             --report_config cos \
                                             --report_config obl \
-                                            --scan_output ${env.WORKSPACE}/${env.EVIDENCE}
+                                            --scan_output "${env.WORKSPACE}/${env.EVIDENCE}"
                                     """
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "${env.WORKSPACE}/${env.EVIDENCE}"
                                 }
