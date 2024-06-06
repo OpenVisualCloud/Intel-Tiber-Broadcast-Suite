@@ -123,8 +123,12 @@ pipeline {
                                             --ing_path \".\" \
                                             --report_type xlsx \
                                             --report_config cos \
-                                            --report_config obl \"
+                                            --report_config obl \
+                                            --scan_output ${env.EVIDENCE_FOLDER}\"
                                     """
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${env.EVIDENCE_FOLDER}/*"
+
+                                    sh """ sudo rm -rf OWRBuild/ """
                                 }
                             }
                         }
