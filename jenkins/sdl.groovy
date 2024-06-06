@@ -121,7 +121,7 @@ pipeline {
                                             --scan_project ${env.PROTEX_PROJECT} \
                                             --username ${USERNAME} \
                                             --password ${PASSWORD} \
-                                            --root_dir ${WORKSPACE} \
+                                            --root_dir ${WORKSPACE}/${params.relative_dir} \
                                             --ing_path \".\" \
                                             --report_type xlsx \
                                             --report_config cos \
