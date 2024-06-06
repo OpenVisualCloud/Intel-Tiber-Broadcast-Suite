@@ -122,7 +122,7 @@ pipeline {
                                             --username ${USERNAME} \
                                             --password ${PASSWORD} \
                                             --root_dir ${env.WORKSPACE} \
-                                            --ing_path ${params.relative_dir} \
+                                            --ing_path \".\" \
                                             --report_type xlsx \
                                             --report_config cos \
                                             --report_config obl \
