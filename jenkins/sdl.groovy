@@ -116,7 +116,7 @@ pipeline {
                                 passwordVariable: 'PASSWORD')]){
                                 dir(params.relative_dir){
                                     sh"""
-                                    ${env.DOCKER_ABI} \"cd /opt/ abi ip_scan scan \
+                                    ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
                                             --username ${USERNAME} \
