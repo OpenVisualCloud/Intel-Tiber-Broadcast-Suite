@@ -123,8 +123,7 @@ pipeline {
                                             --ing_path \".\" \
                                             --report_type xlsx \
                                             --report_config cos \
-                                            --report_config obl \
-                                            --scan_output ${WORKSPACE}\"
+                                            --report_config obl \"
                                     """
                                 }
                             }
