@@ -122,7 +122,6 @@ pipeline {
                             -t \"${IMAGE_TAG_NAME}\" \
                             -f Dockerfile .
                                 """
-                           }
                     }
                 }
             }
