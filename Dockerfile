@@ -167,30 +167,6 @@ RUN \
   strip -d /usr/local/lib/libmfx-gen.so
 
 RUN \
-  echo "**** DOWNLOAD LIBMFX ****" && \
-  mkdir -p /tmp/libmfx && \
-  curl -Lf \
-    https://github.com/Intel-Media-SDK/MediaSDK/archive/refs/tags/intel-mediasdk-${LIBMFX}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/libmfx
-RUN \
-  echo "**** BUILD LIBMFX ****" && \
-  mkdir -p /tmp/libmfx/build && \
-  cd /tmp/libmfx/build && \
-  cmake \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_INSTALL_LIBDIR=/usr/local/lib \
-    -DBUILD_SAMPLES=OFF \
-    -DENABLE_X11_DRI3=ON \
-    -DBUILD_DISPATCHER=OFF \
-    -DBUILD_TUTORIALS=OFF \
-    .. && \
-  make && \
-  make install && \
-  strip -d \
-    /usr/local/lib/libmfxhw64.so \
-    /usr/local/lib/mfx/libmfx_*.so
-
-RUN \
   echo "**** DOWNLOAD VMAF ****" && \
   mkdir -p /tmp/vmaf && \
   curl -Lf \
@@ -443,9 +419,6 @@ RUN \
   sudo cp -a \
     /usr/local/lib/libmfx-gen/*.so \
     /buildout/usr/local/lib/libmfx-gen/ && \
-  sudo cp -a \
-    /usr/local/lib/mfx/*.so \
-    /buildout/usr/local/lib/mfx/ && \
   sudo cp -a \
     /usr/local/lib/x86_64-linux-gnu/lib*so* \
     /buildout/usr/local/lib/x86_64-linux-gnu/ && \

@@ -4,6 +4,7 @@ INPUT_FILE_NAME="input_video.yuv"
 INPUT_FILE_NAME_MP4="input_video.mp4"
 REF_FILE_NAME="reference_video.yuv"
 OUTPUT_FILE_NAME="output_video.yuv"
+OUTPUT_FILE_NAME_RGB="output_video.rgb"
 OUTPUT_FILE_NAME_MP4="output_video.mp4"
 REF_FILE_NAME_MP4="reference_video.mp4"
 
@@ -150,7 +151,8 @@ run_qsv () {
       [in2]scale=iw/2:ih/2:flags=area[f_out_2]; \
       [in3]scale=iw/2:ih/2:flags=area[f_out_3]; \
       [in4]scale=iw/2:ih/2:flags=area[f_out_4]; \
-      [f_out_1][f_out_2][f_out_3][f_out_4]xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[out_mutiview]" -sws_flags area -map "[out_mutiview]" -f rawvideo -pix_fmt $3 /videos/$REF_FILE_NAME > logs.txt 
+      [f_out_1][f_out_2][f_out_3][f_out_4]xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[out_mutiview]" -sws_flags area \
+      -map "[out_mutiview]" -f rawvideo -pix_fmt $3 /videos/$REF_FILE_NAME > logs.txt
 
    docker run -it \
       --user root\
@@ -230,7 +232,8 @@ run_jxs() {
       --device=/dev/dri:/dev/dri \
       -v $(pwd):/videos \
       -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-      video_production_image -hide_banner -loglevel quiet -threads $(nproc) -y -i /videos/$INPUT_FILE_NAME_MP4 -c:v jpegxs -bpp 2 /videos/encoded_tmp.mov > logs.txt 
+      video_production_image -hide_banner -loglevel quiet -threads $(nproc) -y -i /videos/$INPUT_FILE_NAME_MP4 \
+      -c:v jpegxs -bpp 2 /videos/encoded_tmp.mov > logs.txt
 
    docker run \
       --user root\
@@ -238,7 +241,8 @@ run_jxs() {
       --device=/dev/dri:/dev/dri \
       -v $(pwd):/videos \
       -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-      video_production_image -hide_banner -loglevel quiet -y -threads $(nproc) -i /videos/encoded_tmp.mov -c:v $1 /videos/$OUTPUT_FILE_NAME_MP4 > logs.txt 
+      video_production_image -hide_banner -loglevel quiet -y -threads $(nproc) -i /videos/encoded_tmp.mov \
+      -c:v $1 /videos/$OUTPUT_FILE_NAME_MP4 > logs.txt
 
    rm -rf /videos/encoded_tmp.mov
 }
@@ -291,43 +295,49 @@ run_imtl_multiple_tx () {
    --cpuset-cpus=$7 \
    -e MTL_PARAM_LCORES=$8 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
-      video_production_image -y -an -hide_banner -loglevel error -video_size $1"x"$2 -f rawvideo -pix_fmt $4 -i /videos/$INPUT_FILE_NAME \
-      -filter_complex "[0:v]format=yuv422p10le,fps=25,split=4[in1][in2][in3][in4]" -total_sessions 4 \
-      -map "[in1]" -pix_fmt yuv422p10le -udp_port 20000 -port 0000:b1:01.1 -local_addr $5 -dst_addr $6 -f kahawai_mux - \
-      -map "[in2]" -pix_fmt yuv422p10le -udp_port 20001 -port 0000:b1:01.1 -local_addr $5 -dst_addr $6 -f kahawai_mux - \
-      -map "[in3]" -pix_fmt yuv422p10le -udp_port 20002 -port 0000:b1:01.1 -local_addr $5 -dst_addr $6 -f kahawai_mux - \
-      -map "[in4]" -pix_fmt yuv422p10le -udp_port 20003 -port 0000:b1:01.1 -local_addr $5 -dst_addr $6 -f kahawai_mux - 
+      video_production_image -loglevel quiet -video_size "$1"x"$2" -f rawvideo -pix_fmt $4 -i /videos/$INPUT_FILE_NAME \
+      -filter_complex "[0:v]format=y210le,fps=25,split=4[in1][in2][in3][in4]" \
+      -map "[in1]" -pix_fmt y210le -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20000 -payload_type 112 -f mtl_st20p - \
+      -map "[in2]" -pix_fmt y210le -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20001 -payload_type 112 -f mtl_st20p - \
+      -map "[in3]" -pix_fmt y210le -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20002 -payload_type 112 -f mtl_st20p - \
+      -map "[in4]" -pix_fmt y210le -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20003 -payload_type 112 -f mtl_st20p -
 }
 
 run_imtl_multiple_rx () {
    docker run -it \
-   --user root\
-   --privileged \
-   --device=/dev/vfio:/dev/vfio \
-   --device=/dev/dri:/dev/dri \
-   --cap-add ALL \
-   -v $(pwd):/videos \
-   -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
-   -v /dev/null:/dev/null \
-   -v /tmp/hugepages:/tmp/hugepages \
-   -v /hugepages:/hugepages \
-   --network=my_net_801f0 \
-   --ip=$5 \
-   --expose=20000-20170 \
-   --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=$7 \
-   -e MTL_PARAM_LCORES=$8 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
-      video_production_image -y -an -hide_banner -loglevel error -thread_queue_size 32768 \
-      -framerate $3 -pixel_format $4 -width $1 -height $2 -udp_port 20000 -port 0000:b1:01.2 -local_addr $5 -src_addr $6 -ext_frames_mode 1 -total_sessions 4 -f kahawai -i "0" \
-      -framerate $3 -pixel_format $4 -width $1 -height $2 -udp_port 20001 -port 0000:b1:01.2 -local_addr $5 -src_addr $6 -ext_frames_mode 1 -total_sessions 4 -f kahawai -i "1" \
-      -framerate $3 -pixel_format $4 -width $1 -height $2 -udp_port 20002 -port 0000:b1:01.2 -local_addr $5 -src_addr $6 -ext_frames_mode 1 -total_sessions 4 -f kahawai -i "2" \
-      -framerate $3 -pixel_format $4 -width $1 -height $2 -udp_port 20003 -port 0000:b1:01.2 -local_addr $5 -src_addr $6 -ext_frames_mode 1 -total_sessions 4 -f kahawai -i "3" \
-      -map 0:0 -f rawvideo -pixel_format $4 -width $1 -height $2 -vframes 25 /videos/output_1080p_y210le_1_frames_1.yuv -y \
-      -map 1:0 -f rawvideo -pixel_format $4 -width $1 -height $2 -vframes 25 /videos/output_1080p_y210le_1_frames_2.yuv -y \
-      -map 2:0 -f rawvideo -pixel_format $4 -width $1 -height $2 -vframes 25 /videos/output_1080p_y210le_1_frames_3.yuv -y \
-      -map 3:0 -f rawvideo -pixel_format $4 -width $1 -height $2 -vframes 25 /videos/output_1080p_y210le_1_frames_4.yuv -y
+      --user root\
+      --privileged \
+      --device=/dev/vfio:/dev/vfio \
+      --device=/dev/dri:/dev/dri \
+      --cap-add ALL \
+      -v $(pwd):/videos \
+      -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
+      -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+      -v /dev/null:/dev/null \
+      -v /tmp/hugepages:/tmp/hugepages \
+      -v /hugepages:/hugepages \
+      --network=my_net_801f0 \
+      --ip=$5 \
+      --expose=20000-20170 \
+      --ipc=host -v /dev/shm:/dev/shm \
+      --cpuset-cpus=$7 \
+      -e MTL_PARAM_LCORES=$8 \
+      -e MTL_PARAM_DATA_QUOTA=10356 \
+         video_production_image -y -loglevel quiet \
+         -qsv_device /dev/dri/renderD128 -hwaccel_output_format qsv \
+         -thread_queue_size 32768 \
+         -fps $3 -pix_fmt $4 -video_size "$1"x"$2" -udp_port 20000 -p_port 0000:b1:01.2 -p_sip $5 -p_rx_ip $6 -payload_type 112 -f mtl_st20p -i "0" \
+         -fps $3 -pix_fmt $4 -video_size "$1"x"$2" -udp_port 20001 -p_port 0000:b1:01.2 -p_sip $5 -p_rx_ip $6 -payload_type 112 -f mtl_st20p -i "1" \
+         -fps $3 -pix_fmt $4 -video_size "$1"x"$2" -udp_port 20002 -p_port 0000:b1:01.2 -p_sip $5 -p_rx_ip $6 -payload_type 112 -f mtl_st20p -i "2" \
+         -fps $3 -pix_fmt $4 -video_size "$1"x"$2" -udp_port 20003 -p_port 0000:b1:01.2 -p_sip $5 -p_rx_ip $6 -payload_type 112 -f mtl_st20p -i "3" \
+         -filter_complex "\
+            [0:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile0];\
+            [1:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile1];\
+            [2:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile2];\
+            [3:v]hwupload=extra_hw_frames=1,scale_qsv=w=iw/2:h=ih/2:mode=compute:async_depth=1[tile3];\
+            [tile0][tile1][tile2][tile3]xstack_qsv=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[multiview]" \
+         -map "[multiview]" -video_size "$1"x"$2" -pix_fmt y210le -fps $3 -p_port 0000:b1:01.3 \
+         -p_sip $5 -p_tx_ip "192.168.2.3" -udp_port 20000 -payload_type 112 -f mtl_st20p -
 }
 
 imtl_latest_tx () {
@@ -350,8 +360,8 @@ imtl_latest_tx () {
    --cpuset-cpus=$7 \
    -e MTL_PARAM_LCORES=$8 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
-      video_production_image -hide_banner -loglevel quiet -video_size "$1"x"$2" -f rawvideo -pix_fmt yuv422p10le -i /videos/$INPUT_FILE_NAME -filter:v fps=$3 \
-      -total_sessions 1 -port 0000:b1:01.1 -local_addr $5 -tx_addr $6 -udp_port 20000 -payload_type 112 -f mtl_st20p -
+      video_production_image -loglevel quiet -video_size "$1"x"$2" -f rawvideo -pix_fmt $4 -i /videos/$INPUT_FILE_NAME -filter:v fps=$3 \
+      -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20000 -payload_type 112 -f mtl_st20p -
 }
 
 imtl_latest_rx () {
@@ -374,11 +384,12 @@ imtl_latest_rx () {
    --cpuset-cpus=$7 \
    -e MTL_PARAM_LCORES=$8 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
-      video_production_image -y \
+      video_production_image -y -loglevel quiet \
       -qsv_device /dev/dri/renderD128 -hwaccel qsv \
-      -port 0000:b1:01.2 -local_addr $5 -rx_addr $6 -fps $3 -pix_fmt yuv422p10le \
+      -p_port 0000:b1:01.4 -p_sip $5 -p_rx_ip $6 -fps $3 -pix_fmt $4 \
       -video_size "$1"x"$2" -udp_port 20000 -payload_type 112 -f mtl_st20p -i "0" \
-      -map 0:0 -c:v h264_qsv /videos/$OUTPUT_FILE_NAME_MP4 #-f rawvideo /videos/$OUTPUT_FILE_NAME -y
+      -map 0:0 -f rawvideo /videos/$OUTPUT_FILE_NAME -y
+      #-c:v h264_qsv /videos/$OUTPUT_FILE_NAME_MP4
 }
 
 if [[ -z $1 ]]; then
@@ -396,19 +407,36 @@ elif [ $1 == "qsv" ]; then
    equality_test "QSV" "3840x2160" "y210le" $OUTPUT_FILE_NAME $REF_FILE_NAME "rawvideo"
 
 elif [ $1 == "imtl" ]; then
+   ###### TEST Multiple IMTL 4 streams | yuv422p10le | 1920x1080 #######
+   # prepare_reference_file "1920x1080" "25" "yuv422p10le" "rawvideo" $INPUT_FILE_NAME
+   # run_imtl_multiple_tx "1920" "1080" "25" "yuv422p10le" "192.168.2.1" "192.168.2.2" "32-63" "59-63" &
+   # sleep 15
+   # run_imtl_multiple_rx "1920" "1080" "25" "yuv422p10le" "192.168.2.2" "192.168.2.1" "96-127" "123-127"
+   # equality_test "IMTL" "1920x1080" "yuv422p10le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
+
+   ###### TEST IMTL | yuv422p10le | 1920x1080 #######
+   prepare_reference_file "1920x1080" "25" "yuv422p10le" "rawvideo" $INPUT_FILE_NAME
+   imtl_latest_tx "1920" "1080" "25" "yuv422p10le" "192.168.2.1" "192.168.2.2" "32-63" "59-63" &
+   sleep 15
+   imtl_latest_rx "1920" "1080" "25" "yuv422p10le" "192.168.2.2" "192.168.2.1" "96-127" "123-127"
+   equality_test "IMTL" "1920x1080" "yuv422p10le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
+   rm -rf *.yuv
+   rm -rf *.mp4
    ###### TEST IMTL | y210le | 1920x1080 #######
    prepare_reference_file "1920x1080" "25" "y210le" "rawvideo" $INPUT_FILE_NAME
    imtl_latest_tx "1920" "1080" "25" "y210le" "192.168.2.1" "192.168.2.2" "32-63" "59-63" &
    sleep 15
    imtl_latest_rx "1920" "1080" "25" "y210le" "192.168.2.2" "192.168.2.1" "96-127" "123-127"
    equality_test "IMTL" "1920x1080" "y210le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
-
+   rm -rf *.yuv
+   rm -rf *.mp4
    ###### TEST IMTL | y210le | 3840x2160 #######
    prepare_reference_file "3840x2160" "25" "y210le" "rawvideo" $INPUT_FILE_NAME
    imtl_latest_tx "3840" "2160" "25" "y210le" "192.168.2.1" "192.168.2.2" "32-63" "59-63" &
    sleep 15
    imtl_latest_rx "3840" "2160" "25" "y210le" "192.168.2.2" "192.168.2.1" "96-127" "123-127"
    equality_test "IMTL" "3840x2160" "y210le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
+
 
    #TODO: Add tests for multiple streams 
 
@@ -425,71 +453,48 @@ elif [ $1 == "imtl" ]; then
       # equality_test "IMTL" "1920x1080" "y210le"
 
    # prepare_reference_file "1920x1080" "25" "y210le" $INPUT_FILE_NAME
+elif [ $1 == "imtl_tx" ]; then
+   ###### TEST Multiple IMTL 4 streams | yuv422p10le | 1920x1080 #######
+   prepare_reference_file "1920x1080" "25" "y210le" "rawvideo" $INPUT_FILE_NAME
+   run_imtl_multiple_tx "1920" "1080" "25" "y210le" "192.168.2.1" "192.168.2.2" "32-63" "59-63" &
+   #sleep 15
+
+
+
+   # ###### TEST IMTL | y210le | 1920x1080 #######
+   # prepare_reference_file "1920x1080" "25" "y210le" "rawvideo" $INPUT_FILE_NAME
+   # imtl_latest_tx "1920" "1080" "25" "y210le" "192.168.2.1" "192.168.2.2" "32-63" "59-63"
+
+elif [ $1 == "imtl_rx" ]; then
+   run_imtl_multiple_rx "1920" "1080" "25" "y210le" "192.168.2.2" "192.168.2.1" "96-110" "106-110"
+   #equality_test "IMTL" "1920x1080" "yuv422p10le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
+
+
+   # ###### TEST IMTL | y210le | 1920x1080 #######
+   # imtl_latest_rx "1920" "1080" "25" "y210le" "192.168.2.2" "192.168.2.1" "96-127" "123-127"
+   # #equality_test "IMTL" "1920x1080" "y210le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
+elif [ $1 == "imtl_rx_single" ]; then
+   # ###### TEST IMTL | yuv422p10le | 1920x1080 #######
+   imtl_latest_rx "1920" "1080" "25" "y210le" "192.168.2.3" "192.168.2.2" "111-127" "123-127"
+   # #equality_test "IMTL" "1920x1080" "y210le" $OUTPUT_FILE_NAME $INPUT_FILE_NAME "rawvideo"
 
 elif [ $1 == "vsr" ]; then
    prepare_reference_file "3840x2160" "25" "yuv420p" "h264_qsv" $REF_FILE_NAME_MP4
    prepare_input_for_vsr "h264_qsv" "yuv420p" $REF_FILE_NAME_MP4 $INPUT_FILE_NAME_MP4
    run_vsr "cpu"
    equality_test "VSR CPU" "3840x2160" "yuv420p" $OUTPUT_FILE_NAME_MP4 $REF_FILE_NAME_MP4
-
+   rm -rf *.yuv
+   rm -rf *.mp4
    prepare_reference_file "3840x2160" "25" "yuv420p" "h264_qsv" $REF_FILE_NAME_MP4
    prepare_input_for_vsr "h264_qsv" "yuv420p" $REF_FILE_NAME_MP4 $INPUT_FILE_NAME_MP4
    run_vsr "qsv"
    equality_test "VSR GPU (QSV)" "3840x2160" "yuv420p" $OUTPUT_FILE_NAME_MP4 $REF_FILE_NAME_MP4
-
+   rm -rf *.yuv
+   rm -rf *.mp4
    prepare_reference_file "3840x2160" "25" "yuv420p" "rawvideo" $REF_FILE_NAME
    prepare_input_for_vsr_rawvideo "rawvideo" "yuv420p" "3840x2160" $REF_FILE_NAME $INPUT_FILE_NAME
    run_vsr_raw "cpu" "yuv420p" "1920x1080" "3840x2160"
    equality_test "VSR rawvideo CPU" "3840x2160" "yuv420p" $OUTPUT_FILE_NAME $REF_FILE_NAME "rawvideo"
-
-elif [ $1 == "imtl_rx" ]; then
-   # docker run -it \
-   #    --user root\
-   #    --privileged \
-   #    --device=/dev/vfio:/dev/vfio \
-   #    --device=/dev/dri:/dev/dri \
-   #    --cap-add ALL \
-   #    -v $(pwd):/videos \
-   #    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-   #    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
-   #    -v /dev/null:/dev/null \
-   #    -v /tmp/hugepages:/tmp/hugepages \
-   #    -v /hugepages:/hugepages \
-   #    --network=my_net_801f0 \
-   #    --ip=192.168.2.2 \
-   #    --expose=20000-20170 \
-   #    --ipc=host -v /dev/shm:/dev/shm \
-   #    --cpuset-cpus="96-127" \
-   #    -e MTL_PARAM_LCORES="123-127" \
-   #    -e MTL_PARAM_DATA_QUOTA=10356 \
-   #       video_production_image -loglevel verbose -qsv_device /dev/dri/renderD128 -an -y -hwaccel qsv \
-   #       -port 0000:b1:01.2 -local_addr 192.168.2.2 -rx_addr 192.168.2.1 -pix_fmt yuv422p10le \
-   #       -video_size 1920x1080 -udp_port 20000 -payload_type 112 -f mtl_st20p -i "k" -vf "hwmap=derive_device=opencl,format=opencl,raisr_opencl,hwmap=derive_device=qsv:reverse=1:extra_hw_frames=16" \
-   #       -f rawvideo -pix_fmt y210le -video_size 3840x2160 /videos/$OUTPUT_FILE_NAME
-
-   docker run -it \
-      --user root\
-      --privileged \
-      --device=/dev/vfio:/dev/vfio \
-      --device=/dev/dri:/dev/dri \
-      --cap-add ALL \
-      -v $(pwd):/videos \
-      -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-      -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
-      -v /dev/null:/dev/null \
-      -v /tmp/hugepages:/tmp/hugepages \
-      -v /hugepages:/hugepages \
-      --network=my_net_801f0 \
-      --ip=192.168.2.2 \
-      --expose=20000-20170 \
-      --ipc=host -v /dev/shm:/dev/shm \
-      --cpuset-cpus="96-127" \
-      -e MTL_PARAM_LCORES="123-127" \
-      -e MTL_PARAM_DATA_QUOTA=10356 \
-         video_production_image -loglevel verbose -an -y -init_hw_device vaapi=va -init_hw_device qsv=qs@va -init_hw_device opencl=ocl@va -hwaccel qsv \
-         -port 0000:b1:01.2 -local_addr 192.168.2.2 -rx_addr 192.168.2.1 -pix_fmt yuv422p10le \
-         -video_size 1920x1080 -udp_port 20000 -payload_type 112 -f mtl_st20p -i "k" -vf "raisr=asm=opencl:threadcount=26:passes=2:bits=10:filterfolder=filters_2x/filters_highres" \
-         -f rawvideo -pix_fmt y210le -video_size 3840x2160 /videos/$OUTPUT_FILE_NAME
 elif [ $1 == "jxs" ]; then
    prepare_reference_file "1920x1080" "25" "y210le" "hevc_qsv" $INPUT_FILE_NAME_MP4
    run_jxs "hevc_qsv"
@@ -522,7 +527,7 @@ elif [ $1 == "imtl_qsv" ]; then
       video_production_image 
       # -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/input_1080p_y210le_500_frames.yuv \
       # -filter:v fps=59.94 -total_sessions 1 -port 0000:b1:01.1 -local_addr "192.168.2.1" -tx_addr "192.168.2.2" -udp_port 20000 -payload_type 112 -f mtl_st20p -
-      #video_production_image -loglevel verbose -i /videos/input_1080p_y210le_500_frames.yuv -filter:v fps=25 -udp_port 20000 -port 0000:b1:01.1 -local_addr 192.168.2.1 -dst_addr 192.168.2.2 -f kahawai_mux -
+      #video_production_image -loglevel quiet -i /videos/input_1080p_y210le_500_frames.yuv -filter:v fps=25 -udp_port 20000 -port 0000:b1:01.1 -local_addr 192.168.2.1 -dst_addr 192.168.2.2 -f kahawai_mux -
    
    docker run -it \
    --user root\
@@ -544,7 +549,7 @@ elif [ $1 == "imtl_qsv" ]; then
    -e MTL_PARAM_LCORES="123-127" \
    -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image #\
-      # -loglevel verbose \
+      # -loglevel quiet \
       # -framerate 25 \
       # -pixel_format y210le \
       # -width 1920 -height 1080 \
@@ -575,7 +580,7 @@ elif [ $1 == "imtl_jxs" ]; then
       video_production_image 
       # -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/input_1080p_y210le_500_frames.yuv \
       # -filter:v fps=59.94 -total_sessions 1 -port 0000:b1:01.1 -local_addr "192.168.2.1" -tx_addr "192.168.2.2" -udp_port 20000 -payload_type 112 -f mtl_st20p -
-      #video_production_image -loglevel verbose -i /videos/input_1080p_y210le_500_frames.yuv -filter:v fps=25 -udp_port 20000 -port 0000:b1:01.1 -local_addr 192.168.2.1 -dst_addr 192.168.2.2 -f kahawai_mux -
+      #video_production_image -loglevel quiet -i /videos/input_1080p_y210le_500_frames.yuv -filter:v fps=25 -udp_port 20000 -port 0000:b1:01.1 -local_addr 192.168.2.1 -dst_addr 192.168.2.2 -f kahawai_mux -
 
    docker run -it \
    --user root\
@@ -597,7 +602,7 @@ elif [ $1 == "imtl_jxs" ]; then
    -e MTL_PARAM_LCORES="123-127" \
    -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image #\
-      # -loglevel verbose \
+      # -loglevel quiet \
       # -framerate 25 \
       # -pixel_format y210le \
       # -width 1920 -height 1080 \
@@ -626,7 +631,7 @@ elif [ $1 == "imtl_qsv_vsr" ]; then
    #    --device=/dev/dri:/dev/dri \
    #    -v $(pwd):/videos \
    #    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
-   #    video_production_image -loglevel verbose -qsv_device /dev/dri/renderD128 -an -y -hwaccel qsv -f lavfi -i testsrc=d=10:s=3840x2160:r=25,format=y210le -c:v h264_qsv /videos/$REF_FILE_NAME_MP4
+   #    video_production_image -loglevel quiet -qsv_device /dev/dri/renderD128 -an -y -hwaccel qsv -f lavfi -i testsrc=d=10:s=3840x2160:r=25,format=y210le -c:v h264_qsv /videos/$REF_FILE_NAME_MP4
 
    # echo "### STEP 2 ###"
 
@@ -661,7 +666,7 @@ elif [ $1 == "imtl_qsv_vsr" ]; then
    #    --cpuset-cpus="32-63" \
    #    -e MTL_PARAM_LCORES="59-63" \
    #    -e MTL_PARAM_DATA_QUOTA=10356 \
-   #       video_production_image -loglevel verbose -qsv_device /dev/dri/renderD128 -an -y -hwaccel qsv -stream_loop 1 -video_size "1920x1080" -f rawvideo -pix_fmt yuv422p10le -i /videos/$INPUT_FILE_NAME -filter:v fps=25 \
+   #       video_production_image -loglevel quiet -qsv_device /dev/dri/renderD128 -an -y -hwaccel qsv -stream_loop 1 -video_size "1920x1080" -f rawvideo -pix_fmt yuv422p10le -i /videos/$INPUT_FILE_NAME -filter:v fps=25 \
    #       -port 0000:b1:01.1 -local_addr 192.168.2.1 -tx_addr 192.168.2.2 -udp_port 20000 -payload_type 112 -f mtl_st20p - &
 
    echo "### STEP 4 ###"
@@ -685,7 +690,7 @@ elif [ $1 == "imtl_qsv_vsr" ]; then
       --cpuset-cpus="96-127" \
       -e MTL_PARAM_LCORES="123-127" \
       -e MTL_PARAM_DATA_QUOTA=10356 \
-         video_production_image -loglevel verbose -an -y -total_sessions 1 -port 0000:b1:01.2 -local_addr 192.168.2.2 -rx_addr 192.168.2.1 -fps 59.94 -pix_fmt yuv422p10le \
+         video_production_image -loglevel quiet -an -y -total_sessions 1 -port 0000:b1:01.2 -local_addr 192.168.2.2 -rx_addr 192.168.2.1 -fps 59.94 -pix_fmt yuv422p10le \
          -video_size 1920x1080 -udp_port 20000 -payload_type 112 -f mtl_st20p -i "k" -vframes 2000 -f rawvideo /dev/null -y
          
          # -hwaccel_output_format qsv \
@@ -723,7 +728,7 @@ elif [ $1 == "imtl_qsv_jxs" ]; then
       video_production_image 
       # -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/input_1080p_y210le_500_frames.yuv \
       # -filter:v fps=59.94 -total_sessions 1 -port 0000:b1:01.1 -local_addr "192.168.2.1" -tx_addr "192.168.2.2" -udp_port 20000 -payload_type 112 -f mtl_st20p -
-      #video_production_image -loglevel verbose -i /videos/input_1080p_y210le_500_frames.yuv -filter:v fps=25 -udp_port 20000 -port 0000:b1:01.1 -local_addr 192.168.2.1 -dst_addr 192.168.2.2 -f kahawai_mux -
+      #video_production_image -loglevel quiet -i /videos/input_1080p_y210le_500_frames.yuv -filter:v fps=25 -udp_port 20000 -port 0000:b1:01.1 -local_addr 192.168.2.1 -dst_addr 192.168.2.2 -f kahawai_mux -
 
    docker run -it \
    --user root\
@@ -745,7 +750,7 @@ elif [ $1 == "imtl_qsv_jxs" ]; then
    -e MTL_PARAM_LCORES="123-127" \
    -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image #\
-      # -loglevel verbose \
+      # -loglevel quiet \
       # -framerate 25 \
       # -pixel_format y210le \
       # -width 1920 -height 1080 \
