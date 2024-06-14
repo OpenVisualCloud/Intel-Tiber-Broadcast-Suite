@@ -87,63 +87,38 @@ pipeline {
     stages {
         stage('Build'){
             steps {
-                    script {
-                        cleanWs()
-                        if(env.GITHUB_PR_URL){
-                                currentBuild.description = 'Trigged by <a href="' + GITHUB_PR_URL + '" target="_blank">' + GITHUB_REPO_FULL_NAME + '</a>.'
-                                println 'Trigged by ' + GITHUB_PR_URL + '.'
-                                setStatusCheck("Build", "pending")
-                                setStatusCheck("Gta", "pending")
-                        }
-                        
-                        def repo = 'https://github.com/intel-innersource/libraries.media.encoding.svt-jpeg-xs.git'
-                        def jpegRelativeDir = 'libraries.media.encoding.svt-jpeg-xs'
-                        def branches = [[name: 'main']]
-                        def userRemoteConfigs = [[
-                            credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
-                            url: repo
-                        ]]
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: branches,
-                            extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: jpegRelativeDir]],
-                            userRemoteConfigs: userRemoteConfigs
-                        ])
-                    }
-                    script {
-                            def repo = 'https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline.git'
-                            def branches = [[name: 'main']]
-                            def userRemoteConfigs = [[
-                                credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
-                                url: repo
-                            ]]
-                            if(env.GITHUB_PR_URL){
-                                currentBuild.description = 'Trigged by <a href="' + GITHUB_PR_URL + '" target="_blank">' + GITHUB_REPO_FULL_NAME + '</a>.'
-                                println 'Trigged by ' + GITHUB_PR_URL + '.'
-                                branches = [[name: "origin/pull/${GITHUB_PR_NUMBER}/merge"]]
-                                userRemoteConfigs[0]['refspec'] = "+refs/pull/${GITHUB_PR_NUMBER}/merge:refs/remotes/origin/pull/${GITHUB_PR_NUMBER}/merge"
-                            }
-                                 
-                            checkout([
-                                $class: 'GitSCM',
-                                branches: branches,
-                                extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: relativeDir]],
-                                userRemoteConfigs: userRemoteConfigs
-                            ])
-                            dir(relativeDir){
-                                sh """
-                                    git config --global --add safe.directory \$(pwd)
-                                    mv ${WORKSPACE}/libraries.media.encoding.svt-jpeg-xs libraries.media.encoding.svt-jpeg-xs
-                                    git config --global --add safe.directory libraries.media.encoding.svt-jpeg-xs
-                                    docker build \
-                                        --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
-                                        --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
-                                        -t \"${IMAGE_TAG_NAME}\" \
-                                        -f Dockerfile .
-                                """
-                            }
+                script {
+                    cleanWs()
+                    def repo = 'https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline.git'
+                    def branches = [[name: 'main']]
+                    def userRemoteConfigs = [[
+                        credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
+                        url: repo
+                    ]]
+                    if(env.GITHUB_PR_URL){
+                        currentBuild.description = 'Trigged by <a href="' + GITHUB_PR_URL + '" target="_blank">' + GITHUB_REPO_FULL_NAME + '</a>.'
+                        println 'Trigged by ' + GITHUB_PR_URL + '.'
+                        branches = [[name: "origin/pull/${GITHUB_PR_NUMBER}/merge"]]
+                        userRemoteConfigs[0]['refspec'] = "+refs/pull/${GITHUB_PR_NUMBER}/merge:refs/remotes/origin/pull/${GITHUB_PR_NUMBER}/merge"
+                    }           
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: branches,
+                        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: relativeDir]],
+                        userRemoteConfigs: userRemoteConfigs
+                    ])
+                    dir(relativeDir){
+                        sh """
+                            git config --global --add safe.directory \$(pwd)
+                            docker build \
+                                --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
+                                --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
+                                -t \"${IMAGE_TAG_NAME}\" \
+                                -f Dockerfile .
+                            """
                     }
                 }
+            }
         }
         stage("Pack"){
             steps{
