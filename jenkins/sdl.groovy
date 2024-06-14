@@ -46,16 +46,19 @@ pipeline {
         string(name: 'github_repo_status_url', defaultValue: '', description: 'api endpoint to return sdl status')
         string(name: 'github_pr_head_sha', defaultValue: '', description: 'github pr commit id')
         string(name: 'relative_dir', defaultValue: '', description: 'jenkins workspace with codespace ')
+        string(name: 'parent_job_id', defaultValue: '')
     }
     environment {
         ABI_IMAGE="amr-registry.caas.intel.com/owr/abi_lnx:3.0.0"
         GITHUB_PR_HEAD_SHA = "${params.github_pr_head_sha}"
         GITHUB_REPO_STATUS_URL = "${params.github_repo_status_url}"
         PROTEX_SERVER = "gerprotex012.devtools.intel.com"
-        EVIDENCE_FOLDER = "ProtexEvidence"
+        PROTEX_FOLDER = "ProtexEvidence"
         PROTEX_PROJECT = "c_broadcastsuiteformediaentertainment_33366"
-        CRED_DEFAULT = "build_sie"
-        CRED_DEFAULT_EMAIL = "build_sie-email"
+        COVERITY_SERVER = "https://coverityent.devtools.intel.com/prod1/"
+        COVERITY_PROJECT = "Software Defined Broadcast main"
+        COVERITY_FOLDER = "CoverityEvidence"
+        COVERITY_STREAM = "sdb-ffmpeg-patch"
         DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
     }
     stages {
@@ -66,6 +69,25 @@ pipeline {
                         setSdlStatusCheck("pending")
                     }
                 }
+            }
+        }
+        stage("build coverity docker"){
+            steps{
+                script{
+                        def imageFullPath = params.tar_docker_image
+                        def imageName = imageFullPath.replaceAll(/^.*\/|\..*$/,"")
+                        sh """
+                            cd ${env.WORKSPACE}
+                            git config --global --add safe.directory \$(pwd)
+                            cd jenkins/docker/coverity
+                            docker build \
+                                --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
+                                --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
+                                --build-arg no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8 \
+                                --build-arg IMAGE_TAG_NAME=${imageName} \
+                                -t \"coverity_image_${params.parent_job_id}\" -f Dockerfile .
+                        """
+                    }
             }
         }
         stage("scans"){
@@ -124,21 +146,53 @@ pipeline {
                                             --report_type xlsx \
                                             --report_config cos \
                                             --report_config obl \
-                                            --scan_output ${env.EVIDENCE_FOLDER}\"
+                                            --scan_output ${env.PROTEX_FOLDER}\"
                                     """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${env.EVIDENCE_FOLDER}/*"
-
-                                    sh """ sudo rm -rf OWRBuild/ """
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${env.PROTEX_FOLDER}/*"
                                 }
                             }
                         }
                     }
                 }
-        
+                stage("coverity"){
+                    steps{
+                        script{
+                        withCredentials([usernamePassword(
+                            credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
+                            usernameVariable: 'USERNAME',
+                            passwordVariable: 'PASSWORD')]){
+                                dir(params.relative_dir){
+                                    sh """
+                                        docker run \
+                                        -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
+                                        -e \"COVERITY_USR=${USERNAME}\" \
+                                        -e \"COVERITY_PSW=${PASSWORD}\" \
+                                        -e \"WORKSPACE=${env.COVERITY_FOLDER}\" \
+                                        coverity_image_${params.parent_job_id} \
+                                        /bin/bash -c \"coverity ${env.COVERITY_STREAM}\"
+
+                                    """
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${COVERITY_FOLDER}/Coverity/*"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
     post{
+        always {
+            script{
+                dir(params.relative_dir){
+                    // Protex run in docker as root, it creates files as root on host machine.
+                    // jenkins cleanup cannot remove those files( permision denied 13), 
+                    // so they needs to be removed manually
+                    echo "cleaning abi related directories..."
+                    sh """ sudo rm -rf OWRBuild/ """
+                }
+            }
+        }
         success{
             script {
                     if(params.github_repo_status_url){

@@ -100,7 +100,7 @@ pipeline {
                         println 'Trigged by ' + GITHUB_PR_URL + '.'
                         branches = [[name: "origin/pull/${GITHUB_PR_NUMBER}/merge"]]
                         userRemoteConfigs[0]['refspec'] = "+refs/pull/${GITHUB_PR_NUMBER}/merge:refs/remotes/origin/pull/${GITHUB_PR_NUMBER}/merge"
-                    }           
+                    }     
                     checkout([
                         $class: 'GitSCM',
                         branches: branches,
@@ -109,13 +109,20 @@ pipeline {
                     ])
                     dir(relativeDir){
                         sh """
-                            git config --global --add safe.directory \$(pwd)
-                            docker build \
-                                --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
-                                --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
-                                -t \"${IMAGE_TAG_NAME}\" \
-                                -f Dockerfile .
-                            """
+                          git config --global --add safe.directory \$(pwd)
+                          docker build \
+                            --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
+                            --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
+                            -t \"${IMAGE_TAG_NAME}_build_stage\" \
+                            --target buildstage \
+                            -f Dockerfile .
+                          docker build \
+                            --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
+                            --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
+                            -t \"${IMAGE_TAG_NAME}\" \
+                            -f Dockerfile .
+                                """
+                           }
                     }
                 }
             }
@@ -144,6 +151,7 @@ pipeline {
                         string(name: 'github_repo_status_url', value:"${github_repo_status_url}" ),
                         string(name: 'github_pr_head_sha', value: "${pr_head_sha}"),
                         string(name: 'relative_dir', value: "${WORKSPACE}/${relativeDir}"),
+                        string(name: 'parent_job_id', value: "${JOB_BUILD_ID}"),
                     ], wait: false
                 }
             }
