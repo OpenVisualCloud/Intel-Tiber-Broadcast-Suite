@@ -1,16 +1,16 @@
-From 85c0b0ae6260738b9a7e5a399302aaa4d9a3fce8 Mon Sep 17 00:00:00 2001
+From bf14b0a27aec16ae7a146cea019929f0d7561153 Mon Sep 17 00:00:00 2001
 From: "Wesierski, Dawid" <dawid.wesierski@intel.com>
-Date: Wed, 22 May 2024 10:10:05 +0200
-Subject: [PATCH 1/2] Use env for lcores and data_quota_mbs_per_sch
+Date: Wed, 12 Jun 2024 13:18:44 +0200
+Subject: [PATCH] Use env for lcores and data_quota_mbs_per_sch
 
 ---
  app/src/args.c                       |  2 +-
  app/v4l2_to_ip/v4l2_to_ip.c          |  2 +-
  ecosystem/ffmpeg_plugin/mtl_common.c | 14 ++++++++++++++
  include/mtl_api.h                    |  2 +-
- lib/src/dev/mt_dev.c                 |  8 --------
+ lib/src/dev/mt_dev.c                 |  1 +
  tests/src/tests.cpp                  |  4 ++--
- 6 files changed, 19 insertions(+), 13 deletions(-)
+ 6 files changed, 20 insertions(+), 5 deletions(-)
 
 diff --git a/app/src/args.c b/app/src/args.c
 index f2b54df..b66e0e2 100644
@@ -77,21 +77,14 @@ index f0b8309..ffbbc29 100644
    /**
     * Optional. Dma(CBDMA or DSA) device can be used in the MTL.
 diff --git a/lib/src/dev/mt_dev.c b/lib/src/dev/mt_dev.c
-index d881afc..01bb38d 100644
+index d881afc..e76cba2 100644
 --- a/lib/src/dev/mt_dev.c
 +++ b/lib/src/dev/mt_dev.c
-@@ -409,14 +409,6 @@ static int dev_eal_init(struct mtl_init_params* p, struct mt_kport_info* kport_i
+@@ -417,6 +417,7 @@ static int dev_eal_init(struct mtl_init_params* p, struct mt_kport_info* kport_i
      argc++;
    }
  
--  if (p->lcores) {
--    argv[argc] = "-l";
--    argc++;
--    info("%s, lcores: %s\n", __func__, p->lcores);
--    argv[argc] = p->lcores;
--    argc++;
--  }
--
++
    if (!pci_ports) {
      argv[argc] = "--no-pci";
      argc++;
