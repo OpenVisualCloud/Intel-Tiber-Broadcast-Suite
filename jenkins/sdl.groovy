@@ -30,6 +30,9 @@ def scan(String type, String tar_image){
         mcAffee: "Malware/*"
     ]
     sh """
+        mkdir -p scan_${type}
+        cp -r . scan_${type}
+        cd scan_${type}
         ${_cmd[type]}
     """
     archiveArtifacts allowEmptyArchive: true, artifacts: "${_artifacts_path[type]}"
@@ -135,8 +138,11 @@ pipeline {
                                 credentialsId: 'de62b8cb-2c0a-4a67-83ea-cc51c7486c05',
                                 usernameVariable: 'USERNAME',
                                 passwordVariable: 'PASSWORD')]){
-                                dir(params.relative_dir){
+                                dir(params.relative_dir){                                    
                                     sh"""
+                                    mkdir -p scan_Protex
+                                    cp -r . scan_Protex
+                                    cd scan_Protex
                                     ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
@@ -163,6 +169,9 @@ pipeline {
                             passwordVariable: 'PASSWORD')]){
                                 dir(params.relative_dir){
                                     sh """
+                                        mkdir -p scan_Coverity
+                                        cp -r . scan_Coverity
+                                        cd scan_Coverity
                                         docker run \
                                         -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
                                         -e \"COVERITY_USR=${USERNAME}\" \
@@ -190,6 +199,7 @@ pipeline {
                     // so they needs to be removed manually
                     echo "cleaning abi related directories..."
                     sh """ sudo rm -rf OWRBuild/ """
+                    cleanWs()
                 }
             }
         }
