@@ -30,9 +30,6 @@ def scan(String type, String tar_image){
         mcAffee: "Malware/*"
     ]
     sh """
-        mkdir -p scan_${type}
-        cp -r . scan_${type}
-        cd scan_${type}
         ${_cmd[type]}
     """
     archiveArtifacts allowEmptyArchive: true, artifacts: "${_artifacts_path[type]}"
