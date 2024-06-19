@@ -98,7 +98,8 @@ pipeline {
                 stage("Hadolint"){
                     steps{
                         script{
-                            dir(params.relative_dir){
+                            dir("Hadolint-scan"){
+                                sh """ cp -r ${params.relative_dir} . """
                                 scan("hadolint", "")
                             }
                         }
@@ -107,7 +108,8 @@ pipeline {
                 stage("Trivy"){
                     steps{
                         script{
-                            dir(params.relative_dir){
+                            dir("Trivy-scan"){
+                                sh """ cp -r ${params.relative_dir} . """
                                 scan("trivy", params.tar_docker_image)
                             }
                         }
@@ -116,7 +118,8 @@ pipeline {
                 stage("Schellcheck"){
                     steps{
                         script{
-                            dir(params.relative_dir){
+                            dir("Shellcheck-scan"){
+                                sh """ cp -r ${params.relative_dir} . """
                                 scan("schellcheck", "")
                             }
                         }
@@ -125,7 +128,8 @@ pipeline {
                 stage("McAfee"){
                     steps{
                         script{
-                            dir(params.relative_dir){
+                            dir("Mcafee_scan"){
+                                sh """ cp -r ${params.relative_dir} . """
                                 scan("mcAffee", "")
                             }
                         }
@@ -138,12 +142,10 @@ pipeline {
                                 credentialsId: 'de62b8cb-2c0a-4a67-83ea-cc51c7486c05',
                                 usernameVariable: 'USERNAME',
                                 passwordVariable: 'PASSWORD')]){
-                                dir(params.relative_dir){                                    
+                                dir("Protex-scan"){                                    
                                     sh"""
-                                    mkdir -p scan_Protex
-                                    cp -r . scan_Protex
-                                    cd scan_Protex
-                                    ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
+                                      cp -r ${params.relative_dir} .
+                                      ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
                                             --username ${USERNAME} \
@@ -167,11 +169,9 @@ pipeline {
                             credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
                             usernameVariable: 'USERNAME',
                             passwordVariable: 'PASSWORD')]){
-                                dir(params.relative_dir){
+                                dir("Coverity-scan"){
                                     sh """
-                                        mkdir -p scan_Coverity
-                                        cp -r . scan_Coverity
-                                        cd scan_Coverity
+                                        cp -r ${params.relative_dir} .
                                         docker run \
                                         -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
                                         -e \"COVERITY_USR=${USERNAME}\" \
