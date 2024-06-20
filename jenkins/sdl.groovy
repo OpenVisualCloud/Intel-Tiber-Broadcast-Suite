@@ -30,6 +30,7 @@ def scan(String type, String tar_image){
         mcAffee: "Malware/*"
     ]
     sh """
+    
         ${_cmd[type]}
     """
     archiveArtifacts allowEmptyArchive: true, artifacts: "${_artifacts_path[type]}"
@@ -96,7 +97,7 @@ pipeline {
                     steps{
                         script{
                             dir("Hadolint-scan"){
-                                sh """ cp -r ${params.relative_dir} . """
+                                sh """ cp -r ${params.relative_dir}/* . """
                                 scan("hadolint", "")
                             }
                         }
@@ -106,7 +107,7 @@ pipeline {
                     steps{
                         script{
                             dir("Trivy-scan"){
-                                sh """ cp -r ${params.relative_dir}/ . """
+                                sh """ cp -r ${params.relative_dir}/* . """
                                 scan("trivy", params.tar_docker_image)
                             }
                         }
@@ -116,7 +117,7 @@ pipeline {
                     steps{
                         script{
                             dir("Shellcheck-scan"){
-                                sh """ cp -r ${params.relative_dir}/ . """
+                                sh """ cp -r ${params.relative_dir}/* . """
                                 scan("schellcheck", "")
                             }
                         }
@@ -126,7 +127,7 @@ pipeline {
                     steps{
                         script{
                             dir("Mcafee_scan"){
-                                sh """ cp -r ${params.relative_dir}/ . """
+                                sh """ cp -r ${params.relative_dir}/* . """
                                 scan("mcAffee", "")
                             }
                         }
@@ -141,7 +142,7 @@ pipeline {
                                 passwordVariable: 'PASSWORD')]){
                                 dir("Protex-scan"){                                    
                                     sh"""
-                                      cp -r ${params.relative_dir}/ .
+                                      cp -r ${params.relative_dir}/* .
                                       ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
@@ -168,7 +169,7 @@ pipeline {
                             passwordVariable: 'PASSWORD')]){
                                 dir("Coverity-scan"){
                                     sh """
-                                        cp -r ${params.relative_dir}/ .
+                                        cp -r ${params.relative_dir}/* .
                                         docker run \
                                         -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
                                         -e \"COVERITY_USR=${USERNAME}\" \
