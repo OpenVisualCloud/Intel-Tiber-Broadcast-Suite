@@ -21,13 +21,15 @@ def scan(String type, String tar_image){
         hadolint: "jenkins/scripts/hadolint.sh" ,
         trivy: "jenkins/scripts/trivy.sh ${tar_image}",
         schellcheck: "jenkins/scripts/shellcheck.sh",
-        mcAffee: "${env.DOCKER_ABI} \"cd /opt/; jenkins/scripts/mcafee_scan.sh\""
+        mcAffee: "${env.DOCKER_ABI} \"cd /opt/; jenkins/scripts/mcafee_scan.sh\"",
+        docker_benchmark: "jenkins/scripts/docker_cis_benchmark.sh"
     ]
     def _artifacts_path =[
         hadolint: "Hadolint/hadolint-Dockerfile*" ,
         trivy: "Trivy/*",
         schellcheck: "shellcheck_logs/*",
-        mcAffee: "Malware/*"
+        mcAffee: "Malware/*",
+        docker_benchmark: "docker-bench-security/cisdockerbench_results/*" 
     ]
     sh """
     
@@ -155,6 +157,10 @@ pipeline {
                                             --scan_output ${env.PROTEX_FOLDER}\"
                                     """
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${env.PROTEX_FOLDER}/*"
+                                // Protex run in docker as root, it creates files as root on host machine.
+                                // jenkins cleanup cannot remove those files( permision denied 13), 
+                                // so they needs to be removed manually
+                                sh """ sudo rm -rf OWRBuild/ """
                                 }
                             }
                         }
@@ -189,22 +195,6 @@ pipeline {
         }
     }
     post{
-        always {
-            script{
-                dir(${WORKSPACE}){
-                    // Protex run in docker as root, it creates files as root on host machine.
-                    // jenkins cleanup cannot remove those files( permision denied 13), 
-                    // so they needs to be removed manually
-                    echo "cleaning abi related directories..."
-                    sh """ 
-                        sudo rm -rf Coverity-scan/
-                        sudo rm -rf Protex-scan/
-                    
-                    """
-                    cleanWs()
-                }
-            }
-        }
         success{
             script {
                     if(params.github_repo_status_url){
