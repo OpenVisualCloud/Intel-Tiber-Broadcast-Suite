@@ -25,7 +25,7 @@ ENV \
   VSR=v23.11 \
   CARTWHEEL_COMMIT_ID=6.1 \
   FFMPEG_COMMIT_ID=n6.1.1 \
-  MTL_VER=95673e279cf37e22e664b8b921b7da950976008b \
+  MTL_VER=2f1c2a3be417065a4dc9276e2d7344d768e95118 \
   DPDK_VER=23.11
 
 # Install dependencies
@@ -258,15 +258,15 @@ RUN \
   cd /tmp/jpegxs/Build/linux && \
   ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
 
-RUN \
-  echo "**** BUILD JPEG-XS MTL PLUGIN ****" && \
-  cd /tmp/jpegxs/imtl-plugin && \
-  ./build.sh --prefix=/tmp/jpegxs/Build/linux/install
-
 ENV \
   LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib:${LD_LIBRARY_PATH}"
 ENV \
   PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+
+RUN \
+  echo "**** BUILD JPEG-XS MTL PLUGIN ****" && \
+  cd /tmp/jpegxs/imtl-plugin && \
+  ./build.sh
 
 RUN \
   echo "**** DOWNLOAD FFMPEG ****" && \
@@ -455,6 +455,9 @@ RUN \
   sudo cp -a \
     /tmp/jpegxs/Build/linux/install/lib/* \
     /buildout/usr/local/lib/ && \
+  sudo cp \
+    /tmp/jpegxs/imtl-plugin/kahawai.json \
+    /buildout/kahawai.json && \
   sudo cp -a \
     /tmp/vsr/install/lib/* \
     /buildout/usr/local/lib/ && \
