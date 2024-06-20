@@ -197,8 +197,8 @@ pipeline {
                     // so they needs to be removed manually
                     echo "cleaning abi related directories..."
                     sh """ 
-                        sudo rm -rf Coverity-scan/OWRBuild/
-                        sudo rm -rf Protex-scan/OWRBuild/
+                        sudo rm -rf Coverity-scan/
+                        sudo rm -rf Protex-scan/
                     
                     """
                     cleanWs()
