@@ -12,11 +12,17 @@ IMAGE_TAR=${1}
 trivy image --no-progress \
             --exit-code 0 \
             --format json \
-            -o Trivy/Trivy_vulnerability.Dockerfile.json \
+            -o Trivy/Trivy_vulnerability.DockerImage.json \
             --input ${IMAGE_TAR%%.tar}
 # spdx licence scans 
 trivy image --no-progress \
             --exit-code 0 \
             --format spdx-json \
-            -o Trivy/Trivy_spdx.Dockerfile.json \
+            -o Trivy/Trivy_spdx.DockerImage.json \
             --input ${IMAGE_TAR%%.tar}
+
+# scan docker image for security issues
+trivy fs --security-checks \
+         config Dockerfile \
+         --format json \
+         -o Trivy/Trivy_vulnerability.Dockerfile.json
