@@ -6,7 +6,7 @@
 
 # build stage
 ARG IMAGE_CACHE_REGISTRY=docker.io
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 as buildstage
+FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS buildstage
 
 ARG nproc=100
 
@@ -238,8 +238,8 @@ RUN \
   echo "**** BUILD JPEG-XS MTL PLUGIN ****" && \
   ./build.sh --prefix=/tmp/jpegxs/Build/linux/install
 
-ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib:${LD_LIBRARY_PATH}"
-ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig:${PKG_CONFIG_PATH}"
+ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
+ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig"
 
 WORKDIR /tmp/ffmpeg
 RUN \
@@ -276,7 +276,8 @@ RUN \
 WORKDIR /tmp
 RUN \
   echo "**** DOWNLOAD AND INSTALL IPP ****" && \
-  no_proxy="" wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
+  no_proxy="" wget --progress=dot:giga \
+    https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
   chmod +x l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
   ./l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
   echo "source /opt/intel/oneapi/ipp/latest/env/vars.sh" | tee -a ~/.bash_profile
@@ -438,7 +439,7 @@ RUN \
 
 # runtime stage
 ARG IMAGE_CACHE_REGISTRY
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 as finalstage
+FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS finalstage
 
 LABEL maintainer="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Intel® Tiber™ Broadcast Suite"
@@ -490,7 +491,8 @@ RUN \
   chmod +x /usr/dpdk/symlink-drivers-solibs.sh && \
   /usr/dpdk/symlink-drivers-solibs.sh lib/x86_64-linux-gnu /usr/dpdk/pmds-24.0
 
-CMD ["ffmpeg"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/ffmpeg"]
 
 HEALTHCHECK --interval=30s --timeout=5s \
   CMD ps aux | grep "ffmpeg" || exit 1

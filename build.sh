@@ -21,3 +21,5 @@ docker buildx build "${ENV_PROXY_ARGS[@]}" "$@" \
     -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
     -f "${SCRIPT_DIR}/Dockerfile" \
     "${SCRIPT_DIR}"
+
+docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image
