@@ -185,7 +185,7 @@ pipeline {
                                         /bin/bash -c \"coverity ${env.COVERITY_STREAM}\"
 
                                     """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${COVERITY_FOLDER}/Coverity/*"
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${COVERITY_FOLDER}/*"
                                 }
                             }
                         }
