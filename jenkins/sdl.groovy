@@ -106,7 +106,7 @@ pipeline {
                     steps{
                         script{
                             dir("Trivy-scan"){
-                                sh """ cp -r ${params.relative_dir} . """
+                                sh """ cp -r ${params.relative_dir}/ . """
                                 scan("trivy", params.tar_docker_image)
                             }
                         }
@@ -116,7 +116,7 @@ pipeline {
                     steps{
                         script{
                             dir("Shellcheck-scan"){
-                                sh """ cp -r ${params.relative_dir} . """
+                                sh """ cp -r ${params.relative_dir}/ . """
                                 scan("schellcheck", "")
                             }
                         }
@@ -126,7 +126,7 @@ pipeline {
                     steps{
                         script{
                             dir("Mcafee_scan"){
-                                sh """ cp -r ${params.relative_dir} . """
+                                sh """ cp -r ${params.relative_dir}/ . """
                                 scan("mcAffee", "")
                             }
                         }
@@ -141,7 +141,7 @@ pipeline {
                                 passwordVariable: 'PASSWORD')]){
                                 dir("Protex-scan"){                                    
                                     sh"""
-                                      cp -r ${params.relative_dir} .
+                                      cp -r ${params.relative_dir}/ .
                                       ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
                                             --scan_server ${env.PROTEX_SERVER} \
                                             --scan_project ${env.PROTEX_PROJECT} \
@@ -168,7 +168,7 @@ pipeline {
                             passwordVariable: 'PASSWORD')]){
                                 dir("Coverity-scan"){
                                     sh """
-                                        cp -r ${params.relative_dir} .
+                                        cp -r ${params.relative_dir}/ .
                                         docker run \
                                         -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
                                         -e \"COVERITY_USR=${USERNAME}\" \
@@ -190,12 +190,16 @@ pipeline {
     post{
         always {
             script{
-                dir(params.relative_dir){
+                dir(${WORKSPACE}){
                     // Protex run in docker as root, it creates files as root on host machine.
                     // jenkins cleanup cannot remove those files( permision denied 13), 
                     // so they needs to be removed manually
                     echo "cleaning abi related directories..."
-                    sh """ sudo rm -rf OWRBuild/ """
+                    sh """ 
+                        sudo rm -rf Coverity-scan/OWRBuild/
+                        sudo rm -rf Protex-scan/OWRBuild/
+                    
+                    """
                     cleanWs()
                 }
             }
