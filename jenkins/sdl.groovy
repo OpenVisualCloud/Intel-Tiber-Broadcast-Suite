@@ -65,7 +65,6 @@ pipeline {
         DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
     }
     stages {
-        }
         stage("set status"){
             steps{
                 script{
