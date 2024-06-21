@@ -41,7 +41,9 @@ def scan(String type, String tar_image){
 
 
 pipeline {
-    agent none
+    agent { 
+        label 'video-production-build'
+    }
     parameters {
         string(name: 'tar_docker_image', defaultValue: '', description: 'full patch to built and packed image')
         string(name: 'github_repo_status_url', defaultValue: '', description: 'api endpoint to return sdl status')
@@ -63,15 +65,6 @@ pipeline {
         DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
     }
     stages {
-        stage("clean workspace"){
-            agent { 
-                label 'video-production-build'
-            }
-            steps{
-                script{ 
-                    sh """ sudo rm -rf  ${WORKSPACE}/* """ 
-                }
-            }
         }
         stage("set status"){
             steps{
@@ -163,6 +156,7 @@ pipeline {
                                             --report_config cos \
                                             --report_config obl \
                                             --scan_output ${env.PROTEX_FOLDER}\"
+                                        sudo chown -R $USER:$USER ./*
                                     """
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${env.PROTEX_FOLDER}/*"
                                 // Protex run in docker as root, it creates files as root on host machine.
