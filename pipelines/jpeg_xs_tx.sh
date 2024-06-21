@@ -16,11 +16,11 @@ docker run -it \
    --ip=192.168.2.1 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=0-10 \
-   -e MTL_PARAM_LCORES=5-10 \
+   --cpuset-cpus=0-20 \
+   -e MTL_PARAM_LCORES=10-20 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image \
         -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/src/1080p_yuv422_10b_1.yuv \
         -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/src/1080p_yuv422_10b_2.yuv \
-        -map 0:v -p_port 0000:4b:01.1 -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -f mtl_st20p - \
-        -map 1:v -p_port 0000:4b:01.1 -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20001 -payload_type 112 -fps 25 -f mtl_st20p -
+        -map 0:v -p_port 0000:4b:01.1 -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -f mtl_st22p - \
+        -map 1:v -p_port 0000:4b:01.1 -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20001 -payload_type 112 -fps 25 -f mtl_st22p -

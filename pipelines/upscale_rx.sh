@@ -20,5 +20,5 @@ docker run -it \
    -e MTL_PARAM_LCORES=35-40 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -y \
-      -p_port 0000:4b:01.3 -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -i "0" \
-      /videos/recv-multiviewer.yuv
+      -p_port 0000:4b:01.3 -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le  -video_size 3840x2160 -f mtl_st20p -i "0" \
+      /videos/recv-upscale.yuv

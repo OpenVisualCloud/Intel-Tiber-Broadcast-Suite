@@ -13,12 +13,14 @@ docker run -it \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
    --network=my_net_801f0 \
-   --ip=192.168.2.3 \
+   --ip=192.168.2.2 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=30-40 \
-   -e MTL_PARAM_LCORES=35-40 \
+   --cpuset-cpus=20-40 \
+   -e MTL_PARAM_LCORES=30-40 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -y \
-      -p_port 0000:4b:01.3 -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -i "0" \
-      /videos/recv-multiviewer.yuv
+      -p_port 0000:4b:01.2 -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20000 -payload_type 112 -fps 25 -f mtl_st22p -i "0" \
+      -p_port 0000:4b:01.2 -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20001 -payload_type 112 -fps 25 -f mtl_st22p -i "1" \
+      -map 0:v /videos/recv-jpeg_1.yuv \
+      -map 1:v /videos/recv-jpeg_2.yuv
