@@ -359,9 +359,9 @@ RUN \
     /buildout/usr/lib/x86_64-linux-gnu/mfx \
     /buildout/usr/local/lib/vpl \
     /buildout/usr/lib/x86_64-linux-gnu/dri \
-    /buildout/usr/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ \
+    /buildout/usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ \
     /buildout/etc/OpenCL/vendors \
-    /buildout/usr/dpdk && \
+    /buildout/dpdk && \
   cp \
     /tmp/ffmpeg/ffmpeg \
     /buildout/usr/local/bin && \
@@ -373,16 +373,16 @@ RUN \
     /buildout/usr/local/bin && \
   cp -a \
     /usr/local/lib/lib*so* \
-    /buildout/usr/lib/ && \
+    /buildout/usr/local/lib/ && \
   cp -a \
     /usr/lib/x86_64-linux-gnu/lib*so* \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
     /usr/local/lib/x86_64-linux-gnu/lib*so* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
+    /buildout/usr/local/lib/x86_64-linux-gnu/ && \
   cp -a \
     /usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/* \
-    /buildout/usr/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ && \
+    /buildout/usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ && \
   cp -a \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/lib/x86_64-linux-gnu/dri/ && \
@@ -421,7 +421,7 @@ RUN \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
     /tmp/vsr/filters* \
-    /buildout/usr/ && \
+    /buildout/ && \
   cp -a \
     /opt/intel/oneapi/ipp/2021.10/lib/libipp*.so.* \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
@@ -430,12 +430,10 @@ RUN \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
     /tmp/dpdk/buildtools/* \
-    /buildout/usr/dpdk/ && \
+    /buildout/dpdk/ && \
   cp -a \
     /tmp/mcm/sdk/out/lib/libmcm_dp.so* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  setcap 'cap_ipc_lock+ep cap_ipc_owner+ep' /buildout/usr/local/bin/ffmpeg && \
-  setcap 'cap_net_bind_service+ep cap_net_broadcast+ep cap_net_raw+ep' /buildout/usr/local/bin/ffmpeg
+    /buildout/usr/lib/x86_64-linux-gnu/
 
 # runtime stage
 ARG IMAGE_CACHE_REGISTRY
@@ -451,7 +449,7 @@ LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
   LIBVA_DRIVERS_PATH="/usr/local/lib/x86_64-linux-gnu/dri" \
-  LD_LIBRARY_PATH="/usr/local/lib" \
+  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/" \
   NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
   NVIDIA_VISIBLE_DEVICES="all"
 
@@ -488,8 +486,9 @@ COPY --chown=ffmpeg-vpp --from=buildstage /buildout/ /
 
 RUN \
   echo "**** ENABLE DPDK ****" && \
-  chmod +x /usr/dpdk/symlink-drivers-solibs.sh && \
-  /usr/dpdk/symlink-drivers-solibs.sh lib/x86_64-linux-gnu /usr/dpdk/pmds-24.0
+  chmod +x dpdk/symlink-drivers-solibs.sh && \
+  ./dpdk/symlink-drivers-solibs.sh lib/x86_64-linux-gnu dpdk/pmds-24.0 && \
+  ldconfig
 
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/ffmpeg"]
