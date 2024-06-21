@@ -30,7 +30,7 @@ ENV \
   VSR=v23.11 \
   CARTWHEEL_COMMIT_ID=6.1 \
   FFMPEG_COMMIT_ID=n6.1.1 \
-  MTL_VER=95673e279cf37e22e664b8b921b7da950976008b \
+  MTL_VER=2f1c2a3be417065a4dc9276e2d7344d768e95118 \
   MCM_VER=9e921f714a3559e78df28c3b4b0160ab7c855582 \
   JPEG_XS_VER=0.9.0 \
   DPDK_VER=23.11
@@ -233,13 +233,13 @@ RUN \
   echo "**** BUILD JPEG-XS ****" && \
   ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
 
+ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
+ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig"
+
 WORKDIR /tmp/jpegxs/imtl-plugin
 RUN \
   echo "**** BUILD JPEG-XS MTL PLUGIN ****" && \
-  ./build.sh --prefix=/tmp/jpegxs/Build/linux/install
-
-ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
-ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig"
+  ./build.sh
 
 WORKDIR /tmp/ffmpeg
 RUN \
