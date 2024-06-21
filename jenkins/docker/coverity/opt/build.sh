@@ -38,10 +38,11 @@ cd /tmp/Media-Transport-Library
 cd /tmp/onevpl/build 
 cmake \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_INSTALL_LIBDIR=/usr/local/lib \
-    .. 
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu \
+    ..
 make
 make install
+strip -d /usr/lib/x86_64-linux-gnu/libmfx-gen.so
 
 
 
