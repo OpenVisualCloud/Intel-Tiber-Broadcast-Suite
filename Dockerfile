@@ -32,7 +32,7 @@ ENV \
   FFMPEG_COMMIT_ID=n6.1.1 \
   MTL_VER=95673e279cf37e22e664b8b921b7da950976008b \
   MCM_VER=9e921f714a3559e78df28c3b4b0160ab7c855582 \
-  JPEG_XS_VER=e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa \
+  JPEG_XS_VER=0.9.0 \
   DPDK_VER=23.11
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
@@ -225,7 +225,7 @@ WORKDIR /tmp/jpegxs/Build/linux
 RUN \
   echo "**** DOWNLOAD JPEG-XS ****" && \
   curl -Lf \
-    https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/${JPEG_XS_VER}.tar.gz | \
+    https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/jpegxs && \
   chmod +x ./build.sh /tmp/jpegxs/imtl-plugin/build.sh
 
