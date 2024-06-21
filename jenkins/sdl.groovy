@@ -41,9 +41,7 @@ def scan(String type, String tar_image){
 
 
 pipeline {
-    agent {
-        label 'video-production-build'
-    }
+    agent none
     parameters {
         string(name: 'tar_docker_image', defaultValue: '', description: 'full patch to built and packed image')
         string(name: 'github_repo_status_url', defaultValue: '', description: 'api endpoint to return sdl status')
@@ -65,6 +63,16 @@ pipeline {
         DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
     }
     stages {
+        stage("clean workspace"){
+            agent { 
+                label 'video-production-build'
+            }
+            steps{
+                script{ 
+                    sh """ sudo rm -rf  ${WORKSPACE}/* """ 
+                }
+            }
+        }
         stage("set status"){
             steps{
                 script{
