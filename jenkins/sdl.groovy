@@ -192,6 +192,16 @@ pipeline {
                         }
                     }
                 }
+                stage("Docker CIS"){
+                    steps{
+                        script{
+                            dir("Docker-CIS"){
+                                sh """ cp -r ${params.relative_dir}/* . """
+                                scan("docker_benchmark", "")
+                            }
+                        }
+                    } 
+                }
             }
         }
     }
