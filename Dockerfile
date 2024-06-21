@@ -358,7 +358,7 @@ RUN \
     /buildout/usr/lib/x86_64-linux-gnu/libmfx-gen \
     /buildout/usr/lib/x86_64-linux-gnu/mfx \
     /buildout/usr/local/lib/vpl \
-    /buildout/usr/lib/x86_64-linux-gnu/dri \
+    /buildout/usr/local/lib/x86_64-linux-gnu/dri \
     /buildout/usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ \
     /buildout/etc/OpenCL/vendors \
     /buildout/dpdk && \
@@ -385,7 +385,7 @@ RUN \
     /buildout/usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ && \
   cp -a \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
-    /buildout/usr/lib/x86_64-linux-gnu/dri/ && \
+    /buildout/usr/local/lib/x86_64-linux-gnu/dri && \
   cp -a \
     /tmp/ffmpeg/libavdevice/libavdevice* \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
@@ -449,7 +449,7 @@ LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
   LIBVA_DRIVERS_PATH="/usr/local/lib/x86_64-linux-gnu/dri" \
-  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/" \
+  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/" \
   NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
   NVIDIA_VISIBLE_DEVICES="all"
 
@@ -469,6 +469,8 @@ RUN \
     libssl3 \
     libxcb-shape0 \
     librdmacm1 \
+    intel-opencl-icd \
+    opencl-headers \
     ocl-icd-libopencl1 \
     libjson-c5 \
     zlib1g \
