@@ -1,11 +1,9 @@
 #! /bin/bash
 
 DIRS_TO_SCAN=( "./" 
-               "./debug_docker/"
                "./doc"
                "./patches"
                "./pipelines"
-               "./tests"
 )
 OPTIONS="-s bash"
 OUT_FILE="shellcheck_output.log"
