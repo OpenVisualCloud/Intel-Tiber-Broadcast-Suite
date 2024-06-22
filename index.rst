@@ -47,11 +47,13 @@ Know-How
    Documentation Build <docs/sphinx/build_docs>
 
 
-Other
+Security
 --------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Other:
+   :caption: Security:
 
+   docs/components/os-components-scans
+   docs/components/libraries-scans
    Security <security>
