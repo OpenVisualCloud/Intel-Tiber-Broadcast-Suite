@@ -30,6 +30,8 @@ ENV \
   VSR=v23.11 \
   CARTWHEEL_COMMIT_ID=6.1 \
   FFMPEG_COMMIT_ID=n6.1.1 \
+  XDP_VER=d7edea3590052581c5fda5f8cfa40ae7be94f05c \
+  BPF_VER=42065ea6627ff6e1ab4c65e51042a70fbf30ff7c \
   MTL_VER=2f1c2a3be417065a4dc9276e2d7344d768e95118 \
   MCM_VER=9e921f714a3559e78df28c3b4b0160ab7c855582 \
   JPEG_XS_VER=0.9.0 \
@@ -68,6 +70,9 @@ RUN \
     git \
     cmake \
     meson \
+    m4 \
+    clang \
+    llvm \
     curl \
     g++ \
     nasm \
@@ -153,8 +158,7 @@ RUN \
   echo "**** BUILD ONEVPL ****" && \
   cmake \
     -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu \
-    .. && \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. && \
   make && \
   make install && \
   strip -d /usr/lib/x86_64-linux-gnu/libmfx-gen.so
@@ -214,7 +218,19 @@ RUN \
   ninja -C build && \
   ninja -C build install
 
-# git -C /tmp/onevpl apply /tmp/patches/onevpl/*.patch
+# Build the xdp-tools project
+WORKDIR /tmp/xdp-tools
+RUN curl -Lf https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz | \
+      tar -zx --strip-components=1 -C /tmp/xdp-tools && \
+    curl -Lf https://github.com/libbpf/libbpf/archive/${BPF_VER}.tar.gz | \
+      tar -zx --strip-components=1 -C /tmp/xdp-tools/lib/libbpf && \
+    ./configure && \
+    make && \
+    make install && \
+    DESTDIR=/buildout make install && \
+    make -C /tmp/xdp-tools/lib/libbpf/src install && \
+    DESTDIR=/buildout make -C /tmp/xdp-tools/lib/libbpf/src install
+
 WORKDIR /tmp/Media-Transport-Library
 RUN \
   echo "**** BUILD MTL ****"  && \
@@ -328,6 +344,7 @@ RUN \
   ./configure \
     --disable-debug \
     --disable-doc \
+    --disable-shared \
     --enable-static \
     --enable-ffprobe \
     --enable-libsvtav1 \
@@ -337,16 +354,16 @@ RUN \
     --enable-libxml2 \
     --enable-mtl \
     --enable-opencl \
-    --enable-shared \
     --enable-stripping \
     --enable-vaapi \
     --enable-vulkan \
     --enable-libsvtjpegxs \
     --enable-libipp \
     --enable-mcm \
+    --enable-pthreads \
     --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/" \
     --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib" \
-    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lm -lz -lbsd -lrdmacm' \
+    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm' \
     --enable-cross-compile && \
   make
 
@@ -354,23 +371,23 @@ RUN \
   echo "**** ARRANGE FILES ****" && \
   ldconfig && \
   mkdir -p \
-    /buildout/usr/local/bin \
+    /buildout/usr/bin \
     /buildout/usr/lib/x86_64-linux-gnu/libmfx-gen \
     /buildout/usr/lib/x86_64-linux-gnu/mfx \
     /buildout/usr/local/lib/vpl \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri \
     /buildout/usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ \
     /buildout/etc/OpenCL/vendors \
-    /buildout/dpdk && \
+    /buildout/usr/local/etc/ && \
   cp \
     /tmp/ffmpeg/ffmpeg \
-    /buildout/usr/local/bin && \
+    /buildout/usr/bin && \
   cp \
     /tmp/ffmpeg/ffprobe \
-    /buildout/usr/local/bin && \
+    /buildout/usr/bin && \
   cp \
     /tmp/ffmpeg/ffplay \
-    /buildout/usr/local/bin && \
+    /buildout/usr/bin && \
   cp -a \
     /usr/local/lib/lib*so* \
     /buildout/usr/local/lib/ && \
@@ -387,35 +404,11 @@ RUN \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri && \
   cp -a \
-    /tmp/ffmpeg/libavdevice/libavdevice* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libavfilter/libavfilter* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libavformat/libavformat* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libavcodec/libavcodec* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libpostproc/libpostproc* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libavutil/libavutil* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libswscale/libswscale* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/ffmpeg/libswresample/libswresample* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
     /tmp/jpegxs/Build/linux/install/lib/* \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
     /tmp/jpegxs/imtl-plugin/kahawai.json \
-    /buildout/kahawai.json && \
+    /buildout/usr/local/etc/jpegxs.json && \
   cp -a \
     /tmp/vsr/install/lib/* \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
@@ -429,9 +422,6 @@ RUN \
     /tmp/Media-Transport-Library/build/lib/libmtl.so* \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
-    /tmp/dpdk/buildtools/* \
-    /buildout/dpdk/ && \
-  cp -a \
     /tmp/mcm/sdk/out/lib/libmcm_dp.so* \
     /buildout/usr/lib/x86_64-linux-gnu/
 
@@ -439,7 +429,7 @@ RUN \
 ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS finalstage
 
-LABEL maintainer="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Intel® Tiber™ Broadcast Suite"
 LABEL org.opencontainers.image.description="Intel® Tiber™ Broadcast Suite. Open Visual Cloud from Intel® Corporation, collaboration on FFmpeg with plugins on Ubuntu. Release image"
 LABEL org.opencontainers.image.version="0.9.0"
@@ -449,9 +439,12 @@ LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
   LIBVA_DRIVERS_PATH="/usr/local/lib/x86_64-linux-gnu/dri" \
-  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu/:/usr/lib/x86_64-linux-gnu/" \
+  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu" \
   NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
   NVIDIA_VISIBLE_DEVICES="all"
+
+ENV TZ=Europe/Warsaw
+ENV KAHAWAI_CFG_PATH="/usr/local/etc/jpegxs.json"
 
 # Install dependencies
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
@@ -469,6 +462,9 @@ RUN \
     libssl3 \
     libxcb-shape0 \
     librdmacm1 \
+    libsdl2-ttf-2.0-0 \
+    libcap-ng0 \
+    libatomic1 \
     intel-opencl-icd \
     opencl-headers \
     ocl-icd-libopencl1 \
@@ -476,6 +472,8 @@ RUN \
     zlib1g \
     libelf1 \
     libcap2-bin && \
+  apt-get remove linux-libc-dev -y && \
+  apt-get autoremove -y && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* &&\
   groupadd -g 2110 vfio && \
@@ -486,14 +484,15 @@ RUN \
 
 COPY --chown=ffmpeg-vpp --from=buildstage /buildout/ /
 
-RUN \
-  echo "**** ENABLE DPDK ****" && \
-  chmod +x dpdk/symlink-drivers-solibs.sh && \
-  ./dpdk/symlink-drivers-solibs.sh lib/x86_64-linux-gnu dpdk/pmds-24.0 && \
-  ldconfig
+RUN ldconfig
 
+EXPOSE 8001/tcp 8002/tcp
+EXPOSE 20000-20100
+
+HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "ffmpeg" || exit 1
+
+USER ["ffmpeg-vpp"]
+
+CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT ["/usr/local/bin/ffmpeg"]
-
-HEALTHCHECK --interval=30s --timeout=5s \
-  CMD ps aux | grep "ffmpeg" || exit 1
+ENTRYPOINT ["/usr/bin/ffmpeg"]
