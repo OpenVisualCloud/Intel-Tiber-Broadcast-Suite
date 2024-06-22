@@ -16,7 +16,7 @@ The software package includes several performance features on to of regular Inte
 - asynchronous execution of video pipeline filters to maximize GPU utilization
 - high-throughput GPU-CPU memory data transfers
 
-![Architecture](../images/architecture.png)
+![Architecture](images/architecture.png)
 
 
 ## 3. Components inside SDB docker image
