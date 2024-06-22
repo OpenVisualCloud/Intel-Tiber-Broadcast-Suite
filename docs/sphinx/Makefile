@@ -1,14 +1,15 @@
-# Minimal makefile for Sphinx documentation
-#
 
-# You can set these variables from the command line, and also
-# from the environment for the first two.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024 Intel Corporation
+# Intel® Tiber™ Broadcast Suite
+
+# Minimal makefile for Sphinx documentation
+
 SPHINXOPTS    ?= --conf-dir .
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = ../../
 BUILDDIR      = ../_build
 
-# Put it first so that "make" without argument is like "make help".
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 

@@ -1,5 +1,10 @@
 @ECHO OFF
 
+@REM SPDX-License-Identifier: BSD-3-Clause
+@REM Copyright 2024 Intel Corporation
+@REM Intel® Tiber™ Broadcast Suite
+@REM # https://www.sphinx-doc.org/
+
 pushd %~dp0
 
 REM Command file for Sphinx documentation
@@ -9,7 +14,7 @@ if "%SPHINXBUILD%" == "" (
 	set SPHINXOPTS="--conf-dir ."
 )
 set SOURCEDIR=../../
-set BUILDDIR=../build
+set BUILDDIR=../_build
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (

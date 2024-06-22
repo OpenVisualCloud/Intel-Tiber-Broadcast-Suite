@@ -35,6 +35,18 @@ Plugins
    docs/plugins/svt-jpeg-xs
    docs/plugins/video-super-resolution
 
+
+Know-How
+--------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Know-How:
+
+   docs/run-know-how
+   Documentation Build <docs/sphinx/build_docs>
+
+
 Other
 --------
 
@@ -42,5 +54,4 @@ Other
    :maxdepth: 2
    :caption: Other:
 
-   Documentation Build <docs/sphinx/build_docs>
    Security <security>
