@@ -62,7 +62,7 @@ pipeline {
         COVERITY_PROJECT = "Software Defined Broadcast main"
         COVERITY_FOLDER = "CoverityEvidence"
         COVERITY_STREAM = "sdb-ffmpeg-patch"
-        DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ ${env.ABI_IMAGE} /bin/bash -c "
+        DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ -v /tmp:/tmp ${env.ABI_IMAGE} /bin/bash -c "
     }
     stages {
         stage("set status"){
@@ -148,7 +148,7 @@ pipeline {
                         }
                     }
                 }
-                stage("coverity"){
+                stage("Coverity"){
                     steps{
                         script{
                         withCredentials([usernamePassword(
@@ -158,6 +158,7 @@ pipeline {
                                 dir("Coverity-scan"){
                                     sh """
                                         cp -r ${params.relative_dir}/* .
+                                        ./jenkins/scripts/coverity_dowload_repos.sh
                                         ${env.DOCKER_ABI} \"cd /opt/; abi coverity analyze \
                                                 --debug \
                                                 --aggressiveness-level high \
@@ -189,6 +190,20 @@ pipeline {
         }
     }
     post{
+        always{
+            script{
+                dir("Protex-scan")
+                    // Protex run in docker as root, it creates files as root on host machine.
+                    // jenkins cleanup cannot remove those files( permision denied 13), 
+                    // so they needs to be removed manually
+                    sh """ sudo rm -rf OWRBuild/ """
+                dir("coverity")
+                    // Protex run in docker as root, it creates files as root on host machine.
+                    // jenkins cleanup cannot remove those files( permision denied 13), 
+                    // so they needs to be removed manually
+                    sh """ sudo rm -rf OWRBuild/ """
+            }
+        }
         success{
             script {
                     if(params.github_repo_status_url){
