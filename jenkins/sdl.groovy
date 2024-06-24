@@ -29,7 +29,7 @@ def scan(String type, String tar_image){
         trivy: "Trivy/*",
         schellcheck: "shellcheck_logs/*",
         mcAffee: "Malware/*",
-        docker_benchmark: "docker-bench-security/cisdockerbench_results/*" 
+        docker_benchmark: "cisdockerbench_results/*" 
     ]
     sh """
     
@@ -163,8 +163,8 @@ pipeline {
                                                 --debug \
                                                 --aggressiveness-level high \
                                                 --server "${COVERITY_SERVER}" \
-                                                --username "${COVERITY_USR}" \
-                                                --password "${COVERITY_PSW}" \
+                                                --username "${USERNAME}" \
+                                                --password "${PASSWORD}" \
                                                 --report_output_dir "${WORKSPACE}" \
                                                 --build_command "jenkins/scripts/coverity_build_script.sh" \
                                                 --stream "${COVERITY_STREAM}"
