@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The Intel® Video Production Pipeline is a software-based package designed for creation of high-performance and high-quality solutions used in live video production.
+The Intel® Tiber™ Broadcast Suite is a software-based package, modular video production pipeline, designed for creation of high-performance and high-quality solutions used in live video production.
 The video pipelines are built using Intel-optimized version of FFmpeg and combine: media transport protocols (SMPTE ST 2110-compliant), JPEG-XS encoding/decoding, GPU media processing and rendering.
 
 ## 2. Intel® Tiber™ Broadcast Suite
