@@ -74,6 +74,25 @@ pipeline {
                 }
             }
         }
+        stage("build coverity docker"){
+            steps{
+                script{
+                        def imageFullPath = params.tar_docker_image
+                        def imageName = imageFullPath.replaceAll(/^.*\/|\..*$/,"")
+                        sh """
+                            cd ${env.WORKSPACE}
+                            git config --global --add safe.directory \$(pwd)
+                            cd jenkins/docker/coverity
+                            docker build \
+                                --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
+                                --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
+                                --build-arg no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8 \
+                                --build-arg IMAGE_TAG_NAME=${imageName} \
+                                -t \"coverity_image_${params.parent_job_id}\" -f Dockerfile .
+                        """
+                    }
+            }
+        }
         stage("scans"){
             parallel {
                 stage("Hadolint"){
