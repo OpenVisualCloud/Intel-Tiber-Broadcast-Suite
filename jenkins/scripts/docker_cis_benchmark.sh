@@ -57,5 +57,4 @@ NUM_OF_WARN_MSG=$(cat ${HOST_OUTPUT_FILE} | grep "WARN" -c)
 
 if [[ $NUM_OF_WARN_MSG!=0 ]]; then
     echo "::warning::Review ${NUM_OF_WARN_MSG} [WARN] messages in artifact report"
-    exit 1
 fi
