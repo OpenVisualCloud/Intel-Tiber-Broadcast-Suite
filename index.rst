@@ -1,7 +1,12 @@
 .. Intel® Tiber™ Broadcast Suite documentation master file, created by
-   sphinx-quickstart on Fri May 17 18:05:19 2024.
+   sphinx-quickstart
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive. # Intel® Tiber™ Broadcast Suite <small>1.0.0</small>
+
+   SPDX-License-Identifier: BSD-3-Clause
+   Copyright(©) 2024 Intel Corporation
+   Intel® Tiber™ Broadcast Suite
+
 
 Intel® Tiber™ Broadcast Suite documentation
 ======================================================
@@ -9,7 +14,7 @@ Intel® Tiber™ Broadcast Suite documentation
 .. toctree::
    :maxdepth: 2
 
-   Quick-start <docs/README>
+   Introduction <docs/README>
 
 Contents
 --------
@@ -57,3 +62,12 @@ Security
    docs/components/os-components-scans
    docs/components/libraries-scans
    Security <security>
+
+Other
+--------
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Other:
+
+   License (LICENSE)

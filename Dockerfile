@@ -1,9 +1,10 @@
 # syntax=docker/dockerfile:1
 
+#
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2024 Intel Corporation
+# Copyright(©) 2024 Intel Corporation
 # Intel® Tiber™ Broadcast Suite
-
+#
 # build stage
 ARG IMAGE_CACHE_REGISTRY=docker.io
 FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS buildstage
@@ -430,8 +431,10 @@ ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS finalstage
 
 LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
 LABEL org.opencontainers.image.title="Intel® Tiber™ Broadcast Suite"
 LABEL org.opencontainers.image.description="Intel® Tiber™ Broadcast Suite. Open Visual Cloud from Intel® Corporation, collaboration on FFmpeg with plugins on Ubuntu. Release image"
+LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
 LABEL org.opencontainers.image.version="0.9.0"
 LABEL org.opencontainers.image.vendor="Intel® Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"

@@ -1,8 +1,10 @@
 #!/bin/bash -e
 
+#
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2024 Intel Corporation
+# Copyright(©) 2024 Intel Corporation
 # Intel® Tiber™ Broadcast Suite
+#
 
 STACK_DEBUG="${STACK_DEBUG:-1}"
 

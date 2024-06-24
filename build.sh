@@ -1,8 +1,10 @@
 #!/bin/bash
 
+#
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2024 Intel Corporation
+# Copyright(©) 2024 Intel Corporation
 # Intel® Tiber™ Broadcast Suite
+#
 
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
