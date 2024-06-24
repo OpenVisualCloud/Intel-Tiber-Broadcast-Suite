@@ -158,16 +158,13 @@ pipeline {
                                 dir("Coverity-scan"){
                                     sh """
                                         cp -r ${params.relative_dir}/* .
-                                        ./jenkins/scripts/coverity_dowload_repos.sh
-                                        ${env.DOCKER_ABI} \"cd /opt/; abi coverity analyze \
-                                                --debug \
-                                                --aggressiveness-level high \
-                                                --server "${COVERITY_SERVER}" \
-                                                --username "${USERNAME}" \
-                                                --password "${PASSWORD}" \
-                                                --report_output_dir "${WORKSPACE}" \
-                                                --build_command "jenkins/scripts/coverity_build_script.sh" \
-                                                --stream "${COVERITY_STREAM}"
+                                        docker run \
+                                        -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
+                                        -e \"COVERITY_USR=${USERNAME}\" \
+                                        -e \"COVERITY_PSW=${PASSWORD}\" \
+                                        -e \"WORKSPACE=${env.COVERITY_FOLDER}\" \
+                                        coverity_image_${params.parent_job_id} \
+                                        /bin/bash -c \"coverity ${env.COVERITY_STREAM}\"
 
                                     """
                                     archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${COVERITY_FOLDER}/*"

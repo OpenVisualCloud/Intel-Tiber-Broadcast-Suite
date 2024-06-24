@@ -1,9 +1,5 @@
 #! /bin/bash -e 
 
-export LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
-export PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig"
-
-echo "performing coverity scan ..."
 echo "**** BUILD FFMPEG ****" 
 . /opt/intel/oneapi/ipp/latest/env/vars.sh 
 cd /tmp/ffmpeg 
@@ -32,8 +28,12 @@ cd /tmp/ffmpeg
     --enable-cross-compile 
 make
 
+
+
 cd /tmp/Media-Transport-Library 
 ./build.sh
+
+
 
 cd /tmp/onevpl/build 
 cmake \
@@ -43,6 +43,8 @@ cmake \
 make
 make install
 strip -d /usr/lib/x86_64-linux-gnu/libmfx-gen.so
+
+
 
 cd /tmp/vsr/ && . /opt/intel/oneapi/ipp/latest/env/vars.sh 
 ./build.sh -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DENABLE_RAISR_OPENCL=ON
