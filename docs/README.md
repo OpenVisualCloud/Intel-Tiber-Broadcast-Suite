@@ -82,3 +82,48 @@ To build please refer to the [build guide](build.md)
 ## 4. High level usage examples
 
 How to run and example usage of the Intel® Tiber™ Broadcast Suite [run guide](run.md)
+
+## 5. How to Contribute
+
+We welcome community contributions to the Intel® Tiber™ Broadcast Suite project. If you have any ideas or issues, please share them with us by using GitHub issues or opening a pull request.
+
+### 5.1 Fork this repository
+
+Before opening a pull request, please follow these steps:
+
+1. [Fork](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/fork) this repository to your own space.
+2. Create a new branch for your changes.
+3. Make your changes and commit them.
+4. Push your changes to your forked repository.
+5. Open a pull request to the main repository.
+
+### 5.2 Coding style
+
+We use linters for style checks.
+
+#### 5.2.1 Linter example
+
+Please check with the following example command inside the Docker container for linters:
+
+```bash
+# super-linter
+docker run -it --rm  -v "$PWD":/opt/ --entrypoint /bin/bash github/super-linter
+
+cd /opt/
+
+# echo "shfmt check"
+find ./ -type f -name "*.sh" -exec shfmt -w {} +
+# echo "shell check"
+find ./ -name "*.sh" -exec shellcheck {} \;
+
+# hadolint check
+hadolint Dockerfile
+
+# markdownlint check
+find ./ -name "*.md" -exec markdownlint {} \;
+# find ./ -name "*.md" -exec markdownlint {} --fix \;
+
+# textlint
+find ./ -name "*.md" -exec textlint {} \;
+# find ./ -name "*.md" -exec textlint {} --fix \;
+```
