@@ -7,6 +7,10 @@
 #
 
 STACK_DEBUG="${STACK_DEBUG:-1}"
+if [ -z "$mtl_source_code" ]; then
+    mtl_source_code="$HOME";
+    echo -e '\e[33mmtl_source_code variable was empty and has been set to '"$HOME"' directory.\e[0m'
+fi
 
 function add_fstab_line()
 {
@@ -38,7 +42,22 @@ mount -t hugetlbfs hugetlbfs /hugepages -o pagesize=1G
 # add_fstab_line "nodev /hugepages hugetlbfs pagesize=1GB 0 0"
 
 touch /tmp/kahawai_lcore.lock
-docker network create --subnet 192.168.2.0/24 --gateway 192.168.2.100 -o parent=ens801f0 my_net_801f0
+if ! docker network create --subnet 192.168.2.0/24 --gateway 192.168.2.100 -o parent=ens801f0 my_net_801f0 2>/dev/null; then
+    echo -e '\e[33mNetwork with the name my_net_801f0 already exists\e[0m'
+fi
+
 output=$(lspci | grep "Ethernet controller: Intel Corporation Ethernet Controller" | awk '{print "0000:"$1}')
 IFS=$'\n'
-while IFS= read -r line; do find "${HOME}" -name "nicctl.sh" -exec {} create_vf "$line" \;; done <<< "$output"
+
+NICCTL=$(find "${mtl_source_code}" -name "nicctl.sh" -print -quit 2>/dev/null);
+if [ -z "$NICCTL" ]; then
+    echo -e '\e[31mnicctl.sh script not found inside '"${mtl_source_code}"'\e[0m'
+    exit 1
+fi
+
+while IFS= read -r line; do
+    if ! "$NICCTL" create_vf "$line" ; then
+        echo -e '\e[31mError occurred while creating VF for device: '"$line"'\e[0m'
+        exit 2
+    fi
+done <<< "$output"
