@@ -100,6 +100,23 @@ session A > jpeg_xs_tx.sh
 session B > jpeg_xs_rx.sh
 ```
 
+
+### JPEG-XS over Media Communications Mesh
+
+Two input streams from local drive are encoded using JPEG-XS codec and send out via Media Communications Mesh using ST2110-22 streams.
+Input streams from two ST2110-22 cameras are decoded using JPEG-XS codec stored on local drive.
+
+<Diagram TBD>
+
+Example command to run the pipeline:
+```
+terminalA> mcm_media_proxy_rx.sh
+terminalB> mcm_media_proxy_tx.sh
+terminalC> mcm_jpeg_xs_rx.sh
+terminalD> mcm_jpeg_xs_tx.sh
+```
+
+
 <!-- Temporarily hidden
 ### Video production pipeline
 This pipeline does not have its equivalent in code at the moment, but shows a production-ready solution that could be built using Intel® Tiber™ Broadcast Suite.
