@@ -494,7 +494,7 @@ EXPOSE 20000-20100
 
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "ffmpeg" || exit 1
 
-USER ["ffmpeg-vpp"]
+USER "ffmpeg-vpp"
 
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
