@@ -1,12 +1,14 @@
 #!/bin/bash 
 
-
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TARGET_IMAGE=${1}
 
-git clone https://github.com/docker/docker-bench-security.git
+git clone https://github.com/docker/docker-bench-security.git /tmp/
 TOOL_IMAGE=docker-bench-security:CI
-cd docker-bench-security
+cd /tmp/docker-bench-security
 docker build --no-cache -t $TOOL_IMAGE --build-arg http_proxy --build-arg https_proxy .
+
+cd ${SCRIPT_DIR}
 
 TARGET_IMAGE=${TARGET_IMAGE}
 IMAGE_NAME="${TARGET_IMAGE##*/}"
