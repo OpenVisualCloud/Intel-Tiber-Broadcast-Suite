@@ -8,7 +8,7 @@ FFmpeg Intel® JPEG XS Codec Plugin Documentation
 
 The FFmpeg JPEG XS codec plugin provides encoding and decoding functionality for the JPEG XS format. Below are the parameters that can be configured for both the libsvtjpegxs encoder and decoder. To use the plugin, specify the codec with `-codec jpegxs` for encoding or `-codec:v jpegxs` for decoding.
 
-### Encoder available params:
+### Encoder available params
 
 Name | mandatory/optional | Accepted values | description
   --         |     --    |                           --                                     |  --
@@ -22,7 +22,7 @@ coding-signs | optional  | (default:off), 0(off), 1(fast), 2(full)              
 coding-sigf  | optional  | (default:on), 0(off), 1(on)                                    | Coding feature: Significance coding
 coding-vpred | optional  | (default:off), 0(off), 1(on)                                   | Coding feature: Vertical-prediction
 
-### Decoder available params:
+### Decoder available params
 
 Name | mandatory/optional | Accepted values | description
   --     |     --    |               --                                                | --
@@ -102,19 +102,19 @@ threads  | optional  | Any integer in range< 1;64>                              
 
 ### Example Usage
 
-#### Encoding raw video:
+#### Encoding raw video
 
 ```bash
 ffmpeg -y -s:v 1920x1080 -c:v rawvideo -pix_fmt yuv420p -i raw_stream.yuv -codec jpegxs -bpp 1.25 -threads 5 encoded_file.mov
 ```
 
-#### Decoding JPEG XS streams to raw video:
+#### Decoding JPEG XS streams to raw video
 
 ```bash
 ffmpeg -threads 10 -i jpegxs-file.mov output.yuv
 ```
 
-#### Transcoding from any format to JPEG XS:
+#### Transcoding from any format to JPEG XS
 
 ```bash
 ffmpeg -i input.mov -c:v jpegxs -bpp 2 -threads 15 encoder.mov

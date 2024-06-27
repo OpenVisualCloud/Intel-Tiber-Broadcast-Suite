@@ -48,6 +48,7 @@ Know-How
    :maxdepth: 2
    :caption: Know-How:
 
+   docs/building-commands
    docs/run-know-how
    Documentation Build <docs/sphinx/build_docs>
 

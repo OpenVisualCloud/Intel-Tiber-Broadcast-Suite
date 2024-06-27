@@ -1,8 +1,18 @@
-# Docker Commands Breakdown:
+# Docker command breakdown
 
-## Based on [../pipelines/jpeg_xs_rx.sh](pipelines/jpeg_xs_rx.sh):
+Full Intel® Tiber™ Broadcast Suite pipeline command consists of `docker run [docker_parameters] video_production_image [broadcast_suite_parameters]`.
+This document describes a docker-related part of command - all `[docker_parameters]` switches until the name of the image, called `video_production_image`.
 
-### Docker run command
+Information about the `[broadcast_suite_parameters]` part of the command may be found, depending on the plugin, under:
+- [FFmpeg Intel® Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
+- [Intel® Media Transport Library](plugins/media-transport-library.md)
+- [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
+- [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
+
+
+## Command example
+
+> **Note:** The example below is based on [../pipelines/jpeg_xs_rx.sh](pipelines/jpeg_xs_rx.sh). Some of the pipelines may require a different number of parameters in order to run.
 
 ```bash
 docker run -it \
@@ -24,12 +34,12 @@ docker run -it \
    --cpuset-cpus=20-40 \
    -e MTL_PARAM_LCORES=30-40 \
    -e MTL_PARAM_DATA_QUOTA=10356 \
-   video_production_image
+   video_production_image  [broadcast_suite_parameters]
 ```
 
-### Docker run parameters breakdown:
+## Docker parameters breakdown
 
-- `-it`: Runs the container in interactive mode with a tty for interaction.
+- `-it`: Runs the container in interactive mode with a TTY for interaction.
 - `--user root`: Sets the user inside the container to `root`.
 - `--privileged`: Grants the container full access to the host system.
 - `--device=/dev/vfio:/dev/vfio`: Mounts the host's `/dev/vfio` directory inside the container.

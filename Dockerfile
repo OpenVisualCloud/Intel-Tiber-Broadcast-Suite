@@ -34,7 +34,7 @@ ENV \
   XDP_VER=d7edea3590052581c5fda5f8cfa40ae7be94f05c \
   BPF_VER=42065ea6627ff6e1ab4c65e51042a70fbf30ff7c \
   MTL_VER=2f1c2a3be417065a4dc9276e2d7344d768e95118 \
-  MCM_VER=9e921f714a3559e78df28c3b4b0160ab7c855582 \
+  MCM_VER=24.06 \
   JPEG_XS_VER=0.9.0 \
   DPDK_VER=23.11
 
@@ -324,7 +324,7 @@ WORKDIR /tmp/mcm
 RUN \
   echo "**** DOWNLOAD MEDIA COMMUNICATIONS MESH ****" && \
   curl -Lf \
-    https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/${MCM_VER}.tar.gz | \
+    https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/mcm
 
 RUN \

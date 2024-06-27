@@ -17,7 +17,7 @@ import sys
 project = 'Intel® Tiber™ Broadcast Suite'
 copyright = '2024, Intel Corporation'
 author = 'Intel Corporation'
-release = '0.1.0'
+release = '0.9'
 
 extensions = [
     'myst_parser',
@@ -31,7 +31,8 @@ extensions = [
     # 'sphinx.ext.inheritance_diagram',
     # 'sphinx.ext.coverage',
     'sphinx.ext.graphviz',
-    'sphinxcontrib.mermaid'
+    'sphinxcontrib.mermaid',
+    'sphinx_copybutton'
 ]
 
 coverage_statistics_to_report = coverage_statistics_to_stdout = True

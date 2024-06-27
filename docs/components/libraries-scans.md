@@ -4,7 +4,7 @@
 
 Libraries components list based on Trivy scan results.
 
-### tiber-broadcast-suite:latest (Ubuntu 22.04 LTS, kernel 5.15)
+### video_production_image:latest (Ubuntu 22.04 LTS, kernel 5.15)
 
 ## Used Libraries Scan Results (Trivy)
 

@@ -4,7 +4,7 @@
 
 Components list based on Trivy scan with licenses types.
 
-### tiber-broadcast-suite:latest (Ubuntu 22.04 LTS, kernel 5.15)
+### video_production_image:latest (Ubuntu 22.04 LTS, kernel 5.15)
 
 ## OS Packages Scan Results (license)
 

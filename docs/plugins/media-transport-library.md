@@ -10,17 +10,17 @@ FFmpeg Intel® Media Transport Library Plugins Documentation
 
 #### MTL Device Arguments
 
-- **`p_port`**: Mtl hardware device to use. Mtl p_port. Example: "eth0"
+- **`p_port`**: MTL hardware device to use. MTL p_port. Example: "eth0"
   - **Type**: String
   - **Default**: `NULL`
   - **Flags**: Encoding/Decoding parameter
 
-- **`p_sip`**: Mtl local (source) IP address to set/use.
+- **`p_sip`**: MTL local (source) IP address to set/use.
   - **Type**: String
   - **Default**: `NULL`
   - **Flags**: Encoding/Decoding parameter
 
-- **`dma_dev`**: Mtl DMA device.
+- **`dma_dev`**: MTL DMA device.
   - **Type**: String
   - **Default**: `NULL`
   - **Flags**: Encoding/Decoding parameter
@@ -65,7 +65,7 @@ FFmpeg Intel® Media Transport Library Plugins Documentation
 
 ## St20p Muxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
 
-The Mtl St20p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-20 video streams over a network. Below are the input parameters that can be configured for the Mtl St20p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st20p`.
+The MTL St20p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-20 video streams over a network. Below are the input parameters that can be configured for the MTL St20p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st20p`.
 
 ### Input Parameters
 
@@ -82,17 +82,17 @@ The Mtl St20p Muxer plugin for FFmpeg is designed to handle the transmission of 
 
 ### Example Usage
 
-To use the Mtl St20p Muxer plugin with FFmpeg, you can specify the input parameters using the `-option` flag. Here is an example command that sets some of the parameters:
+To use the MTL St20p Muxer plugin with FFmpeg, you can specify the input parameters using the `-option` flag. Here is an example command that sets some of the parameters:
 
 ```bash
 ffmpeg -i input.mp4 -c:v rawvideo -f mtl_st20p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_tx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -fb_cnt 4 output.mtl
 ```
 
-This command takes an input file input.mp4, encodes the video as raw video, and uses the Mtl St20p Muxer to send the data to IP address 239.0.0.1 on UDP port 1234 with payload type 112 and a frame buffer count of 4.
+This command takes an input file input.mp4, encodes the video as raw video, and uses the MTL St20p Muxer to send the data to IP address 239.0.0.1 on UDP port 1234 with payload type 112 and a frame buffer count of 4.
 
 ## St20p Demuxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
 
-The Mtl St20p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-20 video streams over a network. Below are the input parameters that can be configured for the Mtl St20p Demuxer plugin. To use plugin prepend input parameters with `-f mtl_st20p`.
+The MTL St20p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-20 video streams over a network. Below are the input parameters that can be configured for the MTL St20p Demuxer plugin. To use plugin prepend input parameters with `-f mtl_st20p`.
 
 ### Input Parameters
 
@@ -132,7 +132,7 @@ The Mtl St20p Demuxer plugin for FFmpeg is designed to handle the reception of S
 
 ### Example Usage
 
-To use the Mtl St20p Demuxer plugin with FFmpeg, you can specify the input parameters using the `-option` flag. Here is an example command that sets some of the parameters:
+To use the MTL St20p Demuxer plugin with FFmpeg, you can specify the input parameters using the `-option` flag. Here is an example command that sets some of the parameters:
 
 ```bash
 ffmpeg -f mtl_st20p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_rx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -video_size 1280x720 -pix_fmt yuv422p10le -fps 50 -timeout_s 2 -fb_cnt 4 -i mtl_input -c:v copy output.mp4
@@ -142,7 +142,7 @@ This command receives an ST 2110-20 video stream with the specified device and p
 
 ## St22p Muxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
 
-The Mtl St22p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-22 video streams over a network. Below are the input parameters that can be configured for the Mtl St22p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st22p`.
+The MTL St22p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-22 video streams over a network. Below are the input parameters that can be configured for the MTL St22p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st22p`.
 
 ### Input Parameters
 
@@ -176,7 +176,7 @@ The Mtl St22p Muxer plugin for FFmpeg is designed to handle the transmission of 
 
 ### Example Usage
 
-The Mtl St22p Muxer plugin usage with FFmpeg example command that sets some of the parameters:
+The MTL St22p Muxer plugin usage with FFmpeg example command that sets some of the parameters:
 
 ```bash
 ffmpeg -i input.mp4 -c:v rawvideo -f mtl_st22p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_tx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -fb_cnt 4 -bpp 2.0 -codec_thread_cnt 4 -st22_codec "jpegxs" output.mtl
@@ -184,7 +184,7 @@ ffmpeg -i input.mp4 -c:v rawvideo -f mtl_st22p -p_port "eth0" -p_sip "192.168.1.
 
 ## St22p Demuxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
 
-The Mtl St22p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-22 video streams over a network. Below are the input parameters that can be configured for the Mtl St22p Demuxer plugin. To use plugin prepend input parameters with `-f mtl_st22p`.
+The MTL St22p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-22 video streams over a network. Below are the input parameters that can be configured for the MTL St22p Demuxer plugin. To use plugin prepend input parameters with `-f mtl_st22p`.
 
 ### Input Parameters
 
@@ -235,7 +235,7 @@ The Mtl St22p Demuxer plugin for FFmpeg is designed to handle the reception of S
 
 ### Example Usage
 
-The Mtl St22p FFmpeg Demuxer plugin usage example command that sets some of the parameters:
+The MTL St22p FFmpeg Demuxer plugin usage example command that sets some of the parameters:
 
 ```bash
 ffmpeg -f mtl_st22p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_rx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -video_size 1280x720 -pix_fmt yuv422p10le -fps 50 -timeout_s 2 -fb_cnt 4 -codec_thread_cnt 4 -st22_codec "jpegxs" -i mtl_input -c:v copy output.mp4
@@ -245,7 +245,7 @@ This command receives an ST 2110-22 video stream with the specified device and p
 
 ## St30p Muxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
 
-The Mtl St30p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-30 audio streams over a network. Below are the input parameters that can be configured for the Mtl St30p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st30p`.
+The MTL St30p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-30 audio streams over a network. Below are the input parameters that can be configured for the MTL St30p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st30p`.
 
 ### Input Parameters
 
@@ -268,17 +268,17 @@ The Mtl St30p Muxer plugin for FFmpeg is designed to handle the transmission of 
 
 ### Example Usage
 
-The Mtl St30p FFmpeg Muxer plugin usage example command that sets some of the parameters:
+The MTL St30p FFmpeg Muxer plugin usage example command that sets some of the parameters:
 
 ```bash
 ffmpeg -i input.wav -c:a pcm_s24be -f mtl_st30p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_tx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -fb_cnt 4 -at "1ms" output.mtl
 ```
 
-This command takes an input file input.wav, encodes the audio as PCM 24-bit big-endian, and uses the Mtl St30p Muxer to send the data to IP address 239.0.0.1 on UDP port 1234 with payload type 112, frame buffer count of 4, and audio packet time of 1ms.
+This command takes an input file input.wav, encodes the audio as PCM 24-bit big-endian, and uses the MTL St30p Muxer to send the data to IP address 239.0.0.1 on UDP port 1234 with payload type 112, frame buffer count of 4, and audio packet time of 1ms.
 
 ## St30p Demuxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
 
-The Mtl St30p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-30 audio streams over a network. Below are the input parameters that can be configured for the Mtl St30p Demuxer plugin.  To use plugin prepend input parameters with `-f mtl_st30p`.
+The MTL St30p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-30 audio streams over a network. Below are the input parameters that can be configured for the MTL St30p Demuxer plugin.  To use plugin prepend input parameters with `-f mtl_st30p`.
 
 ### Input Parameters
 
@@ -325,7 +325,7 @@ The Mtl St30p Demuxer plugin for FFmpeg is designed to handle the reception of S
 
 ### Example Usage
 
-The Mtl St30p FFmpeg Demuxer plugin usage example command that sets some of the parameters:
+The MTL St30p FFmpeg Demuxer plugin usage example command that sets some of the parameters:
 
 ```bash
 ffmpeg -f mtl_st30p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_rx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -fb_cnt 4 -timeout_s 2 -ar 48000 -ac 2 -pcm_fmt "pcm24" -at "1ms" -i mtl_input -c:a copy output.wav
@@ -337,17 +337,17 @@ This command receives an ST 2110-30 audio stream with the specified device and p
 
 ### A.1 ST20P raw video run guide
 
-The MTL ST20P plugin is implemented as an FFMpeg input/output device, enabling direct reading from or sending raw video via the ST2110-20 stream.
+The MTL ST20P plugin is implemented as an FFmpeg input/output device, enabling direct reading from or sending raw video via the ST 2110-20 stream.
 
 #### A.1.1 St20p input
 
-Reading two st2110-20 10bit YUV422 stream, one on "239.168.85.20:20000" and the second on "239.168.85.20:20002":
+Reading two ST 2110-20 10bit YUV422 streams, one on "239.168.85.20:20000" and the second on "239.168.85.20:20002":
 
 ```bash
 ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -fps 59.94 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "1" -p_port 0000:af:01.0 -p_rx_ip 239.168.85.20 -udp_port 20002 -payload_type 112 -fps 59.94 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "2" -map 0:0 -f rawvideo /dev/null -y -map 1:0 -f rawvideo /dev/null -y
 ```
 
-Reading a st2110-20 10bit YUV422 stream on "239.168.85.20:20000" with payload_type 112, and use libopenh264 to encode the stream to out.264 file:
+Reading a ST 2110-20 10bit YUV422 stream on "239.168.85.20:20000" with `payload_type 112`, and use `libopenh264` to encode the stream to `out.264` file:
 
 ```bash
 ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -fps 59.94 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "k" -c:v libopenh264 out.264 -y
@@ -355,7 +355,7 @@ ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port
 
 #### A.1.2 St20p output
 
-Reading from a yuv stream from a local file and sending a st2110-20 10bit YUV422 stream on "239.168.85.20:20000" with payload_type 112:
+Reading from a yuv stream from a local file and sending a ST 2110-20 10bit YUV422 stream on "239.168.85.20:20000" with `payload_type 112`:
 
 ```bash
 ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i yuv422p10le_1080p.yuv -filter:v fps=59.94 -p_port 0000:af:01.1 -p_sip 192.168.96.3 -p_tx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -f mtl_st20p -
@@ -363,12 +363,12 @@ ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i
 
 ### A.2 ST22 compressed video run guide
 
-A typical workflow for processing an MTL ST22 compressed stream with FFMpeg is outlined in the following steps: Initially, FFMpeg reads a YUV frame from the input source, then forwards the frame to a codec to encode the raw video into a compressed codec stream. Finally, the codec stream is sent to the MTL ST22 plugin.
-The MTL ST22 plugin constructs the codec stream and transmits it as ST2110-22 RTP packets, adhering to the standard. In addition to the JPEG XS stream, the MTL ST22 plugin is capable of supporting various other common compressed codecs, including H264, H265, and HEVC, among others.
+A typical workflow for processing an MTL ST22 compressed stream with FFmpeg is outlined in the following steps: Initially, FFmpeg reads a YUV frame from the input source, then forwards the frame to a codec to encode the raw video into a compressed codec stream. Finally, the codec stream is sent to the MTL ST22 plugin.
+The MTL ST22 plugin constructs the codec stream and transmits it as ST 2110-22 RTP packets, adhering to the standard. In addition to the JPEG XS stream, the MTL ST22 plugin is capable of supporting various other common compressed codecs, including H264, H265, and HEVC, among others.
 
 #### A.2.1 St22 output
 
-Reading from a yuv stream from local source file, encode with h264 codec and sending a st2110-22 codestream on "239.168.85.20:20000" with payload_type 112:
+Reading from a yuv stream from local source file, encode with h264 codec and sending a ST 2110-22 codestream on "239.168.85.20:20000" with payload_type 112:
 
 ```bash
 ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv420p -i yuv420p_1080p.yuv -filter:v fps=59.94 -c:v libopenh264 -p_port 0000:af:01.1 -p_sip 192.168.96.3 -p_tx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -f mtl_st22 -
@@ -376,7 +376,7 @@ ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv420p -i yuv
 
 #### A.2.2 St22 input
 
-Reading a st2110-22 codestream on "239.168.85.20:20000" with payload_type 112, decode with ffmpeg h264 codec:
+Reading a ST 2110-22 codestream on "239.168.85.20:20000" with payload_type 112, decode with ffmpeg h264 codec:
 
 ```bash
 ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -fps 59.94 -video_size 1920x1080 -st22_codec h264 -f mtl_st22 -i "k" -f rawvideo /dev/null -y
@@ -384,7 +384,7 @@ ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port
 
 #### A.2.3 SVT-JPEGXS
 
-Make sure the FFMpeg is build with both MTL and SVT-JPEGXS plugin:
+Make sure the FFmpeg is build with both MTL and SVT-JPEGXS plugin:
 
 ```bash
 # start rx
@@ -395,7 +395,7 @@ ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv420p -i yuv
 
 #### A.2.4 SVT-HEVC
 
-Make sure the FFMpeg is build with both MTL and SVT-HEVC plugin:
+Make sure the FFmpeg is build with both MTL and SVT-HEVC plugin:
 
 ```bash
 # start rx
@@ -408,13 +408,13 @@ ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv420p -i yuv
 
 Another option involves utilizing the MTL built-in ST22 codec plugin, where FFmpeg can directly send or retrieve the YUV raw frame to/from the MTL ST22P plugin. MTL will then internally decode or encode the codec stream.
 
-Reading a st2110-22 pipeline jpegxs codestream on "239.168.85.20:20000" with payload_type 112:
+Reading a ST 2110-22 pipeline jpegxs codestream on "239.168.85.20:20000" with payload_type 112:
 
 ```bash
 ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -st22_codec jpegxs -fps 59.94 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st22p -i "k" -f rawvideo /dev/null -y
 ```
 
-Reading from a yuv file and sending a st2110-22 pipeline jpegxs codestream on "239.168.85.20:20000" with payload_type 112:
+Reading from a yuv file and sending a ST 2110-22 pipeline jpegxs codestream on "239.168.85.20:20000" with payload_type 112:
 
 ```bash
 ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i yuv422p10le_1080p.yuv -filter:v fps=59.94 -p_port 0000:af:01.1 -p_sip 192.168.96.3 -p_tx_ip 239.168.85.20 -udp_port 20000 -payload_type 112 -st22_codec jpegxs -f mtl_st22p -
@@ -424,7 +424,7 @@ ffmpeg -stream_loop -1 -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i
 
 #### A.3.1 St30p input
 
-Reading a st2110-30 stream(pcm24,1ms packet time,2 channels) on "239.168.85.20:30000" with payload_type 111 and encoded to a wav file:
+Reading a ST 2110-30 stream (pcm24, 1ms packet time, 2 channels) on "239.168.85.20:30000" with `payload_type 111` and encoded to a wav file:
 
 ```bash
 ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port 30000 -payload_type 111 -pcm_fmt pcm24 -at 1ms -ac 2 -f mtl_st30p -i "0" dump.wav -y
@@ -432,7 +432,7 @@ ffmpeg -p_port 0000:af:01.0 -p_sip 192.168.96.2 -p_rx_ip 239.168.85.20 -udp_port
 
 #### A.3.2 St30p output
 
-Reading from a wav file and sending a st2110-30 stream(pcm24,1ms packet time,2 channels) on "239.168.85.20:30000" with payload_type 111:
+Reading from a wav file and sending a ST 2110-30 stream(pcm24,1ms packet time,2 channels) on "239.168.85.20:30000" with payload_type 111:
 
 ```bash
 ffmpeg -stream_loop -1 -i test.wav -p_port 0000:af:01.1 -p_sip 192.168.96.3 -p_tx_ip 239.168.85.20 -udp_port 30000 -payload_type 111 -at 1ms -f mtl_st30p -

@@ -1,6 +1,6 @@
 # Intel® Media Communications Mesh
 
-FFmpeg Intel® Media Communications Mesh Plugins Documentation
+Documentation for FFmpeg Intel® Media Communications Mesh (further: Mesh) plugin.
 
 > 💡 _**Tip:** For up to date documentation refer to: [https://github.com/OpenVisualCloud/Media-Communications-Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)_
 
@@ -10,7 +10,7 @@ FFmpeg Intel® Media Communications Mesh Plugins Documentation
 
 ## FFmpeg Intel® Media Communications Mesh Muxer Parameters Table
 
-### Muxer plugin available params:
+### Muxer plugin available params
 
 | Parameter      | Description                                               | Type             | Default               | Possible Values                                  |
 |----------------|-----------------------------------------------------------|------------------|-----------------------|--------------------------------------------------|
@@ -24,7 +24,7 @@ FFmpeg Intel® Media Communications Mesh Plugins Documentation
 | `socket_name`  | Set the memif socket name for the media data transmission. | String           | `NULL`                |                                                  |
 | `interface_id` | Set the interface ID for the media data transmission.    | Integer          | `0`                   | `-1` to `INT_MAX` |
 
-### Demuxer plugin available params:
+### Demuxer plugin available params
 
 | Parameter      | Description                                               | Type             | Default               | Possible Values                                  |
 |----------------|-----------------------------------------------------------|------------------|-----------------------|--------------------------------------------------|
@@ -40,7 +40,7 @@ FFmpeg Intel® Media Communications Mesh Plugins Documentation
 
 ## FFmpeg Intel® Media Communications Mesh Muxer Plugin Documentation
 
-The Mcm Muxer plugin for FFmpeg is designed to handle the transmission of media data over a network using various protocols and payload types. Below are the input parameters that can be configured for the Mcm Muxer plugin.
+The Mesh's Muxer plugin for FFmpeg is designed to handle the transmission of media data over a network using various protocols and payload types. Below are the input parameters that can be configured for the Mesh's Muxer plugin.
 
 ### Input Parameters
 
@@ -104,17 +104,17 @@ The Mcm Muxer plugin for FFmpeg is designed to handle the transmission of media 
 
 ### Example Usage
 
-To use the Mcm Muxer plugin with FFmpeg, pass the `-f mcm` flag and parameters. Here is an example command that sets some of the parameters:
+To use the Mesh's Muxer plugin with FFmpeg, pass the `-f mcm` flag and parameters. Here is an example command that sets some of the parameters:
 
 ```bash
 ffmpeg -i input.mp4 -c:v rawvideo -f mcm -ip_addr 192.168.1.100 -port 8000 -payload_type st20 -pixel_format yuv422p10le -protocol_type auto -video_size hd720 -frame_rate 30 -socket_name my_socket -interface_id 2 output.mcm
 ```
 
-This command takes an input file input.mp4, encodes the video as raw video, and uses the Mcm Muxer to send the data to IP address 192.168.1.100 on port 8000 with payload type st20, protocol type auto, video size hd720, frame rate 30, socket name my_socket, and interface ID 2.
+This command takes an `input.mp4` input file, processes the video as `rawvideo`, uses the Mesh's Muxer to send the data to `192.168.1.100` IP address on port `8000` with `st20` payload type, protocol type `auto`, `hd720` video size, `30` frames per second (frame rate), onto socket name `my_socket` with socket's interface ID set to `2`. Output is saved to `output.mcm` file.
 
 ## FFmpeg Intel® Media Communications Mesh Demuxer Plugin
 
-The Mcm Demuxer plugin for FFmpeg is designed to handle the reception of media data over a network using various protocols and payload types. Below are the input parameters that can be configured for the Mcm Demuxer plugin.
+The Mesh's Demuxer plugin for FFmpeg is designed to handle the reception of media data over a network using various protocols and payload types. Below are the input parameters that can be configured for the Mesh's Demuxer plugin.
 
 ### Input Parameters
 
@@ -178,10 +178,10 @@ The Mcm Demuxer plugin for FFmpeg is designed to handle the reception of media d
 
 ### Example Usage
 
-To use the Mcm Demuxer plugin with FFmpeg, pass the `-f mcm` flag and parameters. Here is an example command that sets some of the parameters:
+To use the Mesh's Demuxer plugin with FFmpeg, pass the `-f mcm` flag and parameters. Here is an example command that sets some of the parameters:
 
 ```bash
 ffmpeg -f mcm -ip_addr 192.168.1.100 -port 8000 -payload_type st22 -protocol_type udp -pixel_format yuv422p10le -video_size hd720 -frame_rate 30 -socket_name my_socket -interface_id 2 -i input.mcm -c:v copy output.mp4
 ```
 
-This command receives media data from IP address 192.168.1.100 on port 8000 with payload type st22, protocol type udp, video size hd720, frame rate 30, socket name my_socket, and socket interface ID 2, and then copies the video stream to an output file output.mp4.
+This command receives media data from IP address `192.168.1.100` on port `8000` with `st22` payload type, using `udp` protocol, `hd720` video size, `30` frames per second (frame rate), onto socket named `my_socket` that has `2` set as an interface ID; and then copies the video stream to an output file `output.mp4`.
