@@ -1,4 +1,5 @@
 
 docs/_build
+_build
 file*.json
 .reports

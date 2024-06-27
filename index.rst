@@ -72,3 +72,5 @@ Other
    :caption: Other:
 
    License (LICENSE)
+   Third Party License (docs/ATTRIBUTION-RAW)
+   Third Party License Links (ATTRIBUTION)
