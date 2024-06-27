@@ -101,19 +101,23 @@ session B > jpeg_xs_rx.sh
 ```
 
 
-### JPEG-XS over Media Communications Mesh
+### JPEG XS over Media Communications Mesh
 
-Two input streams from local drive are encoded using JPEG-XS codec and send out via Media Communications Mesh using ST2110-22 streams.
-Input streams from two ST2110-22 cameras are decoded using JPEG-XS codec stored on local drive.
+Two input streams from local drive are encoded using JPEG XS codec and send out via Media Communications Mesh using ST2110-22 streams.
+Input streams from two ST2110-22 cameras are decoded using JPEG XS codec stored on local drive.
 
-<Diagram TBD>
+![JPEG XS MCM process](images/jpeg_xs-process.png)
+![JPEG XS MCM](images/mcm_jpeg_xs.png)
+
+*Note*: The container environment for MCM `media_proxy` is Work in Progress.
+The temporary workaround is to run `media_proxy` in the host OS, so before you run the pipeline make sure you installed [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/README.md#basic-installation).
 
 Example command to run the pipeline:
-```
-terminalA> mcm_media_proxy_rx.sh
-terminalB> mcm_media_proxy_tx.sh
-terminalC> mcm_jpeg_xs_rx.sh
-terminalD> mcm_jpeg_xs_tx.sh
+```text
+session A > mcm_media_proxy_rx.sh
+session B > mcm_media_proxy_tx.sh
+session C > mcm_jpeg_xs_rx.sh
+session D > mcm_jpeg_xs_tx.sh
 ```
 
 
