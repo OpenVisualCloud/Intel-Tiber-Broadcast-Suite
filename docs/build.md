@@ -48,18 +48,18 @@ To install Flex GPU dirver follow the instruction: [Ubuntu Install Steps](https:
     ```shell
     export imtl_source_code=${PWD}
     ```
-3. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the instruction:
+4. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the instruction:
     [Intel® E810 Series Ethernet Adapter driver install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/e810.md)
 
     > **Note:** Please ensure Intel® Ethernet Adapter Complete Driver Pack is downloaded in a version specified in the instruction from a link containing the `MTL_VER` commit hash.
 
-4.  Install Data Plain with Intel® Media Transport Library patches included:
+5.  Install Data Plain with Intel® Media Transport Library patches included:
     [Patched DPDK install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/build.md)
     > **Note:** PIP package manager for Python reads proxy settings from environment variables, thus it might be required to re-setup proxy before proceeding, if sudo is used.
-5. Configure VFIO (IOMMU) required by PMD based DPDK:
+6. Configure VFIO (IOMMU) required by PMD based DPDK:
     [Configuration of the VFIO (IOMMU)](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/run.md)
 
-6. From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, and E810 NIC's virtual controllers:
+7. From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, and E810 NIC's virtual controllers:
     ```shell
     sudo -E ./first_run.sh | tee virtual_functions.txt
     ```
@@ -102,7 +102,7 @@ Change number of cores used to build by make can be changed  by _--build-arg npr
 docker build --build-arg nproc=1 -t video_production_image -f Dockerfile .
 ```
 
-### 3. Test run the image
+## 3. Test run the image
 
 ```shell
 docker run --rm -it --user=root --privileged video_production_image --help
