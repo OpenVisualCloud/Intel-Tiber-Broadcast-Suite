@@ -212,7 +212,7 @@ This chapter explains how to use information from the previous chapter in the In
 This chapter explains how to gather the platform information regarding CPU and use them in commands.
 
 ### CPUset CPUs
-For parameter `--cpuset-cpus` use information gathered in [Find proper NUMA node and CPUs](#find-proper-numa-node-and-cpus) - `36-71,108-143`.
+For parameter `--cpuset-cpus` use information gathered in [Find proper NUMA node and CPUs](#find-proper-numa-node-and-cpus-for-the-nic) - `36-71,108-143`.
 
 Dedicate a set of CPUs for specific container, e.g. `--cpuset-cpus=36-56`.
 
