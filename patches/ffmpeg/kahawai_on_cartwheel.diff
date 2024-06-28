@@ -1,0 +1,1215 @@
+diff --git a/configure b/configure
+index 1eee7c8..d466c4d 100755
+--- a/configure
++++ b/configure
+@@ -214,6 +214,7 @@ External library support:
+                            if openssl, libtls or mbedtls is not used [no]
+   --disable-iconv          disable iconv [autodetect]
+   --enable-jni             enable JNI support [no]
++  --enable-mtl             enable Kahawai indev [no]
+   --enable-ladspa          enable LADSPA audio filtering [no]
+   --enable-lcms2           enable ICC profile support via LittleCMS 2 [no]
+   --enable-libaom          enable AV1 video encoding/decoding via libaom [no]
+@@ -1899,6 +1900,7 @@ EXTERNAL_LIBRARY_LIST="
+     libspeex
+     libsrt
+     libssh
++    mtl
+     libsvtav1
+     libtensorflow
+     libtesseract
+@@ -3623,6 +3625,8 @@ iec61883_indev_deps="libiec61883"
+ iec61883_indev_select="dv_demuxer"
+ jack_indev_deps="libjack"
+ jack_indev_deps_any="sem_timedwait dispatch_dispatch_h"
++kahawai_indev_deps="mtl"
++kahawai_outdev_deps="mtl"
+ kmsgrab_indev_deps="libdrm"
+ lavfi_indev_deps="avfilter"
+ libcdio_indev_deps="libcdio"
+@@ -6700,6 +6704,7 @@ enabled frei0r            && require_headers "frei0r.h"
+ enabled gmp               && require gmp gmp.h mpz_export -lgmp
+ enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
+ enabled jni               && { [ $target_os = "android" ] && check_headers jni.h && enabled pthreads || die "ERROR: jni not found"; }
++enabled mtl               && require_pkg_config mtl "mtl >= 22.12.0" mtl/st_pipeline_api.h mtl_init
+ enabled ladspa            && require_headers "ladspa.h dlfcn.h"
+ enabled lcms2             && require_pkg_config lcms2 "lcms2 >= 2.13" lcms2.h cmsCreateContext
+ enabled libaom            && require_pkg_config libaom "aom >= 1.0.0" aom/aom_codec.h aom_codec_version
+diff --git a/libavdevice/Makefile b/libavdevice/Makefile
+index c304492..a76c469 100644
+--- a/libavdevice/Makefile
++++ b/libavdevice/Makefile
+@@ -32,6 +32,8 @@ OBJS-$(CONFIG_FBDEV_OUTDEV)              += fbdev_enc.o \
+ OBJS-$(CONFIG_GDIGRAB_INDEV)             += gdigrab.o
+ OBJS-$(CONFIG_IEC61883_INDEV)            += iec61883.o
+ OBJS-$(CONFIG_JACK_INDEV)                += jack.o timefilter.o
++OBJS-$(CONFIG_KAHAWAI_INDEV)             += kahawai_common.o kahawai_dec.o
++OBJS-$(CONFIG_KAHAWAI_OUTDEV)            += kahawai_common.o kahawai_enc.o
+ OBJS-$(CONFIG_KMSGRAB_INDEV)             += kmsgrab.o
+ OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
+ OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
+diff --git a/libavdevice/alldevices.c b/libavdevice/alldevices.c
+index 8a90fcb..5150903 100644
+--- a/libavdevice/alldevices.c
++++ b/libavdevice/alldevices.c
+@@ -54,6 +54,8 @@ extern const FFOutputFormat ff_v4l2_muxer;
+ extern const AVInputFormat  ff_vfwcap_demuxer;
+ extern const AVInputFormat  ff_xcbgrab_demuxer;
+ extern const FFOutputFormat ff_xv_muxer;
++extern const AVInputFormat  ff_kahawai_demuxer;
++extern const FFOutputFormat ff_kahawai_muxer;
+ 
+ /* external libraries */
+ extern const AVInputFormat  ff_libcdio_demuxer;
+diff --git a/libavdevice/kahawai_common.c b/libavdevice/kahawai_common.c
+new file mode 100644
+index 0000000..37c32d9
+--- /dev/null
++++ b/libavdevice/kahawai_common.c
+@@ -0,0 +1,100 @@
++/*
++ * Kahawai common struct and functions
++ * Copyright (c) 2023 Intel
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include "kahawai_common.h"
++
++#include <mtl/st_convert_api.h>
++#include <mtl/st_pipeline_api.h>
++#include "libavutil/log.h"
++#include "libavutil/common.h"
++
++static mtl_handle shared_st_handle = NULL;
++unsigned int active_session_cnt = 0;
++static struct mtl_init_params param = {0};
++
++enum st_fps kahawai_fps_to_st_fps(AVRational framerate) {
++  double fps = (double)framerate.num / (double)framerate.den;
++
++  return st_frame_rate_to_st_fps(fps);
++}
++
++mtl_handle kahawai_init(char* port, char* local_addr, int enc_session_cnt,
++                        int dec_session_cnt, char* dma_dev) {
++  param.num_ports = 1;
++
++  snprintf(param.port[MTL_PORT_P], MTL_PORT_MAX_LEN, "%s", port);
++  param.pmd[MTL_PORT_P] = mtl_pmd_by_port_name(param.port[MTL_PORT_P]);
++
++  if (param.pmd[MTL_PORT_P] == MTL_PMD_DPDK_USER) {
++    /* check ip for dpdk based pmd */
++    if (NULL == local_addr) {
++      av_log(NULL, AV_LOG_ERROR, "Invalid local IP address\n");
++      return NULL;
++    } else if (sscanf(local_addr, "%hhu.%hhu.%hhu.%hhu", &param.sip_addr[MTL_PORT_P][0],
++                      &param.sip_addr[MTL_PORT_P][1], &param.sip_addr[MTL_PORT_P][2],
++                      &param.sip_addr[MTL_PORT_P][3]) != MTL_IP_ADDR_LEN) {
++      av_log(NULL, AV_LOG_ERROR, "Failed to parse local IP address: %s\n", local_addr);
++      return NULL;
++    }
++  }
++
++  if (enc_session_cnt > 0) {
++    param.tx_queues_cnt[MTL_PORT_P] = enc_session_cnt;
++    param.flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
++  }
++  if (dec_session_cnt > 0) {
++    param.rx_queues_cnt[MTL_PORT_P] = dec_session_cnt;
++    param.flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
++    param.flags |= MTL_FLAG_RX_SEPARATE_VIDEO_LCORE;
++  }
++  param.flags |= MTL_FLAG_BIND_NUMA;
++  param.flags |= MTL_FLAG_DEV_AUTO_START_STOP;
++  param.log_level = MTL_LOG_LEVEL_DEBUG;  // log level. ERROR, INFO, WARNING
++  param.priv = NULL;                      // usr crx pointer
++  param.ptp_get_time_fn = NULL;
++  av_log(NULL, AV_LOG_DEBUG, "params.lcores = %s\n", getenv("MTL_PARAM_LCORES"));
++  //param.lcores = (char*) malloc(256*sizeof(char));
++  //param.lcores = strcpy(param.lcores, getenv("MTL_PARAM_LCORES"));
++  if (getenv("MTL_PARAM_LCORES")) {
++    sprintf(param.lcores, "%s", getenv("MTL_PARAM_LCORES"));
++  } else {
++    sprintf(param.lcores, "");
++  }
++
++  if (getenv("MTL_PARAM_DATA_QUOTA")) {
++    uint32_t data_quota_mbs_per_sch = (uint32_t)atol(getenv("MTL_PARAM_DATA_QUOTA"));
++    av_log(NULL, AV_LOG_DEBUG, "params.data_quota_mbs_per_sch = %u\n", data_quota_mbs_per_sch);
++    param.data_quota_mbs_per_sch = data_quota_mbs_per_sch;
++  } else {
++    av_log(NULL, AV_LOG_DEBUG, "params.data_quota_mbs_per_sch set do default: %lu\n", 4 * st20_1080p59_yuv422_10bit_bandwidth_mps());
++    param.data_quota_mbs_per_sch = (uint32_t)(4 * st20_1080p59_yuv422_10bit_bandwidth_mps());
++  }
++
++  if (dma_dev) {
++    param.num_dma_dev_port = 1;
++    snprintf(param.dma_dev_port[MTL_PORT_P], MTL_PORT_MAX_LEN, "%s", dma_dev);
++    av_log(NULL, AV_LOG_VERBOSE, "DMA enabled on %s\n", dma_dev);
++  }
++
++  return mtl_init(&param);
++}
++
++mtl_handle kahawai_get_handle() { return shared_st_handle; }
++
++void kahawai_set_handle(mtl_handle handle) { shared_st_handle = handle; }
+diff --git a/libavdevice/kahawai_common.h b/libavdevice/kahawai_common.h
+new file mode 100644
+index 0000000..5e38d06
+--- /dev/null
++++ b/libavdevice/kahawai_common.h
+@@ -0,0 +1,34 @@
++/*
++ * Kahawai common struct and functions
++ * Copyright (c) 2023 Intel
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <mtl/st_pipeline_api.h>
++
++#include "libavutil/rational.h"
++
++typedef struct KahawaiFpsDecs {
++  enum st_fps st_fps;
++  unsigned int min;
++  unsigned int max;
++} KahawaiFpsDecs;
++
++enum st_fps kahawai_fps_to_st_fps(AVRational framerate);
++mtl_handle kahawai_init(char* port, char* local_addr, int enc_session_cnt,
++                        int dec_session_cnt, char* dma_dev);
++mtl_handle kahawai_get_handle(void);
++void kahawai_set_handle(mtl_handle handle);
+diff --git a/libavdevice/kahawai_dec.c b/libavdevice/kahawai_dec.c
+new file mode 100644
+index 0000000..3258132
+--- /dev/null
++++ b/libavdevice/kahawai_dec.c
+@@ -0,0 +1,607 @@
++/*
++ * Kahawai raw video demuxer
++ * Copyright (c) 2023 Intel
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <mtl/st_convert_api.h>
++#include <mtl/st_pipeline_api.h>
++
++#include "kahawai_common.h"
++#include "libavformat/avformat.h"
++#include "libavformat/internal.h"
++#include "libavutil/imgutils.h"
++#include "libavutil/opt.h"
++#include "libavutil/parseutils.h"
++#include "libavutil/pixdesc.h"
++
++typedef struct KahawaiDemuxerContext {
++  const AVClass* class; /**< Class for private options. */
++
++  char* port;
++  char* local_addr;
++  char* src_addr;
++  int udp_port;
++  int width;
++  int height;
++  char* pixel_format;
++  AVRational framerate;
++  int fb_cnt;
++  int session_cnt;
++  bool ext_frames_mode;
++  char* dma_dev;
++
++  mtl_handle dev_handle;
++  st20p_rx_handle rx_handle;
++
++  pthread_cond_t get_frame_cond;
++  pthread_mutex_t get_frame_mutex;
++
++  int64_t frame_counter;
++  struct st_frame* frame;
++  size_t output_frame_size;
++
++  /* The below session is for ext frames only */
++  struct st_ext_frame* ext_frames;
++  AVBufferRef** av_buffers;
++  AVBufferRef** av_buffers_keepers;
++  int last_frame_num;
++  struct st_frame* last_frame;
++} KahawaiDemuxerContext;
++
++extern unsigned int active_session_cnt;
++
++static int rx_st20p_frame_available(void* priv) {
++  KahawaiDemuxerContext* s = priv;
++
++  pthread_mutex_lock(&(s->get_frame_mutex));
++  pthread_cond_signal(&(s->get_frame_cond));
++  pthread_mutex_unlock(&(s->get_frame_mutex));
++
++  return 0;
++}
++
++static int kahawai_read_header(AVFormatContext* ctx) {
++  KahawaiDemuxerContext* s = ctx->priv_data;
++
++  AVStream* st = NULL;
++  enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
++  int packet_size = 0;
++  const AVPixFmtDescriptor* pix_fmt_desc = NULL;
++
++  // struct mtl_init_params param;
++  struct st20p_rx_ops ops_rx;
++
++  av_log(ctx, AV_LOG_VERBOSE, "kahawai_read_header triggered\n");
++
++  memset(&ops_rx, 0, sizeof(ops_rx));
++
++  if ((NULL == s->port) || (strlen(s->port) > MTL_PORT_MAX_LEN)) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid port info\n");
++    return AVERROR(EINVAL);
++  }
++  ops_rx.port.num_port = 1;
++  snprintf(ops_rx.port.port[MTL_PORT_P], MTL_PORT_MAX_LEN, "%s", s->port);
++
++  if (NULL == s->src_addr) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid source IP address\n");
++    return AVERROR(EINVAL);
++  } else if (sscanf(s->src_addr, "%hhu.%hhu.%hhu.%hhu",
++                    &ops_rx.port.sip_addr[MTL_PORT_P][0],
++                    &ops_rx.port.sip_addr[MTL_PORT_P][1],
++                    &ops_rx.port.sip_addr[MTL_PORT_P][2],
++                    &ops_rx.port.sip_addr[MTL_PORT_P][3]) != MTL_IP_ADDR_LEN) {
++    av_log(ctx, AV_LOG_ERROR, "Failed to parse source IP address: %s\n", s->src_addr);
++    return AVERROR(EINVAL);
++  }
++
++  if ((s->udp_port < 0) || (s->udp_port > 0xFFFF)) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid UDP port: %d\n", s->udp_port);
++    return AVERROR(EINVAL);
++  }
++  ops_rx.port.udp_port[MTL_PORT_P] = s->udp_port;
++
++  if (s->width <= 0) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid transport width: %d\n", s->width);
++    return AVERROR(EINVAL);
++  }
++  ops_rx.width = s->width;
++
++  if (s->height <= 0) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid transport height: %d\n", s->height);
++    return AVERROR(EINVAL);
++  }
++  ops_rx.height = s->height;
++
++  pix_fmt = av_get_pix_fmt(s->pixel_format);
++  pix_fmt_desc = av_pix_fmt_desc_get(pix_fmt);
++  switch (pix_fmt) {
++    case AV_PIX_FMT_YUV422P10LE:
++      ops_rx.transport_fmt = ST20_FMT_YUV_422_10BIT;
++      if (s->ext_frames_mode) {
++        ops_rx.output_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
++      } else {
++        ops_rx.output_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
++      }
++      break; 
++    case AV_PIX_FMT_Y210LE:
++      ops_rx.transport_fmt = ST20_FMT_YUV_422_10BIT;
++      ops_rx.output_fmt = ST_FRAME_FMT_Y210;
++      break;
++    case AV_PIX_FMT_RGB24:
++      ops_rx.transport_fmt = ST20_FMT_RGB_8BIT;
++      ops_rx.output_fmt = ST_FRAME_FMT_RGB8;
++      break;
++    default:
++      av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s.\n", pix_fmt_desc->name);
++      return AVERROR(EINVAL);
++  }
++
++  packet_size = av_image_get_buffer_size(pix_fmt, s->width, s->height, 1);
++  if (packet_size < 0) {
++    av_log(ctx, AV_LOG_ERROR, "av_image_get_buffer_size failed with %d\n", packet_size);
++    return packet_size;
++  }
++  av_log(ctx, AV_LOG_VERBOSE, "packet size: %d\n", packet_size);
++  ops_rx.fps = kahawai_fps_to_st_fps(s->framerate);
++  if (ops_rx.fps == ST_FPS_MAX) {
++    av_log(ctx, AV_LOG_ERROR, "Frame rate %0.2f is not supported\n",
++           av_q2d(s->framerate));
++    return AVERROR(EINVAL);
++  }
++
++  if (NULL == s->dma_dev) {
++    av_log(ctx, AV_LOG_VERBOSE, "DMA disabled\n");
++  } else {
++    if (!s->ext_frames_mode) {
++      av_log(ctx, AV_LOG_WARNING, "Turned off DMA for ext_frames_mode disabled\n");
++    } else {
++      ops_rx.flags = ST20_RX_FLAG_DMA_OFFLOAD;
++    }
++  }
++
++  st = avformat_new_stream(ctx, NULL);
++  if (!st) {
++    return AVERROR(ENOMEM);
++  }
++
++  st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
++  st->codecpar->codec_id = ctx->iformat->raw_codec_id;
++  st->codecpar->format = pix_fmt;
++  st->codecpar->width = s->width;
++  st->codecpar->height = s->height;
++  avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
++  ctx->packet_size = packet_size;
++  st->codecpar->bit_rate =
++      av_rescale_q(ctx->packet_size, (AVRational){8, 1}, st->time_base);
++
++  // Create device
++  if (!kahawai_get_handle()) {
++    s->dev_handle = kahawai_init(s->port, s->local_addr, 0, s->session_cnt, s->dma_dev);
++    if (!s->dev_handle) {
++      av_log(ctx, AV_LOG_ERROR, "mtl_init failed\n");
++      return AVERROR(EIO);
++    }
++    kahawai_set_handle(s->dev_handle);
++    av_log(ctx, AV_LOG_VERBOSE, "mtl_init finished: st_handle %p\n ",
++           kahawai_get_handle());
++  } else {
++    s->dev_handle = kahawai_get_handle();
++    av_log(ctx, AV_LOG_VERBOSE, "use shared st_handle %p\n ", kahawai_get_handle());
++  }
++  ++active_session_cnt;
++
++  ops_rx.name = "st20p_rx";
++  ops_rx.priv = s;                 // Handle of priv_data registered to lib
++  ops_rx.port.payload_type = 112;  // RX_ST20_PAYLOAD_TYPE
++  ops_rx.device = ST_PLUGIN_DEVICE_AUTO;
++  ops_rx.notify_frame_available = rx_st20p_frame_available;
++  ops_rx.framebuff_cnt = s->fb_cnt;
++
++  if (s->ext_frames_mode) {
++    s->ext_frames = malloc(sizeof(struct st_ext_frame) * s->fb_cnt);
++    if (!s->ext_frames) {
++      av_log(ctx, AV_LOG_ERROR, "Allocation of ext_frames failed\n");
++      return AVERROR(ENOMEM);
++    }
++    memset(s->ext_frames, 0, sizeof(struct st_ext_frame) * s->fb_cnt);
++
++    s->av_buffers = malloc(sizeof(AVBufferRef*) * s->fb_cnt);
++    if (!s->av_buffers) {
++      av_log(ctx, AV_LOG_ERROR, "Allocation of av_buffers failed\n");
++      return AVERROR(ENOMEM);
++    }
++    for (int i = 0; i < s->fb_cnt; ++i) {
++      s->av_buffers[i] = NULL;
++    }
++
++    s->av_buffers_keepers = malloc(sizeof(AVBufferRef*) * s->fb_cnt);
++    if (!s->av_buffers_keepers) {
++      av_log(ctx, AV_LOG_ERROR, "Allocation of av_buffers_keepers failed\n");
++      return AVERROR(ENOMEM);
++    }
++    for (int i = 0; i < s->fb_cnt; ++i) {
++      s->av_buffers_keepers[i] = NULL;
++    }
++
++    for (int i = 0; i < s->fb_cnt; ++i) {
++      s->av_buffers[i] = av_buffer_allocz(ctx->packet_size);
++      if (!s->av_buffers[i]) {
++        av_log(ctx, AV_LOG_ERROR, "av_buffer_allocz failed\n");
++        return AVERROR(ENOMEM);
++      }
++
++      s->av_buffers_keepers[i] = av_buffer_ref(s->av_buffers[i]);
++      if (!s->av_buffers_keepers[i]) {
++        av_log(ctx, AV_LOG_ERROR, "av_buffer_ref failed\n");
++
++        for (int j = 0; j < i; ++j) {
++          av_buffer_unref(&s->av_buffers_keepers[j]);
++          av_buffer_unref(&s->av_buffers[j]);
++        }
++        av_buffer_unref(&s->av_buffers[i]);
++      }
++
++      s->ext_frames[i].addr[0] = s->av_buffers[i]->data;
++      s->ext_frames[i].linesize[0] = s->width * 2 * (pix_fmt == AV_PIX_FMT_Y210LE ? 2 : 1);
++      s->ext_frames[i].addr[1] =
++          (void*)((unsigned long)s->ext_frames[i].addr[0] + (s->width * s->height * 2));
++      s->ext_frames[i].linesize[1] = s->width * (pix_fmt == AV_PIX_FMT_Y210LE ? 0 : 1);
++      s->ext_frames[i].addr[2] =
++          (void*)((unsigned long)s->ext_frames[i].addr[1] + (s->width * s->height));
++      s->ext_frames[i].linesize[2] = s->width * (pix_fmt == AV_PIX_FMT_Y210LE ? 0 : 1);
++      s->ext_frames[i].size = ctx->packet_size;
++
++      av_log(ctx, AV_LOG_VERBOSE, "Allocated Framebuf[%d]: 0x%" PRIx64 "\n", i,
++             (unsigned long)s->av_buffers[i]->data);
++    }
++    ops_rx.ext_frames = s->ext_frames;
++  } else {
++    s->ext_frames = NULL;
++    s->av_buffers = s->av_buffers_keepers = NULL;
++  }
++
++  pthread_mutex_init(&(s->get_frame_mutex), NULL);
++  pthread_cond_init(&(s->get_frame_cond), NULL);
++
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_rx_create st_handle 0x%" PRIx64 "\n",
++         (unsigned long)s->dev_handle);
++  av_log(ctx, AV_LOG_VERBOSE, "udp_port %d\n", s->udp_port);
++
++  s->rx_handle = st20p_rx_create(s->dev_handle, &ops_rx);
++  if (!s->rx_handle) {
++    av_log(ctx, AV_LOG_ERROR, "st20p_rx_create failed\n");
++    return AVERROR(EIO);
++  }
++
++  s->output_frame_size = st20p_rx_frame_size(s->rx_handle);
++  if (s->output_frame_size <= 0) {
++    av_log(ctx, AV_LOG_ERROR, "st20p_rx_frame_size failed\n");
++    return AVERROR(EINVAL);
++  }
++
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_rx_create finished\n");
++
++  s->frame_counter = 0;
++  s->frame = NULL;
++  s->last_frame_num = -1;
++  s->last_frame = NULL;
++
++  return 0;
++}
++
++static int kahawai_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
++  KahawaiDemuxerContext* s = ctx->priv_data;
++  int frame_num = 0;
++  int ret = 0;
++
++  av_log(ctx, AV_LOG_VERBOSE, "kahawai_read_packet triggered\n");
++  if (active_session_cnt != s->session_cnt) {
++    return 0;
++  }
++
++  if (s->ext_frames_mode) {
++    if (s->last_frame) {
++      av_log(ctx, AV_LOG_VERBOSE, "st20p_rx_put_frame: 0x%" PRIx64 "\n",
++             (unsigned long)(s->last_frame->addr[0]));
++      st20p_rx_put_frame(s->rx_handle, s->last_frame);
++      s->last_frame = NULL;
++
++      if ((s->last_frame_num >= 0) && (s->last_frame_num < s->fb_cnt)) {
++        s->av_buffers[s->last_frame_num] =
++            av_buffer_ref(s->av_buffers_keepers[s->last_frame_num]);
++        if (!s->av_buffers[s->last_frame_num]) {
++          av_log(ctx, AV_LOG_ERROR, "av_buffer_ref failed\n");
++          return AVERROR(ENOMEM);
++        }
++      }
++    }
++  }
++
++  s->frame = st20p_rx_get_frame(s->rx_handle);
++  if (!s->frame) {
++    pthread_mutex_lock(&(s->get_frame_mutex));
++    pthread_cond_wait(&(s->get_frame_cond), &(s->get_frame_mutex));
++    pthread_mutex_unlock(&(s->get_frame_mutex));
++
++    s->frame = st20p_rx_get_frame(s->rx_handle);
++    if (!s->frame) {
++      av_log(ctx, AV_LOG_ERROR, "st20p_rx_get_frame failed\n");
++      return AVERROR(EIO);
++    }
++  }
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_rx_get_frame: 0x%" PRIx64 "\n",
++         (unsigned long)(s->frame->addr[0]));
++
++  if (s->ext_frames_mode) {
++    s->last_frame = s->frame;
++  }
++
++  if (s->frame->data_size != s->output_frame_size) {
++    av_log(ctx, AV_LOG_ERROR,
++           "Unexpected frame size received: %" PRIu64 " (%" PRIu64 " expected)\n",
++           s->frame->data_size, s->output_frame_size);
++    // s->stopped = true;
++    // pthread_mutex_unlock(&(s->read_packet_mutex));
++    return AVERROR(EIO);
++  }
++
++  if (s->ext_frames_mode) {
++    while (frame_num < s->fb_cnt) {
++      av_log(ctx, AV_LOG_VERBOSE, "Checked Framebuf[%d]: 0x%" PRIx64 "\n", frame_num,
++             (unsigned long)s->av_buffers[frame_num]->data);
++      if (s->av_buffers[frame_num]->data == s->frame->addr[0]) {
++        break;
++      }
++      ++frame_num;
++    }
++
++    if (frame_num >= s->fb_cnt) {
++      av_log(ctx, AV_LOG_ERROR, "Failed to match the received frame\n");
++      return AVERROR(EIO);
++    }
++    s->last_frame_num = frame_num;
++
++    pkt->buf = s->av_buffers[frame_num];
++    pkt->data = s->av_buffers[frame_num]->data;
++    pkt->size = s->av_buffers[frame_num]->size;
++    av_log(ctx, AV_LOG_DEBUG, "pkt data 0x%" PRIx64 " size %d data[0]=%u\n",
++           (unsigned long)pkt->data, pkt->size, pkt->data[0]);
++  } else {
++    ret = av_new_packet(pkt, ctx->packet_size);
++    if (ret != 0) {
++      av_log(ctx, AV_LOG_ERROR, "av_new_packet failed with %d\n", ret);
++      // s->stopped = true;
++      // pthread_mutex_unlock(&(s->read_packet_mutex));
++      return ret;
++    }
++
++    switch (av_get_pix_fmt(s->pixel_format)) {
++      case AV_PIX_FMT_YUV422P10LE:
++        ret = st20_rfc4175_422be10_to_yuv422p10le(
++            (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), (uint16_t*)pkt->data,
++            (uint16_t*)(pkt->data + (s->width * s->height * 2)),
++            (uint16_t*)(pkt->data + (s->width * s->height * 3)), s->width, s->height);
++        if (ret != 0) {
++          av_log(ctx, AV_LOG_ERROR,
++                 "st20_rfc4175_422be10_to_yuv422p10le failed with %d\n", ret);
++          // s->stopped = true;
++          // pthread_mutex_unlock(&(s->read_packet_mutex));
++          return ret;
++        }
++        break;
++      case AV_PIX_FMT_Y210LE:
++        ret = st20_rfc4175_422be10_to_y210(
++            (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), (uint16_t*)pkt->data,
++            s->width, s->height);
++        if (ret != 0) {
++          av_log(ctx, AV_LOG_ERROR,
++                 "st20_rfc4175_422be10_to_y210le failed with %d\n", ret);
++          // s->stopped = true;
++          // pthread_mutex_unlock(&(s->read_packet_mutex));
++          return ret;
++        }
++        break;      
++      case AV_PIX_FMT_RGB24:
++        memcpy((uint8_t*)pkt->data, s->frame->addr[0], s->width * s->height * 3);
++    }
++    st20p_rx_put_frame(s->rx_handle, s->frame);
++    av_log(ctx, AV_LOG_VERBOSE, "st20p_rx_put_frame: 0x%" PRIx64 "\n",
++           (unsigned long)(s->frame->addr[0]));
++    // pthread_mutex_unlock(&(s->read_packet_mutex));
++  }
++  pkt->pts = pkt->dts = s->frame_counter++;
++  s->frame = NULL;
++  av_log(ctx, AV_LOG_VERBOSE, "Got POC %" PRIu64 "\n", pkt->pts);
++
++  return 0;
++}
++
++static int kahawai_read_close(AVFormatContext* ctx) {
++  KahawaiDemuxerContext* s = ctx->priv_data;
++
++  av_log(ctx, AV_LOG_VERBOSE, "kahawai_read_close triggered\n");
++
++  if (s->frame) {
++    av_log(ctx, AV_LOG_VERBOSE, "Put a frame: 0x%" PRIx64 "\n",
++           (unsigned long)(s->frame->addr[0]));
++    st20p_rx_put_frame(s->rx_handle, s->frame);
++    s->frame = NULL;
++  }
++
++  if (s->ext_frames_mode) {
++    if (s->last_frame) {
++      av_log(ctx, AV_LOG_VERBOSE, "Put a frame: 0x%" PRIx64 "\n",
++             (unsigned long)(s->last_frame->addr[0]));
++      st20p_rx_put_frame(s->rx_handle, s->last_frame);
++      s->last_frame = NULL;
++    }
++  }
++  if (s->rx_handle) {
++    st20p_rx_free(s->rx_handle);
++    s->rx_handle = NULL;
++  }
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_rx_free finished\n");
++
++  pthread_mutex_destroy(&s->get_frame_mutex);
++  pthread_cond_destroy(&s->get_frame_cond);
++
++  // Destroy device
++  if (--active_session_cnt == 0) {
++    if (kahawai_get_handle()) {
++      mtl_uninit(kahawai_get_handle());
++      kahawai_set_handle(NULL);
++      av_log(ctx, AV_LOG_VERBOSE, "mtl_uninit finished\n");
++    } else {
++      av_log(ctx, AV_LOG_ERROR, "missing st_handle\n");
++    }
++  } else {
++    av_log(ctx, AV_LOG_VERBOSE, "no need to do st_uninit yet\n");
++  }
++  s->dev_handle = NULL;
++
++  if (s->ext_frames_mode) {
++    if (s->ext_frames) {
++      free(s->ext_frames);
++      s->ext_frames = NULL;
++    }
++
++    for (int i = 0; i < s->fb_cnt; ++i) {
++      if (i != s->last_frame_num) av_buffer_unref(&(s->av_buffers[i]));
++      av_buffer_unref(&(s->av_buffers_keepers[i]));
++    }
++
++    if (s->av_buffers) {
++      free(s->av_buffers);
++      s->av_buffers = NULL;
++    }
++
++    if (s->av_buffers_keepers) {
++      free(s->av_buffers_keepers);
++      s->av_buffers_keepers = NULL;
++    }
++  }
++
++  return 0;
++}
++
++#define OFFSET(x) offsetof(KahawaiDemuxerContext, x)
++#define DEC AV_OPT_FLAG_DECODING_PARAM
++static const AVOption kahawai_options[] = {
++    {"port", "ST port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC},
++    {"local_addr",
++     "Local IP address",
++     OFFSET(local_addr),
++     AV_OPT_TYPE_STRING,
++     {.str = NULL},
++     .flags = DEC},
++    {"src_addr",
++     "Source IP address",
++     OFFSET(src_addr),
++     AV_OPT_TYPE_STRING,
++     {.str = NULL},
++     .flags = DEC},
++    {"udp_port",
++     "UDP port",
++     OFFSET(udp_port),
++     AV_OPT_TYPE_INT,
++     {.i64 = -1},
++     -1,
++     INT_MAX,
++     DEC},
++    {"width",
++     "Video frame width",
++     OFFSET(width),
++     AV_OPT_TYPE_INT,
++     {.i64 = -1},
++     -1,
++     INT_MAX,
++     DEC},
++    {"height",
++     "Video frame height",
++     OFFSET(height),
++     AV_OPT_TYPE_INT,
++     {.i64 = -1},
++     -1,
++     INT_MAX,
++     DEC},
++    {"pixel_format",
++     "Video frame format",
++     OFFSET(pixel_format),
++     AV_OPT_TYPE_STRING,
++     {.str = NULL},
++     .flags = DEC},
++    {"framerate",
++     "Video frame rate",
++     OFFSET(framerate),
++     AV_OPT_TYPE_VIDEO_RATE,
++     {.str = "25"},
++     0,
++     INT_MAX,
++     DEC},
++    {"fb_cnt",
++     "Frame buffer count",
++     OFFSET(fb_cnt),
++     AV_OPT_TYPE_INT,
++     {.i64 = 8},
++     3,
++     8,
++     DEC},
++    {"total_sessions",
++     "Total sessions count",
++     OFFSET(session_cnt),
++     AV_OPT_TYPE_INT,
++     {.i64 = 1},
++     1,
++     INT_MAX,
++     DEC},
++    {"ext_frames_mode",
++     "Enable external frames mode",
++     OFFSET(ext_frames_mode),
++     AV_OPT_TYPE_BOOL,
++     {.i64 = 1},
++     0,
++     1,
++     DEC},
++    {"dma_dev",
++     "DMA device node",
++     OFFSET(dma_dev),
++     AV_OPT_TYPE_STRING,
++     {.str = NULL},
++     .flags = DEC},
++    {NULL},
++};
++
++static const AVClass kahawai_demuxer_class = {
++    .class_name = "kahawai demuxer",
++    .item_name = av_default_item_name,
++    .option = kahawai_options,
++    .version = LIBAVUTIL_VERSION_INT,
++    .category = AV_CLASS_CATEGORY_DEVICE_INPUT,
++};
++
++AVInputFormat ff_kahawai_demuxer = {
++    .name = "kahawai",
++    .long_name = NULL_IF_CONFIG_SMALL("kahawai input device"),
++    .priv_data_size = sizeof(KahawaiDemuxerContext),
++    .read_header = kahawai_read_header,
++    .read_packet = kahawai_read_packet,
++    .read_close = kahawai_read_close,
++    .flags = AVFMT_NOFILE,
++    .extensions = "kahawai",
++    .raw_codec_id = AV_CODEC_ID_RAWVIDEO,
++    .priv_class = &kahawai_demuxer_class,
++};
+diff --git a/libavdevice/kahawai_enc.c b/libavdevice/kahawai_enc.c
+new file mode 100644
+index 0000000..93dbb1c
+--- /dev/null
++++ b/libavdevice/kahawai_enc.c
+@@ -0,0 +1,387 @@
++/*
++ * Kahawai raw video muxer
++ * Copyright (c) 2023 Intel
++ *
++ * FFmpeg is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Lesser General Public
++ * License as published by the Free Software Foundation; either
++ * version 2.1 of the License, or (at your option) any later version.
++ *
++ * FFmpeg is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Lesser General Public License for more details.
++ *
++ * You should have received a copy of the GNU Lesser General Public
++ * License along with FFmpeg; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
++ */
++
++#include <mtl/st_convert_api.h>
++#include <mtl/st_pipeline_api.h>
++#include <unistd.h>
++
++#include "kahawai_common.h"
++
++#include "libavutil/internal.h"
++#include "avdevice.h"
++#include "libavformat/mux.h"
++
++#include "libavformat/avformat.h"
++#include "libavformat/internal.h"
++#include "libavutil/imgutils.h"
++#include "libavutil/opt.h"
++#include "libavutil/parseutils.h"
++#include "libavutil/pixdesc.h"
++
++typedef struct KahawaiMuxerContext {
++  const AVClass* class; /**< Class for private options. */
++
++  char* port;
++  char* local_addr;
++  char* dst_addr;
++  int udp_port;
++  int fb_cnt;
++  int session_cnt;
++
++  int width;
++  int height;
++  enum AVPixelFormat pixel_format;
++  AVRational framerate;
++  mtl_handle dev_handle;
++  st20p_tx_handle tx_handle;
++
++  pthread_cond_t get_frame_cond;
++  pthread_mutex_t get_frame_mutex;
++  int64_t frame_tx_completed;
++  bool tx_completed;
++
++  int64_t frame_counter;
++  struct st_frame* frame;
++  size_t output_frame_size;
++} KahawaiMuxerContext;
++
++extern unsigned int active_session_cnt;
++
++static int tx_st20p_frame_available(void* priv) {
++  KahawaiMuxerContext* s = priv;
++
++  pthread_mutex_lock(&(s->get_frame_mutex));
++  pthread_cond_signal(&(s->get_frame_cond));
++  pthread_mutex_unlock(&(s->get_frame_mutex));
++
++  return 0;
++}
++
++static int tx_st20p_frame_done(void* priv, struct st_frame* frame) {
++  KahawaiMuxerContext* s = priv;
++
++  if (ST_FRAME_STATUS_COMPLETE == frame->status) {
++    s->frame_tx_completed++;
++    /* s->frame_counter is the number of frames sent to MTL,
++      -1 here because some times we cannot get all notifications from MTL
++    */
++    if (s->frame_tx_completed == (s->frame_counter - 1)) {
++      s->frame_tx_completed = 0;
++      s->frame_counter = 0;
++      s->tx_completed = true;
++    }
++  }
++
++  return 0;
++}
++
++static int kahawai_write_header(AVFormatContext* ctx) {
++  KahawaiMuxerContext* s = ctx->priv_data;
++  struct st20p_tx_ops ops_tx;
++  const AVPixFmtDescriptor* pix_fmt_desc = NULL;
++
++  av_log(ctx, AV_LOG_VERBOSE, "kahawai_write_header triggered\n");
++
++  memset(&ops_tx, 0, sizeof(ops_tx));
++
++  if ((NULL == s->port) || (strlen(s->port) > MTL_PORT_MAX_LEN)) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid port info\n");
++    return AVERROR(EINVAL);
++  }
++  ops_tx.port.num_port = 1;
++  snprintf(ops_tx.port.port[MTL_PORT_P], MTL_PORT_MAX_LEN, "%s", s->port);
++
++  if (NULL == s->dst_addr) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid destination IP address\n");
++    return AVERROR(EINVAL);
++  } else if (sscanf(s->dst_addr, "%hhu.%hhu.%hhu.%hhu",
++                    &ops_tx.port.dip_addr[MTL_PORT_P][0],
++                    &ops_tx.port.dip_addr[MTL_PORT_P][1],
++                    &ops_tx.port.dip_addr[MTL_PORT_P][2],
++                    &ops_tx.port.dip_addr[MTL_PORT_P][3]) != MTL_IP_ADDR_LEN) {
++    av_log(ctx, AV_LOG_ERROR, "Failed to parse destination IP address: %s\n",
++           s->dst_addr);
++    return AVERROR(EINVAL);
++  }
++
++  if ((s->udp_port < 0) || (s->udp_port > 0xFFFF)) {
++    av_log(ctx, AV_LOG_ERROR, "Invalid UDP port: %d\n", s->udp_port);
++    return AVERROR(EINVAL);
++  }
++  ops_tx.port.udp_port[MTL_PORT_P] = s->udp_port;
++
++  ops_tx.width = s->width = ctx->streams[0]->codecpar->width;
++  ops_tx.height = s->height = ctx->streams[0]->codecpar->height;
++
++  s->pixel_format = ctx->streams[0]->codecpar->format;
++  av_pix_fmt_desc_get(s->pixel_format);
++
++  switch (s->pixel_format) {
++    case AV_PIX_FMT_YUV422P10LE:
++      ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
++      ops_tx.input_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
++      break;
++    case AV_PIX_FMT_Y210LE:
++      ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
++      ops_tx.input_fmt = ST_FRAME_FMT_Y210;
++      break;
++    case AV_PIX_FMT_RGB24:
++      ops_tx.transport_fmt = ST20_FMT_RGB_8BIT;
++      ops_tx.input_fmt = ST_FRAME_FMT_RGB8;
++      break;
++    default:
++      av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s.\n", pix_fmt_desc->name);
++      return AVERROR(EINVAL);
++  }
++
++  s->framerate = ctx->streams[0]->avg_frame_rate;
++  ops_tx.fps = kahawai_fps_to_st_fps(s->framerate);
++  if (ops_tx.fps == ST_FPS_MAX) {
++    av_log(ctx, AV_LOG_ERROR, "Frame rate %0.2f is not supported\n",
++           av_q2d(s->framerate));
++    return AVERROR(EINVAL);
++  }
++
++  // Create device
++  if (!kahawai_get_handle()) {
++    s->dev_handle = kahawai_init(s->port, s->local_addr, s->session_cnt, 0, NULL);
++    if (!s->dev_handle) {
++      av_log(ctx, AV_LOG_ERROR, "mtl_init failed\n");
++      return AVERROR(EIO);
++    }
++    kahawai_set_handle(s->dev_handle);
++    av_log(ctx, AV_LOG_VERBOSE, "mtl_init finished: st_handle 0x%" PRIx64 "\n",
++           (unsigned long)kahawai_get_handle());
++  } else {
++    s->dev_handle = kahawai_get_handle();
++    av_log(ctx, AV_LOG_VERBOSE, "use shared st_handle 0x%" PRIx64 "\n",
++           (unsigned long)kahawai_get_handle());
++  }
++  ++active_session_cnt;
++
++  ops_tx.name = "st20p";
++  ops_tx.priv = s;                 // Handle of priv_data registered to lib
++  ops_tx.port.payload_type = 112;  // TX_ST20_PAYLOAD_TYPE
++  ops_tx.device = ST_PLUGIN_DEVICE_AUTO;
++  ops_tx.notify_frame_available = tx_st20p_frame_available;
++  ops_tx.notify_frame_done = tx_st20p_frame_done;
++  ops_tx.framebuff_cnt = s->fb_cnt;
++
++  pthread_mutex_init(&(s->get_frame_mutex), NULL);
++  pthread_cond_init(&(s->get_frame_cond), NULL);
++
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_tx_create st_handle 0x%" PRIx64 "\n",
++         (unsigned long)s->dev_handle);
++  av_log(ctx, AV_LOG_VERBOSE, "udp_port %d\n", s->udp_port);
++
++  s->tx_handle = st20p_tx_create(s->dev_handle, &ops_tx);
++  if (!s->tx_handle) {
++    av_log(ctx, AV_LOG_ERROR, "st20p_tx_create failed\n");
++    return AVERROR(EIO);
++  }
++
++  s->output_frame_size = st20p_tx_frame_size(s->tx_handle);
++
++  if (s->output_frame_size <= 0) {
++    av_log(ctx, AV_LOG_ERROR, "st20p_tx_frame_size failed\n");
++    return AVERROR(EINVAL);
++  }
++
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_tx_create finished\n");
++
++  s->frame_counter = 0;
++  s->frame = NULL;
++
++  s->frame_tx_completed = 0;
++  s->tx_completed = false;
++  return 0;
++}
++
++static int kahawai_write_packet(AVFormatContext* ctx, AVPacket* pkt) {
++  KahawaiMuxerContext* s = ctx->priv_data;
++  uint8_t* data[4] = {NULL};
++  int linesize[4] = {0};
++  const AVPixFmtDescriptor* pix_fmt_desc = NULL;
++
++  av_log(ctx, AV_LOG_VERBOSE, "kahawai_write_packet triggered\n");
++  s->frame = st20p_tx_get_frame(s->tx_handle);
++  if (!s->frame) {
++    pthread_mutex_lock(&(s->get_frame_mutex));
++    pthread_cond_wait(&(s->get_frame_cond), &(s->get_frame_mutex));
++    pthread_mutex_unlock(&(s->get_frame_mutex));
++
++    s->frame = st20p_tx_get_frame(s->tx_handle);
++    if (!s->frame) {
++      av_log(ctx, AV_LOG_ERROR, "st20p_tx_get_frame failed\n");
++      return AVERROR(EIO);
++    }
++  }
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_tx_get_frame: 0x%" PRIx64 "\n",
++         (unsigned long)(s->frame->addr[0]));
++
++  if (s->frame->data_size != s->output_frame_size) {
++    av_log(ctx, AV_LOG_ERROR,
++           "Unexpected frame size received: %" PRIu64 " (%" PRIu64 " expected)\n",
++           s->frame->data_size, s->output_frame_size);
++    return AVERROR(EIO);
++  }
++
++  pix_fmt_desc = av_pix_fmt_desc_get(s->pixel_format);
++
++  switch (s->pixel_format) {
++    case AV_PIX_FMT_YUV422P10LE:
++      st20_yuv422p10le_to_rfc4175_422be10(
++          (uint16_t*)pkt->data, (uint16_t*)(pkt->data + (s->width * s->height * 2)),
++          (uint16_t*)(pkt->data + (s->width * s->height * 3)),
++          (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]), s->width, s->height);
++      break;
++    case AV_PIX_FMT_Y210LE:
++      st20_y210_to_rfc4175_422be10(
++          (uint16_t*)pkt->data, (struct st20_rfc4175_422_10_pg2_be*)(s->frame->addr[0]),
++           s->width, s->height);
++      break;
++    case AV_PIX_FMT_RGB24:
++      av_image_fill_arrays(data, linesize, pkt->data, s->pixel_format, s->width,
++                           s->height, 1);
++      av_image_copy((uint8_t**)s->frame->addr, (int*)s->frame->linesize,
++                    (const uint8_t**)data, linesize, s->pixel_format, s->width,
++                    s->height);
++      break;
++    default:
++      av_log(ctx, AV_LOG_ERROR, "Unsupported pixel format: %s.\n", pix_fmt_desc->name);
++      return AVERROR(EINVAL);
++  }
++
++  st20p_tx_put_frame(s->tx_handle, s->frame);
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_tx_put_frame: 0x%" PRIx64 "\n",
++         (unsigned long)(s->frame->addr[0]));
++
++  return 0;
++}
++
++static int kahawai_write_trailer(AVFormatContext* ctx) {
++  KahawaiMuxerContext* s = ctx->priv_data;
++  int i;
++
++  av_log(ctx, AV_LOG_VERBOSE, "kahawai_write_trailer triggered\n");
++
++  for (i = 0; s->tx_completed != true && i < 100; i++) {
++    usleep(10000);
++  }
++
++  s->frame_counter = 0;
++  s->frame_tx_completed = 0;
++  s->tx_completed = false;
++
++  if (s->frame) {
++    av_log(ctx, AV_LOG_VERBOSE, "Put a frame: 0x%" PRIx64 "\n",
++           (unsigned long)(s->frame->addr[0]));
++    st20p_tx_put_frame(s->tx_handle, s->frame);
++    s->frame = NULL;
++  }
++
++  if (s->tx_handle) {
++    st20p_tx_free(s->tx_handle);
++    s->tx_handle = NULL;
++  }
++  av_log(ctx, AV_LOG_VERBOSE, "st20p_tx_free finished\n");
++
++  pthread_mutex_destroy(&s->get_frame_mutex);
++  pthread_cond_destroy(&s->get_frame_cond);
++
++  // Destroy device
++  if (--active_session_cnt == 0) {
++    if (kahawai_get_handle()) {
++      mtl_uninit(kahawai_get_handle());
++      kahawai_set_handle(NULL);
++      av_log(ctx, AV_LOG_VERBOSE, "mtl_uninit finished\n");
++    } else {
++      av_log(ctx, AV_LOG_ERROR, "missing st_handle\n");
++    }
++  } else {
++    av_log(ctx, AV_LOG_VERBOSE, "no need to do st_uninit yet\n");
++  }
++  s->dev_handle = NULL;
++
++  return 0;
++}
++
++#define OFFSET(x) offsetof(KahawaiMuxerContext, x)
++#define ENC AV_OPT_FLAG_ENCODING_PARAM
++static const AVOption kahawai_options[] = {
++    {"port", "ST port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = ENC},
++    {"local_addr",
++     "Local IP address",
++     OFFSET(local_addr),
++     AV_OPT_TYPE_STRING,
++     {.str = NULL},
++     .flags = ENC},
++    {"dst_addr",
++     "Destination IP address",
++     OFFSET(dst_addr),
++     AV_OPT_TYPE_STRING,
++     {.str = NULL},
++     .flags = ENC},
++    {"udp_port",
++     "UDP port",
++     OFFSET(udp_port),
++     AV_OPT_TYPE_INT,
++     {.i64 = -1},
++     -1,
++     INT_MAX,
++     ENC},
++    {"fb_cnt",
++     "Frame buffer count",
++     OFFSET(fb_cnt),
++     AV_OPT_TYPE_INT,
++     {.i64 = 8},
++     3,
++     8,
++     ENC},
++    {"total_sessions",
++     "Total sessions count",
++     OFFSET(session_cnt),
++     AV_OPT_TYPE_INT,
++     {.i64 = 1},
++     1,
++     INT_MAX,
++     ENC},
++    {NULL},
++};
++
++static const AVClass kahawai_muxer_class = {
++    .class_name = "kahawai muxer",
++    .item_name = av_default_item_name,
++    .option = kahawai_options,
++    .version = LIBAVUTIL_VERSION_INT,
++    .category = AV_CLASS_CATEGORY_DEVICE_OUTPUT,
++};
++
++const FFOutputFormat ff_kahawai_muxer = {
++    .p.name = "kahawai_mux",
++    .p.long_name = NULL_IF_CONFIG_SMALL("kahawai output device"),
++    .priv_data_size = sizeof(KahawaiMuxerContext),
++    .write_header = kahawai_write_header,
++    .write_packet = kahawai_write_packet,
++    .write_trailer = kahawai_write_trailer,
++    .p.video_codec = AV_CODEC_ID_RAWVIDEO,
++    .p.flags = AVFMT_NOFILE,
++    .control_message = NULL,
++    .p.priv_class = &kahawai_muxer_class,
++};

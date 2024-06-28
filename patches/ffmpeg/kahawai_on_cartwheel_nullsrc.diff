@@ -1,0 +1,142 @@
+diff --git a/libavdevice/kahawai_dec.c b/libavdevice/kahawai_dec.c
+index 3258132..f3c2332 100644
+--- a/libavdevice/kahawai_dec.c
++++ b/libavdevice/kahawai_dec.c
+@@ -28,6 +28,8 @@
+ #include "libavutil/parseutils.h"
+ #include "libavutil/pixdesc.h"
+ 
++static int kahawai_read_close(AVFormatContext* ctx);
++
+ typedef struct KahawaiDemuxerContext {
+   const AVClass* class; /**< Class for private options. */
+ 
+@@ -42,6 +44,8 @@ typedef struct KahawaiDemuxerContext {
+   int fb_cnt;
+   int session_cnt;
+   bool ext_frames_mode;
++  int nullsource;
++  AVBufferRef *nullbuffer;
+   char* dma_dev;
+ 
+   mtl_handle dev_handle;
+@@ -188,29 +192,6 @@ static int kahawai_read_header(AVFormatContext* ctx) {
+   st->codecpar->bit_rate =
+       av_rescale_q(ctx->packet_size, (AVRational){8, 1}, st->time_base);
+ 
+-  // Create device
+-  if (!kahawai_get_handle()) {
+-    s->dev_handle = kahawai_init(s->port, s->local_addr, 0, s->session_cnt, s->dma_dev);
+-    if (!s->dev_handle) {
+-      av_log(ctx, AV_LOG_ERROR, "mtl_init failed\n");
+-      return AVERROR(EIO);
+-    }
+-    kahawai_set_handle(s->dev_handle);
+-    av_log(ctx, AV_LOG_VERBOSE, "mtl_init finished: st_handle %p\n ",
+-           kahawai_get_handle());
+-  } else {
+-    s->dev_handle = kahawai_get_handle();
+-    av_log(ctx, AV_LOG_VERBOSE, "use shared st_handle %p\n ", kahawai_get_handle());
+-  }
+-  ++active_session_cnt;
+-
+-  ops_rx.name = "st20p_rx";
+-  ops_rx.priv = s;                 // Handle of priv_data registered to lib
+-  ops_rx.port.payload_type = 112;  // RX_ST20_PAYLOAD_TYPE
+-  ops_rx.device = ST_PLUGIN_DEVICE_AUTO;
+-  ops_rx.notify_frame_available = rx_st20p_frame_available;
+-  ops_rx.framebuff_cnt = s->fb_cnt;
+-
+   if (s->ext_frames_mode) {
+     s->ext_frames = malloc(sizeof(struct st_ext_frame) * s->fb_cnt);
+     if (!s->ext_frames) {
+@@ -274,6 +255,35 @@ static int kahawai_read_header(AVFormatContext* ctx) {
+     s->av_buffers = s->av_buffers_keepers = NULL;
+   }
+ 
++  if (s->nullsource > 0) {
++    av_log(ctx, AV_LOG_WARNING, "Kahawai in NULLSOURCE mode %d\n", s->nullsource);
++    if (s->nullsource == 2)
++      return 0;
++  }
++
++  // Create device
++  if (!kahawai_get_handle()) {
++    s->dev_handle = kahawai_init(s->port, s->local_addr, 0, s->session_cnt, s->dma_dev);
++    if (!s->dev_handle) {
++      av_log(ctx, AV_LOG_ERROR, "mtl_init failed\n");
++      return AVERROR(EIO);
++    }
++    kahawai_set_handle(s->dev_handle);
++    av_log(ctx, AV_LOG_VERBOSE, "mtl_init finished: st_handle %p\n ",
++           kahawai_get_handle());
++  } else {
++    s->dev_handle = kahawai_get_handle();
++    av_log(ctx, AV_LOG_VERBOSE, "use shared st_handle %p\n ", kahawai_get_handle());
++  }
++  ++active_session_cnt;
++
++  ops_rx.name = "st20p_rx";
++  ops_rx.priv = s;                 // Handle of priv_data registered to lib
++  ops_rx.port.payload_type = 112;  // RX_ST20_PAYLOAD_TYPE
++  ops_rx.device = ST_PLUGIN_DEVICE_AUTO;
++  ops_rx.notify_frame_available = rx_st20p_frame_available;
++  ops_rx.framebuff_cnt = s->fb_cnt;
++
+   pthread_mutex_init(&(s->get_frame_mutex), NULL);
+   pthread_cond_init(&(s->get_frame_cond), NULL);
+ 
+@@ -308,6 +318,28 @@ static int kahawai_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
+   int frame_num = 0;
+   int ret = 0;
+ 
++  if (s->nullsource > 0)
++  {
++    frame_num = s->frame_counter % s->fb_cnt;
++    s->av_buffers[frame_num] = av_buffer_ref(s->av_buffers_keepers[frame_num]);
++    if (!s->av_buffers[frame_num]) {
++      av_log(ctx, AV_LOG_ERROR, "av_buffer_ref failed\n");
++      return AVERROR(ENOMEM);
++    }
++
++    memset(pkt, 0, sizeof(*pkt));
++    pkt->pos        = -1;
++    pkt->time_base  = av_make_q(0, 1);
++    pkt->buf = s->av_buffers[frame_num];
++    pkt->data = s->av_buffers[frame_num]->data;
++    pkt->size = s->av_buffers[frame_num]->size;
++
++    pkt->size       = ctx->packet_size;
++    pkt->pts = pkt->dts = s->frame_counter++;
++
++    return 0;
++  }
++
+   av_log(ctx, AV_LOG_VERBOSE, "kahawai_read_packet triggered\n");
+   if (active_session_cnt != s->session_cnt) {
+     return 0;
+@@ -433,6 +465,9 @@ static int kahawai_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
+ static int kahawai_read_close(AVFormatContext* ctx) {
+   KahawaiDemuxerContext* s = ctx->priv_data;
+ 
++  if (s->nullsource == 2)
++    return 0;
++
+   av_log(ctx, AV_LOG_VERBOSE, "kahawai_read_close triggered\n");
+ 
+   if (s->frame) {
+@@ -576,6 +611,14 @@ static const AVOption kahawai_options[] = {
+      0,
+      1,
+      DEC},
++    {"nullsrc",
++     "Enable null source mode",
++     OFFSET(nullsource),
++     AV_OPT_TYPE_INT,
++     {.i64 = 0},
++     0,
++     2,
++     DEC},
+     {"dma_dev",
+      "DMA device node",
+      OFFSET(dma_dev),

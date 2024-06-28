@@ -1,0 +1,438 @@
+diff --git a/fftools/ffmpeg.h b/fftools/ffmpeg.h
+index 74e82bc9f9..693e6a98e9 100644
+--- a/fftools/ffmpeg.h
++++ b/fftools/ffmpeg.h
+@@ -683,6 +683,8 @@ extern float max_error_rate;
+ 
+ extern char *filter_nbthreads;
+ extern int filter_complex_nbthreads;
++extern int filter_complex_frames;
++extern int filter_complex_policy;
+ extern int vstats_version;
+ extern int auto_conversion_filters;
+ 
+diff --git a/fftools/ffmpeg_filter.c b/fftools/ffmpeg_filter.c
+index 9fc877b437..c507c7cb3e 100644
+--- a/fftools/ffmpeg_filter.c
++++ b/fftools/ffmpeg_filter.c
+@@ -55,6 +55,8 @@ typedef struct FilterGraphPriv {
+     // source filters are present in the graph
+     int have_sources;
+     int disable_conversions;
++    int max_frames_in_flight;
++    int input_policy;
+ 
+     unsigned nb_outputs_done;
+ 
+@@ -90,11 +92,13 @@ typedef struct FilterGraphThread {
+     // The output index is stored in frame opaque.
+     AVFifo  *frame_queue_out;
+ 
+-    // index of the next input to request from the scheduler
+-    unsigned next_in;
+     // set to 1 after at least one frame passed through this output
+     int      got_frame;
+ 
++    // index of the next inputs to request from the scheduler
++    unsigned *inputs;
++    int      count;
++
+     // EOF status of each input/output, as received by the thread
+     uint8_t *eof_in;
+     uint8_t *eof_out;
+@@ -930,6 +934,8 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
+     fg->index      = nb_filtergraphs - 1;
+     fgp->graph_desc = graph_desc;
+     fgp->disable_conversions = !auto_conversion_filters;
++    fgp->max_frames_in_flight = filter_complex_frames;
++    fgp->input_policy = filter_complex_policy;
+     fgp->sch                 = sch;
+ 
+     snprintf(fgp->log_name, sizeof(fgp->log_name), "fc#%d", fg->index);
+@@ -1755,6 +1761,9 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
+ 
+     if (fgp->disable_conversions)
+         avfilter_graph_set_auto_convert(fgt->graph, AVFILTER_AUTO_CONVERT_NONE);
++    avfilter_graph_set_max_frames_in_flight(fgt->graph, fgp->max_frames_in_flight);
++    avfilter_graph_set_input_policy(fgt->graph, fgp->input_policy);
++
+     if ((ret = avfilter_graph_config(fgt->graph, NULL)) < 0)
+         goto fail;
+ 
+@@ -1924,10 +1933,10 @@ static void send_command(FilterGraph *fg, AVFilterGraph *graph,
+     }
+ }
+ 
+-static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
++static void choose_input(const FilterGraph *fg, const FilterGraphThread *fgt, int* inputs, int* count)
+ {
+-    int nb_requests, nb_requests_max = 0;
+-    int best_input = -1;
++    int nb_requests;
++    *count = 0;
+ 
+     for (int i = 0; i < fg->nb_inputs; i++) {
+         InputFilter *ifilter = fg->inputs[i];
+@@ -1937,15 +1946,13 @@ static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
+             continue;
+ 
+         nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
+-        if (nb_requests > nb_requests_max) {
+-            nb_requests_max = nb_requests;
+-            best_input = i;
++        if (nb_requests > 0) {
++            inputs[*count] = i;
++            (*count)++;
+         }
+     }
++    return;
+ 
+-    av_assert0(best_input >= 0);
+-
+-    return best_input;
+ }
+ 
+ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
+@@ -2410,13 +2417,15 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+ 
+     // graph not configured, just select the input to request
+     if (!fgt->graph) {
++        fgt->count = 0;
+         for (int i = 0; i < fg->nb_inputs; i++) {
+             InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+             if (ifp->format < 0 && !fgt->eof_in[i]) {
+-                fgt->next_in = i;
+-                return 0;
++                fgt->inputs[fgt->count] = i;
++                fgt->count++;
+             }
+         }
++        return 0;
+ 
+         // This state - graph is not configured, but all inputs are either
+         // initialized or EOF - should be unreachable because sending EOF to a
+@@ -2430,7 +2439,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+ 
+         ret = avfilter_graph_request_oldest(fgt->graph);
+         if (ret == AVERROR(EAGAIN)) {
+-            fgt->next_in = choose_input(fg, fgt);
++            choose_input(fg, fgt, fgt->inputs, &fgt->count);
+             break;
+         } else if (ret < 0) {
+             if (ret == AVERROR_EOF)
+@@ -2441,7 +2450,6 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+                        av_err2str(ret));
+             return ret;
+         }
+-        fgt->next_in = fg->nb_inputs;
+ 
+         // return after one iteration, so that scheduler can rate-control us
+         if (did_step && fgp->have_sources)
+@@ -2670,8 +2678,8 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
+         return AVERROR(ENOMEM);
+     fd->wallclock[LATENCY_PROBE_FILTER_PRE] = av_gettime_relative();
+ 
+-    ret = av_buffersrc_add_frame_flags(ifp->filter, frame,
+-                                       AV_BUFFERSRC_FLAG_PUSH);
++    ret = av_buffersrc_add_frame_flags(ifp->filter, frame, fgt->graph->input_policy ? 0 : AV_BUFFERSRC_FLAG_PUSH);
++
+     if (ret < 0) {
+         av_frame_unref(frame);
+         if (ret != AVERROR_EOF)
+@@ -2735,6 +2743,9 @@ static int fg_thread_init(FilterGraphThread *fgt, const FilterGraph *fg)
+     if (!fgt->frame_queue_out)
+         goto fail;
+ 
++    fgt->count = 0;
++    fgt->inputs = malloc(sizeof(unsigned int) * fg->nb_inputs);
++
+     return 0;
+ 
+ fail:
+@@ -2770,52 +2781,59 @@ static void *filter_thread(void *arg)
+         InputFilter *ifilter;
+         InputFilterPriv *ifp;
+         enum FrameOpaque o;
+-        unsigned input_idx = fgt.next_in;
+ 
+-        input_status = sch_filter_receive(fgp->sch, fgp->sch_idx,
+-                                          &input_idx, fgt.frame);
+-        if (input_status == AVERROR_EOF) {
+-            av_log(fg, AV_LOG_VERBOSE, "Filtering thread received EOF\n");
+-            break;
+-        } else if (input_status == AVERROR(EAGAIN)) {
+-            // should only happen when we didn't request any input
+-            av_assert0(input_idx == fg->nb_inputs);
+-            goto read_frames;
+-        }
+-        av_assert0(input_status >= 0);
++        for (int i = 0; i < fgt.count; i++) {
+ 
+-        o = (intptr_t)fgt.frame->opaque;
++            unsigned input_idx = fgt.inputs[i];
+ 
+-        o = (intptr_t)fgt.frame->opaque;
++            input_status = sch_filter_receive(fgp->sch, fgp->sch_idx,
++                                              &input_idx, fgt.frame);
++            if (input_status == AVERROR_EOF) {
++                av_log(fg, AV_LOG_VERBOSE, "Filtering thread received EOF\n");
++                break;
++            } else if (input_status == AVERROR(EAGAIN)) {
++                // should only happen when we didn't request any input
++                av_assert0(input_idx == fg->nb_inputs);
++                goto read_frames;
++            }
++            av_assert0(input_status >= 0);
+ 
+-        // message on the control stream
+-        if (input_idx == fg->nb_inputs) {
+-            FilterCommand *fc;
++            o = (intptr_t)fgt.frame->opaque;
+ 
+-            av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
++            o = (intptr_t)fgt.frame->opaque;
+ 
+-            fc = (FilterCommand*)fgt.frame->buf[0]->data;
+-            send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
+-                         fc->all_filters);
+-            av_frame_unref(fgt.frame);
+-            continue;
+-        }
++            // message on the control stream
++            if (input_idx == fg->nb_inputs) {
++                FilterCommand *fc;
+ 
+-        // we received an input frame or EOF
+-        ifilter   = fg->inputs[input_idx];
+-        ifp       = ifp_from_ifilter(ifilter);
++                av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
+ 
+-        if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
+-            int hb_frame = input_status >= 0 && o == FRAME_OPAQUE_SUB_HEARTBEAT;
+-            ret = sub2video_frame(ifilter, (fgt.frame->buf[0] || hb_frame) ? fgt.frame : NULL,
+-                                  !fgt.graph);
+-        } else if (fgt.frame->buf[0]) {
+-            ret = send_frame(fg, &fgt, ifilter, fgt.frame);
+-        } else {
+-            av_assert1(o == FRAME_OPAQUE_EOF);
+-            ret = send_eof(&fgt, ifilter, fgt.frame->pts, fgt.frame->time_base);
++                fc = (FilterCommand*)fgt.frame->buf[0]->data;
++                send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
++                             fc->all_filters);
++                av_frame_unref(fgt.frame);
++                continue;
++            }
++
++            // we received an input frame or EOF
++            ifilter   = fg->inputs[input_idx];
++            ifp       = ifp_from_ifilter(ifilter);
++
++            if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
++                int hb_frame = input_status >= 0 && o == FRAME_OPAQUE_SUB_HEARTBEAT;
++                ret = sub2video_frame(ifilter, (fgt.frame->buf[0] || hb_frame) ? fgt.frame : NULL,
++                                      !fgt.graph);
++            } else if (fgt.frame->buf[0]) {
++                ret = send_frame(fg, &fgt, ifilter, fgt.frame);
++            } else {
++                av_assert1(o == FRAME_OPAQUE_EOF);
++                ret = send_eof(&fgt, ifilter, fgt.frame->pts, fgt.frame->time_base);
++            }
++            av_frame_unref(fgt.frame);
++            if (ret < 0)
++                break;
+         }
+-        av_frame_unref(fgt.frame);
++
+         if (ret < 0)
+             goto finish;
+ 
+diff --git a/fftools/ffmpeg_opt.c b/fftools/ffmpeg_opt.c
+index c189cf373b..81a673cf00 100644
+--- a/fftools/ffmpeg_opt.c
++++ b/fftools/ffmpeg_opt.c
+@@ -81,6 +81,8 @@ int stdin_interaction = 1;
+ float max_error_rate  = 2.0/3;
+ char *filter_nbthreads;
+ int filter_complex_nbthreads = 0;
++int filter_complex_frames = 0;
++int filter_complex_policy = 0;
+ int vstats_version = 2;
+ int auto_conversion_filters = 1;
+ int64_t stats_period = 500000;
+@@ -1652,6 +1654,10 @@ const OptionDef options[] = {
+     { "filter_complex_threads", OPT_TYPE_INT, OPT_EXPERT,
+         { &filter_complex_nbthreads },
+         "number of threads for -filter_complex" },
++    { "filter_complex_frames", OPT_TYPE_INT, OPT_EXPERT,                    { &filter_complex_frames },
++        "max number of frames in flight inside filter complex" },
++    { "filter_complex_policy", OPT_TYPE_INT, OPT_EXPERT,                    { &filter_complex_policy },
++        "scheduling policy for filter complex inputs" },
+     { "lavfi",               OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
+         { .func_arg = opt_filter_complex },
+         "create a complex filtergraph", "graph_description" },
+diff --git a/fftools/ffmpeg_sched.c b/fftools/ffmpeg_sched.c
+index 4fc5a33941..6af4ff37f1 100644
+--- a/fftools/ffmpeg_sched.c
++++ b/fftools/ffmpeg_sched.c
+@@ -44,6 +44,8 @@
+ // FIXME: some other value? make this dynamic?
+ #define SCHEDULE_TOLERANCE (100 * 1000)
+ 
++extern int filter_complex_policy;
++
+ enum QueueType {
+     QUEUE_PACKETS,
+     QUEUE_FRAMES,
+@@ -353,7 +355,7 @@ static void waiter_uninit(SchWaiter *w)
+ }
+ 
+ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_size,
+-                       enum QueueType type)
++                       enum QueueType type, enum QueuePolicy policy)
+ {
+     ThreadQueue *tq;
+     ObjPool *op;
+@@ -364,7 +366,7 @@ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_si
+         return AVERROR(ENOMEM);
+ 
+     tq = tq_alloc(nb_streams, queue_size, op,
+-                  (type == QUEUE_PACKETS) ? pkt_move : frame_move);
++                  (type == QUEUE_PACKETS) ? pkt_move : frame_move, policy);
+     if (!tq) {
+         objpool_free(&op);
+         return AVERROR(ENOMEM);
+@@ -773,7 +775,7 @@ int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx,
+     if (!dec->send_frame)
+         return AVERROR(ENOMEM);
+ 
+-    ret = queue_alloc(&dec->queue, 1, 1, QUEUE_PACKETS);
++    ret = queue_alloc(&dec->queue, 1, 1, QUEUE_PACKETS, POLICY_DYNAMIC);
+     if (ret < 0)
+         return ret;
+ 
+@@ -813,7 +815,7 @@ int sch_add_enc(Scheduler *sch, SchThreadFunc func, void *ctx,
+ 
+     task_init(sch, &enc->task, SCH_NODE_TYPE_ENC, idx, func, ctx);
+ 
+-    ret = queue_alloc(&enc->queue, 1, 1, QUEUE_FRAMES);
++    ret = queue_alloc(&enc->queue, 1, 1, QUEUE_FRAMES, POLICY_DYNAMIC);
+     if (ret < 0)
+         return ret;
+ 
+@@ -861,7 +863,10 @@ int sch_add_filtergraph(Scheduler *sch, unsigned nb_inputs, unsigned nb_outputs,
+     if (ret < 0)
+         return ret;
+ 
+-    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, 1, QUEUE_FRAMES);
++    if ((filter_complex_policy != POLICY_DYNAMIC) || (filter_complex_policy != POLICY_ROUNDROBIN))
++        av_log(sch, AV_LOG_ERROR, "Unsupported filter complex scheduling policy: %d.\n", filter_complex_policy);
++
++    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, filter_complex_policy == POLICY_ROUNDROBIN ? fg->nb_inputs : 1, QUEUE_FRAMES, filter_complex_policy);
+     if (ret < 0)
+         return ret;
+ 
+@@ -1313,7 +1318,7 @@ int sch_start(Scheduler *sch)
+             }
+         }
+ 
+-        ret = queue_alloc(&mux->queue, mux->nb_streams, 1, QUEUE_PACKETS);
++        ret = queue_alloc(&mux->queue, mux->nb_streams, 1, QUEUE_PACKETS, POLICY_DYNAMIC);
+         if (ret < 0)
+             return ret;
+ 
+@@ -1951,8 +1956,12 @@ int sch_dec_receive(Scheduler *sch, unsigned dec_idx, AVPacket *pkt)
+ static int send_to_filter(Scheduler *sch, SchFilterGraph *fg,
+                           unsigned in_idx, AVFrame *frame)
+ {
+-    if (frame)
+-        return tq_send(fg->queue, in_idx, frame);
++    if (frame) {
++        int ret = 0;
++        ret = tq_send(fg->queue, in_idx, frame);
++        //av_log(sch, AV_LOG_WARNING, "Sending frame to filter, idx:%d\n", in_idx);
++        return ret;
++    }
+ 
+     if (!fg->inputs[in_idx].send_finished) {
+         fg->inputs[in_idx].send_finished = 1;
+diff --git a/fftools/thread_queue.c b/fftools/thread_queue.c
+index fd73cc0a9b..fe1ea4d587 100644
+--- a/fftools/thread_queue.c
++++ b/fftools/thread_queue.c
+@@ -43,6 +43,9 @@ struct ThreadQueue {
+     int              *finished;
+     unsigned int    nb_streams;
+ 
++    enum QueuePolicy policy;
++    int next_stream;
++
+     AVFifo  *fifo;
+ 
+     ObjPool *obj_pool;
+@@ -77,7 +80,8 @@ void tq_free(ThreadQueue **ptq)
+ }
+ 
+ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
+-                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src))
++                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src),
++                      enum QueuePolicy policy)
+ {
+     ThreadQueue *tq;
+     int ret;
+@@ -111,6 +115,9 @@ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
+     tq->obj_pool = obj_pool;
+     tq->obj_move = obj_move;
+ 
++    tq->policy = policy;
++    tq->next_stream = 0;
++
+     return tq;
+ fail:
+     tq_free(&tq);
+@@ -132,6 +139,9 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
+         goto finish;
+     }
+ 
++    while ((tq->policy == POLICY_ROUNDROBIN) && (tq->next_stream != stream_idx))
++        pthread_cond_wait(&tq->cond, &tq->lock);
++
+     while (!(*finished & FINISHED_RECV) && !av_fifo_can_write(tq->fifo))
+         pthread_cond_wait(&tq->cond, &tq->lock);
+ 
+@@ -149,6 +159,10 @@ int tq_send(ThreadQueue *tq, unsigned int stream_idx, void *data)
+ 
+         ret = av_fifo_write(tq->fifo, &elem, 1);
+         av_assert0(ret >= 0);
++
++        if (tq->policy == POLICY_ROUNDROBIN)
++            tq->next_stream = (tq->next_stream + 1) % (tq->nb_streams-1);
++
+         pthread_cond_broadcast(&tq->cond);
+     }
+ 
+diff --git a/fftools/thread_queue.h b/fftools/thread_queue.h
+index 0cc8c71ebd..802ad0030d 100644
+--- a/fftools/thread_queue.h
++++ b/fftools/thread_queue.h
+@@ -25,6 +25,11 @@
+ 
+ typedef struct ThreadQueue ThreadQueue;
+ 
++enum QueuePolicy {
++    POLICY_DYNAMIC  = 0,
++    POLICY_ROUNDROBIN = 1,
++};
++
+ /**
+  * Allocate a queue for sending data between threads.
+  *
+@@ -37,7 +42,8 @@ typedef struct ThreadQueue ThreadQueue;
+  * @param callback that moves the contents between two data pointers
+  */
+ ThreadQueue *tq_alloc(unsigned int nb_streams, size_t queue_size,
+-                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src));
++                      ObjPool *obj_pool, void (*obj_move)(void *dst, void *src),
++                      enum QueuePolicy policy);
+ void         tq_free(ThreadQueue **tq);
+ 
+ /**

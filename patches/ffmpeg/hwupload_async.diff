@@ -1,0 +1,370 @@
+diff --git a/libavfilter/vf_hwdownload.c b/libavfilter/vf_hwdownload.c
+index 5ef23cb5d4..dd21837d35 100644
+--- a/libavfilter/vf_hwdownload.c
++++ b/libavfilter/vf_hwdownload.c
+@@ -18,6 +18,7 @@
+ 
+ #include "libavutil/buffer.h"
+ #include "libavutil/hwcontext.h"
++#include "libavutil/hwcontext_internal.h"
+ #include "libavutil/log.h"
+ #include "libavutil/mem.h"
+ #include "libavutil/opt.h"
+@@ -33,6 +34,9 @@ typedef struct HWDownloadContext {
+ 
+     AVBufferRef       *hwframes_ref;
+     AVHWFramesContext *hwframes;
++
++    AVFrame *input;
++    AVFrame *output;
+ } HWDownloadContext;
+ 
+ static int hwdownload_query_formats(AVFilterContext *avctx)
+@@ -116,6 +120,29 @@ static int hwdownload_filter_frame(AVFilterLink *link, AVFrame *input)
+     AVFrame *output = NULL;
+     int err;
+ 
++    if (link->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++        if (!ctx->output || !ctx->input)
++            av_log(ctx, AV_LOG_ERROR, "Async operation already completed\n");
++
++        AVHWFramesContext *frameCtx = (AVHWFramesContext*)ctx->input->hw_frames_ctx->data;
++        err = frameCtx->internal->hw_type->transfer_data_from(frameCtx, ctx->output, ctx->input);
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Delayed sync error.");
++            return AVERROR(ENOSYS);
++        }
++
++        av_frame_free(&ctx->input);
++        err = ff_filter_frame(outlink, ctx->output);
++        if (err < 0)
++            av_log(ctx, AV_LOG_ERROR, "Failed to complete async upload: %d.\n", err);
++
++        ctx->output = NULL;
++        ctx->input = NULL;
++        link->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
++        link->dst->ready = 100; // mark as ready (low priority) to check if more input frames are available
++        return err;
++    }
++
+     if (!ctx->hwframes_ref || !input->hw_frames_ctx) {
+         av_log(ctx, AV_LOG_ERROR, "Input frames must have hardware context.\n");
+         err = AVERROR(EINVAL);
+@@ -136,6 +163,15 @@ static int hwdownload_filter_frame(AVFilterLink *link, AVFrame *input)
+     }
+ 
+     err = av_hwframe_transfer_data(output, input, 0);
++
++    if (err == AVERROR(EAGAIN)) {
++        link->dst->ready = 50;
++        link->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
++        ctx->output = output;
++        ctx->input = input;
++        err = 0;
++    }
++
+     if (err < 0) {
+         av_log(ctx, AV_LOG_ERROR, "Failed to download frame: %d.\n", err);
+         goto fail;
+@@ -148,6 +184,11 @@ static int hwdownload_filter_frame(AVFilterLink *link, AVFrame *input)
+     if (err < 0)
+         goto fail;
+ 
++    if (link->dst->ready) {
++        // call again to complete frame filtering
++        return 0;
++    }
++
+     av_frame_free(&input);
+ 
+     return ff_filter_frame(avctx->outputs[0], output);
+diff --git a/libavfilter/vf_hwupload.c b/libavfilter/vf_hwupload.c
+index ef61bb4137..6de8ace225 100644
+--- a/libavfilter/vf_hwupload.c
++++ b/libavfilter/vf_hwupload.c
+@@ -24,6 +24,7 @@
+ #include "libavutil/opt.h"
+ 
+ #include "avfilter.h"
++#include "filters.h"
+ #include "formats.h"
+ #include "internal.h"
+ #include "video.h"
+@@ -36,6 +37,9 @@ typedef struct HWUploadContext {
+     AVBufferRef       *hwframes_ref;
+     AVHWFramesContext *hwframes;
+ 
++    AVFrame *output;
++    AVFrame *input;
++
+     char *device_type;
+ } HWUploadContext;
+ 
+@@ -176,6 +180,32 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+     AVFrame *output = NULL;
+     int err;
+ 
++    if (link->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++        if (!ctx->output || !ctx->input)
++            av_log(ctx, AV_LOG_ERROR, "Async operation already completed\n");
++
++        AVHWFramesContext *frameCtx = (AVHWFramesContext*)ctx->output->hw_frames_ctx->data;
++        err = frameCtx->internal->hw_type->transfer_data_to(frameCtx, ctx->output, ctx->input);
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Delayed sync error.");
++            return AVERROR(ENOSYS);
++        }
++
++        av_frame_free(&ctx->input);
++        err = ff_filter_frame(outlink, ctx->output);
++        if (err < 0)
++            av_log(ctx, AV_LOG_ERROR, "Failed to complete async upload: %d.\n", err);
++
++        ctx->output = NULL;
++        ctx->input = NULL;
++        link->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
++        if (ff_inlink_queued_frames(link))
++            ff_filter_set_ready(link->dst, 300); // ready to process next frame
++        else
++            ff_filter_set_ready(link->dst, 100); // mark as ready (low priority) to check if more input frames are available
++        return 0;
++    }
++
+     if (input->format == outlink->format)
+         return ff_filter_frame(outlink, input);
+ 
+@@ -190,6 +220,15 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+     output->height = input->height;
+ 
+     err = av_hwframe_transfer_data(output, input, 0);
++
++    if (err == AVERROR(EAGAIN)) {
++        link->dst->ready = 50;
++        link->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
++        ctx->output = output;
++        ctx->input = input;
++        err = 0;
++    }
++
+     if (err < 0) {
+         av_log(ctx, AV_LOG_ERROR, "Failed to upload frame: %d.\n", err);
+         goto fail;
+@@ -199,6 +238,11 @@ static int hwupload_filter_frame(AVFilterLink *link, AVFrame *input)
+     if (err < 0)
+         goto fail;
+ 
++    if (link->dst->ready) {
++        // call again to complete async frame filtering
++        return 0;
++    }
++
+     av_frame_free(&input);
+ 
+     return ff_filter_frame(outlink, output);
+diff --git a/libavutil/hwcontext_qsv.c b/libavutil/hwcontext_qsv.c
+index 2dc1a9b78c..ced1643273 100644
+--- a/libavutil/hwcontext_qsv.c
++++ b/libavutil/hwcontext_qsv.c
+@@ -81,9 +81,15 @@ typedef struct QSVDeviceContext {
+ 
+ typedef struct QSVFramesContext {
+     mfxSession session_download;
++    mfxFrameSurface1 session_download_out;
++    mfxSyncPoint session_download_sync;
+     atomic_int session_download_init;
++    int session_download_async_depth;
+     mfxSession session_upload;
++    mfxFrameSurface1 session_upload_in;
++    mfxSyncPoint session_upload_sync;
+     atomic_int session_upload_init;
++    int session_upload_async_depth;
+ #if HAVE_PTHREADS
+     pthread_mutex_t session_lock;
+ #endif
+@@ -1416,8 +1422,14 @@ static int qsv_frames_init(AVHWFramesContext *ctx)
+     s->session_download = NULL;
+     s->session_upload   = NULL;
+ 
++    memset(&s->session_download_out, 0, sizeof(s->session_download_out));
+     s->session_download_init = 0;
++    s->session_download_sync = NULL;
++    s->session_download_async_depth = 1;
++    memset(&s->session_upload_in, 0, sizeof(s->session_upload_in));
+     s->session_upload_init   = 0;
++    s->session_upload_sync   = NULL;
++    s->session_upload_async_depth  = 1;
+ 
+ #if HAVE_PTHREADS
+     pthread_mutex_init(&s->session_lock, NULL);
+@@ -1766,10 +1778,8 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+                                   const AVFrame *src)
+ {
+     QSVFramesContext  *s = ctx->internal->priv;
+-    mfxFrameSurface1 out = {{ 0 }};
+     mfxFrameSurface1 *in = (mfxFrameSurface1*)src->data[3];
+ 
+-    mfxSyncPoint sync = NULL;
+     mfxStatus err;
+     int ret = 0;
+     /* download to temp frame if the output is not padded as libmfx requires */
+@@ -1781,6 +1791,20 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+     if (ret < 0)
+         return ret;
+ 
++    if ((s->session_download_async_depth == 1) && s->session_download_sync) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_download, s->session_download_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        //av_log(ctx, AV_LOG_WARNING, "DOWNLOAD_SyncOperation-early\n");
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
++            return AVERROR_UNKNOWN;
++        }
++        s->session_download_sync = NULL;
++        return 0;
++    }
++    s->session_download_sync = NULL;
++
+     /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
+      * Height must be a multiple of 16 for progressive frame sequence and a
+      * multiple of 32 otherwise.", so allign all frames to 16 before downloading. */
+@@ -1810,28 +1834,21 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+         return AVERROR(ENOSYS);
+     }
+ 
+-    out.Info = in->Info;
+-    map_frame_to_surface(dst_frame, &out);
++    s->session_download_out.Info = in->Info;
++    map_frame_to_surface(dst_frame, &s->session_download_out);
+ 
+     do {
+-        err = MFXVideoVPP_RunFrameVPPAsync(s->session_download, in, &out, NULL, &sync);
++        err = MFXVideoVPP_RunFrameVPPAsync(s->session_download, in, &s->session_download_out, NULL, &s->session_download_sync);
+         if (err == MFX_WRN_DEVICE_BUSY)
+             av_usleep(1);
+     } while (err == MFX_WRN_DEVICE_BUSY);
++    //av_log(ctx, AV_LOG_WARNING, "DOWNLOAD_RunFrameVPPAsync\n");
+ 
+-    if (err < 0 || !sync) {
++    if (err < 0 || !s->session_download_sync) {
+         av_log(ctx, AV_LOG_ERROR, "Error downloading the surface\n");
+         return AVERROR_UNKNOWN;
+     }
+ 
+-    do {
+-        err = MFXVideoCORE_SyncOperation(s->session_download, sync, 1000);
+-    } while (err == MFX_WRN_IN_EXECUTION);
+-    if (err < 0) {
+-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
+-        return AVERROR_UNKNOWN;
+-    }
+-
+     if (realigned) {
+         tmp_frame->width  = dst->width;
+         tmp_frame->height = dst->height;
+@@ -1842,6 +1859,19 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
+             return ret;
+     }
+ 
++    if (s->session_download_async_depth == 0) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_download, s->session_download_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        //av_log(ctx, AV_LOG_WARNING, "DOWNLOAD_SyncOperation-late\n");
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation: %d\n", err);
++            return AVERROR_UNKNOWN;
++        }
++   } else {
++        return AVERROR(EAGAIN);
++    }
++
+     return 0;
+ }
+ 
+@@ -1849,11 +1879,9 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+                                 const AVFrame *src)
+ {
+     QSVFramesContext   *s = ctx->internal->priv;
+-    mfxFrameSurface1   in = {{ 0 }};
+     mfxFrameSurface1 *out = (mfxFrameSurface1*)dst->data[3];
+     mfxFrameInfo tmp_info;
+ 
+-    mfxSyncPoint sync = NULL;
+     mfxStatus err;
+     int ret = 0;
+     /* make a copy if the input is not padded as libmfx requires */
+@@ -1865,6 +1893,20 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+     if (ret < 0)
+         return ret;
+ 
++    if ((s->session_upload_async_depth == 1) && s->session_upload_sync) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_upload, s->session_upload_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        //av_log(ctx, AV_LOG_WARNING, "UPLOAD_SyncOperation-early\n");
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
++            return AVERROR_UNKNOWN;
++        }
++        s->session_upload_sync = NULL;
++        return 0;
++    }
++    s->session_upload_sync = NULL;
++
+     /* According to MSDK spec for mfxframeinfo, "Width must be a multiple of 16.
+      * Height must be a multiple of 16 for progressive frame sequence and a
+      * multiple of 32 otherwise.", so allign all frames to 16 before uploading. */
+@@ -1908,33 +1950,39 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
+         return AVERROR(ENOSYS);
+     }
+ 
+-    in.Info = out->Info;
+-    map_frame_to_surface(src_frame, &in);
++    s->session_upload_in.Info = out->Info;
++    map_frame_to_surface(src_frame, &s->session_upload_in);
+ 
+     do {
+-        err = MFXVideoVPP_RunFrameVPPAsync(s->session_upload, &in, out, NULL, &sync);
++        err = MFXVideoVPP_RunFrameVPPAsync(s->session_upload, &s->session_upload_in, out, NULL, &s->session_upload_sync);
+         if (err == MFX_WRN_DEVICE_BUSY)
+             av_usleep(1);
+     } while (err == MFX_WRN_DEVICE_BUSY);
++    //av_log(ctx, AV_LOG_WARNING, "UPLOAD_RunFrameVPPAsync\n");
+ 
+-    if (err < 0 || !sync) {
++    if (err < 0 || !s->session_upload_sync) {
+         av_log(ctx, AV_LOG_ERROR, "Error uploading the surface\n");
+         return AVERROR_UNKNOWN;
+     }
+ 
+-    do {
+-        err = MFXVideoCORE_SyncOperation(s->session_upload, sync, 1000);
+-    } while (err == MFX_WRN_IN_EXECUTION);
+-    if (err < 0) {
+-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
+-        return AVERROR_UNKNOWN;
+-    }
+-
+     if (realigned) {
+         out->Info.CropW = tmp_info.CropW;
+         out->Info.CropH = tmp_info.CropH;
+     }
+ 
++    if (s->session_upload_async_depth == 0) {
++        do {
++            err = MFXVideoCORE_SyncOperation(s->session_upload, s->session_upload_sync, 1000);
++        } while (err == MFX_WRN_IN_EXECUTION);
++        //av_log(ctx, AV_LOG_WARNING, "DOWNLOAD_SyncOperation-late\n");
++        if (err < 0) {
++            av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
++            return AVERROR_UNKNOWN;
++        }
++    } else {
++        return AVERROR(EAGAIN);
++    }
++
+     return 0;
+ }
+ 
+ 
