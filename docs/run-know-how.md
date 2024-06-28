@@ -5,7 +5,7 @@ This document describes a docker-related part of command - all `[docker_paramete
 
 Information about the `[broadcast_suite_parameters]` part of the command may be found, depending on the plugin, under:
 - [FFmpeg Intel® Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
-- [Intel® Media Transport Library](plugins/media-transport-library.md)
+- [Media Transport Library](plugins/media-transport-library.md)
 - [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
 - [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
 

@@ -6,7 +6,7 @@ The Intel® Tiber™ Broadcast Suite is a software-based package designed for cr
 ## 2. Software Architecture
 
 The Intel® Tiber™ Broadcast Suite uses open-source FFmpeg framework as a baseline, and enhances it with:
-- Intel® Media Transport Library (MTL) with SMPTE 2110 transport protocols and yuv422p10le and y210le pixel formats.
+- Media Transport Library (MTL) with SMPTE 2110 transport protocols and yuv422p10le and y210le pixel formats.
 - Intel® QSV and OneVPL libraries to support hardware-accelerated media processing with Intel Flex GPU cards.
 - DPC++ kernels to enable custom effect filters used in video production (not supported in this release).
 - OpenGL/Vulkan integration to display rendering effects (not supported in this release).

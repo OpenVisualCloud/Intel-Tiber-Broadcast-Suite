@@ -12,7 +12,7 @@ The video pipelines are built using Intel-optimized version of FFmpeg and combin
 ### 2.1 High level components description
 
 The Intel® Tiber™ Broadcast Suite uses open-source FFmpeg framework as a baseline, and enhances it with:
-- Intel® Media Transport Library (MTL) with [SMPTE ST 2110 transport protocols](https://www.smpte.org/standards/st2110) and yuv422p10le and y210le pixel formats.
+- Media Transport Library (MTL) with [SMPTE ST 2110 transport protocols](https://www.smpte.org/standards/st2110) and yuv422p10le and y210le pixel formats.
 - Intel® QSV and OneVPL libraries to support hardware-accelerated media processing with Intel Flex GPU cards.
 - DPC++ kernels to enable custom effect filters used in video production (not supported in this release).
 - OpenGL/Vulcan integration to display rendering effects (not supported in this release).
@@ -24,7 +24,7 @@ The software package includes several performance features on top of regular [In
 
 ![Architecture](images/sw-architecture.png)
 
-### 2.2 Intel®'s Media Transport Library (MTL) for Intel® Tiber™ Broadcast Suite
+### 2.2 Media Transport Library (MTL) for Intel® Tiber™ Broadcast Suite
 
 - **Lockless Design:** MTL employs a lockless design in the data plane, utilizing busy polling (busy-waiting or spinning) to achieve ultra-high performance and low latency. This technique constantly checks for new data packets, minimizing latency and avoiding costly context switches between the kernel and user space.
 - **Tasklet Scheduler:** MTL incorporates an asynchronous tasklet scheduler, allowing efficient utilization of the pinned polling thread. Tasklets are lightweight functions that run in the context of the pinned thread, enabling more efficient use of the Last Level Cache (LLC) at different processing stages.

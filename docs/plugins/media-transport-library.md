@@ -1,6 +1,6 @@
-# Intel® Media Transport Library
+# Media Transport Library
 
-FFmpeg Intel® Media Transport Library Plugins Documentation
+FFmpeg Media Transport Library Plugins Documentation
 
 > 💡 _**Tip:** For up to date documentation refer to: [https://github.com/OpenVisualCloud/Media-Transport-Library](https://github.com/OpenVisualCloud/Media-Transport-Library)_
 
@@ -63,7 +63,7 @@ FFmpeg Intel® Media Transport Library Plugins Documentation
   - **Flags**: Decoding parameter
   - **Range**: `-1` to `INT_MAX`
 
-## St20p Muxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
+## St20p Muxer Plugin Documentation for FFmpeg Media Transport Library.
 
 The MTL St20p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-20 video streams over a network. Below are the input parameters that can be configured for the MTL St20p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st20p`.
 
@@ -90,7 +90,7 @@ ffmpeg -i input.mp4 -c:v rawvideo -f mtl_st20p -p_port "eth0" -p_sip "192.168.1.
 
 This command takes an input file input.mp4, encodes the video as raw video, and uses the MTL St20p Muxer to send the data to IP address 239.0.0.1 on UDP port 1234 with payload type 112 and a frame buffer count of 4.
 
-## St20p Demuxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
+## St20p Demuxer Plugin Documentation for FFmpeg Media Transport Library.
 
 The MTL St20p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-20 video streams over a network. Below are the input parameters that can be configured for the MTL St20p Demuxer plugin. To use plugin prepend input parameters with `-f mtl_st20p`.
 
@@ -140,7 +140,7 @@ ffmpeg -f mtl_st20p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_rx_ip
 
 This command receives an ST 2110-20 video stream with the specified device and port configurations, a frame size of 1280x720, pixel format yuv422p10le, frame rate 50, a timeout of 2 seconds for frame retrieval, and a frame buffer count of 4. The video stream is then copied to an output file output.mp4.
 
-## St22p Muxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
+## St22p Muxer Plugin Documentation for FFmpeg Media Transport Library.
 
 The MTL St22p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-22 video streams over a network. Below are the input parameters that can be configured for the MTL St22p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st22p`.
 
@@ -182,7 +182,7 @@ The MTL St22p Muxer plugin usage with FFmpeg example command that sets some of t
 ffmpeg -i input.mp4 -c:v rawvideo -f mtl_st22p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_tx_ip "239.0.0.1" -udp_port 1234 -payload_type 112 -fb_cnt 4 -bpp 2.0 -codec_thread_cnt 4 -st22_codec "jpegxs" output.mtl
 ```
 
-## St22p Demuxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
+## St22p Demuxer Plugin Documentation for FFmpeg Media Transport Library.
 
 The MTL St22p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-22 video streams over a network. Below are the input parameters that can be configured for the MTL St22p Demuxer plugin. To use plugin prepend input parameters with `-f mtl_st22p`.
 
@@ -243,7 +243,7 @@ ffmpeg -f mtl_st22p -p_port "eth0" -p_sip "192.168.1.1" -dma_dev "dma0" -p_rx_ip
 
 This command receives an ST 2110-22 video stream with the specified device and port configurations, a frame size of 1280x720, pixel format yuv422p10le, frame rate 50, a timeout of 2 seconds for frame retrieval, a frame buffer count of 4, codec threads count of 4, and codec jpegxs. The video stream is then copied to an output file output.mp4.
 
-## St30p Muxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
+## St30p Muxer Plugin Documentation for FFmpeg Media Transport Library.
 
 The MTL St30p Muxer plugin for FFmpeg is designed to handle the transmission of ST 2110-30 audio streams over a network. Below are the input parameters that can be configured for the MTL St30p Muxer plugin. To use plugin prepend input parameters with `-f mtl_st30p`.
 
@@ -276,7 +276,7 @@ ffmpeg -i input.wav -c:a pcm_s24be -f mtl_st30p -p_port "eth0" -p_sip "192.168.1
 
 This command takes an input file input.wav, encodes the audio as PCM 24-bit big-endian, and uses the MTL St30p Muxer to send the data to IP address 239.0.0.1 on UDP port 1234 with payload type 112, frame buffer count of 4, and audio packet time of 1ms.
 
-## St30p Demuxer Plugin Documentation for FFmpeg Intel® Media Transport Library.
+## St30p Demuxer Plugin Documentation for FFmpeg Media Transport Library.
 
 The MTL St30p Demuxer plugin for FFmpeg is designed to handle the reception of ST 2110-30 audio streams over a network. Below are the input parameters that can be configured for the MTL St30p Demuxer plugin.  To use plugin prepend input parameters with `-f mtl_st30p`.
 

@@ -9,7 +9,7 @@ Steps to perform before run Intel® Tiber™ Broadcast Suite on host with Ubuntu
 ### 1.1 BIOS settings
 > **Note:** It is recommended to properly setup BIOS settings before proceeding. Depending on manufacturer, labels may vary. Please consult an instruction manual or ask a platform vendor for detailed steps.
 
-Following technologies must be enabled for Intel® Media Transport Library (MTL) to function properly:
+Following technologies must be enabled for Media Transport Library (MTL) to function properly:
 - [Intel® Virtualization for Directed I/O (VT-d)](https://en.wikipedia.org/wiki/X86_virtualization#Intel_virtualization_(VT-x))
 - [Single-root input/output virtualization (SR-IOV)](https://en.wikipedia.org/wiki/Single-root_input/output_virtualization)
 - Bifurcation on PCI-E lanes of Intel® E810 Series Ethernet Adapter card may be required in some cases <!--TODO: Document which cases require bifurcation-->
@@ -53,7 +53,7 @@ To install Flex GPU dirver follow the instruction: [Ubuntu Install Steps](https:
 
     > **Note:** Please ensure Intel® Ethernet Adapter Complete Driver Pack is downloaded in a version specified in the instruction from a link containing the `MTL_VER` commit hash.
 
-5.  Install Data Plain with Intel® Media Transport Library patches included:
+5.  Install Data Plain with Media Transport Library patches included:
     [Patched DPDK install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/build.md)
     > **Note:** PIP package manager for Python reads proxy settings from environment variables, thus it might be required to re-setup proxy before proceeding, if sudo is used.
 6. Configure VFIO (IOMMU) required by PMD based DPDK:

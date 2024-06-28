@@ -5,7 +5,7 @@
 > **Note:** This instruction regards running the predefined scripts from `pipelines` folder present in the root of the repository. For more information on how to prepare an own pipeline, see:
 - [Docker command breakdown](run-know-how.md)
 - [FFmpeg Intel® Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
-- [Intel® Media Transport Library](plugins/media-transport-library.md)
+- [Media Transport Library](plugins/media-transport-library.md)
 - [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
 - [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
 
