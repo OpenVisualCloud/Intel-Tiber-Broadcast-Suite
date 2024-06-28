@@ -9,6 +9,7 @@
 - [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
 - [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
 
+> **Note:** The scaling factors provided in this document consider the number of pixels in the image, instead of dimensions, e.g. scaling 1/4 means the number of overall pixel is down by 4, but the edges are divided by 2 (like in 3840x2160 -> 1920x1080).
 
 ## Run sample pipelines
 
@@ -44,7 +45,7 @@ session C > multiviewer_rx.sh
 
 ### Recorder
 
-Input streams from ST 2110-20 camera is split to two streams with different resolution 1/4 and 1/16. Scaled outputs are stored on local drive.
+Input streams from ST 2110-20 camera is split to two streams with different 1/4 and 1/16 pixelwise scaling. Scaled outputs are stored on local drive.
 
 ![Recorder process](images/recorder-process.png)
 ![Recorder](images/recorder.png)
