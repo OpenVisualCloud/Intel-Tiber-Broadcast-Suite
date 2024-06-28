@@ -26,7 +26,7 @@ Component               |   Version     |   Source
 FFmpeg                  |   6.1.1       |   [FFmpeg ](https://github.com/FFmpeg/FFmpeg)
 Intel® FFmpeg patches   |   6.1         |   [Intel® FFmpeg patches](https://github.com/intel/cartwheel-ffmpeg)
 Media Transport Library |   commit SHA: `b210f1a85f571507f317d156b105dbe5690a234d`   |   [Media Transport Library](https://github.com/OpenVisualCloud/Media-Transport-Library)
-Media Communications Mesh|   24.06      |   [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)
+Media Communications Mesh|   24.06.01   |   [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)
 Data Plane Development Kit (DPDK)   |    23.11   |   [DPDK](https://github.com/DPDK/dpdk)
 SVT JPEG XS             |  0.9      |   [SVT JPEG XS](https://github.com/OpenVisualCloud/SVT-JPEG-XS)
 SVT AV1                 |  1.7.0        |   [SVT AV1](https://gitlab.com/AOMediaCodec/SVT-AV1)
