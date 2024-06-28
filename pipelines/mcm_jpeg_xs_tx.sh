@@ -12,7 +12,7 @@ docker run -it \
    --device=/dev/vfio:/dev/vfio \
    --device=/dev/dri:/dev/dri \
    --cap-add ALL \
-   -v $(pwd):/videos \
+   -v "$(pwd)":/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
    -v /dev/null:/dev/null \
