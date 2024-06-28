@@ -1,0 +1,133 @@
+diff --git a/libavfilter/qsvvpp.c b/libavfilter/qsvvpp.c
+index 2c8e73e87d..d1e2a3c349 100644
+--- a/libavfilter/qsvvpp.c
++++ b/libavfilter/qsvvpp.c
+@@ -972,10 +972,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+     QSVFrame         *in_frame, *out_frame;
+     int               ret, ret1, filter_ret;
+ 
+-    while (s->eof && av_fifo_read(s->async_fifo, &aframe, 1) >= 0) {
++    while ((s->eof || !picref) && av_fifo_read(s->async_fifo, &aframe, 1) >= 0) {
+         if (MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000) < 0)
+             av_log(ctx, AV_LOG_WARNING, "Sync failed.\n");
+ 
++        //av_log(ctx, AV_LOG_WARNING, "SyncOperation-early.\n");
++
+         filter_ret = s->filter_frame(outlink, aframe.frame->frame);
+         if (filter_ret < 0) {
+             av_frame_free(&aframe.frame->frame);
+@@ -984,6 +986,11 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+         aframe.frame->queued--;
+         s->got_frame = 1;
+         aframe.frame->frame = NULL;
++
++        if (!av_fifo_can_read(s->async_fifo)) {
++            inlink->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
++            inlink->dst->ready = 100; // mark as ready (low priority) to check if more input frames are available
++        }
+     };
+ 
+     if (!picref)
+@@ -1013,6 +1020,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+             if (ret == MFX_WRN_DEVICE_BUSY)
+                 av_usleep(500);
+         } while (ret == MFX_WRN_DEVICE_BUSY);
++        //av_log(ctx, AV_LOG_WARNING, "RunFrameVPPAsync.\n");
+ 
+         if (ret < 0 && ret != MFX_ERR_MORE_SURFACE) {
+             /* Ignore more_data error */
+@@ -1033,6 +1041,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+             do {
+                 ret1 = MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000);
+             } while (ret1 == MFX_WRN_IN_EXECUTION);
++            //av_log(ctx, AV_LOG_WARNING, "SyncOperation-late.\n");
+ 
+             if (ret1 < 0) {
+                 ret = ret1;
+@@ -1048,6 +1057,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+             aframe.frame->queued--;
+             s->got_frame = 1;
+             aframe.frame->frame = NULL;
++        }
++
++        if (av_fifo_can_read(s->async_fifo)) {
++            // request sync call
++            inlink->dst->ready = 50;
++            inlink->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
+         }
+     } while(ret == MFX_ERR_MORE_SURFACE);
+ 
+diff --git a/libavfilter/vf_stack_qsv.c b/libavfilter/vf_stack_qsv.c
+index 3e6aefe44b..e1fa3fd073 100644
+--- a/libavfilter/vf_stack_qsv.c
++++ b/libavfilter/vf_stack_qsv.c
+@@ -73,6 +73,15 @@ static int process_frame(FFFrameSync *fs)
+     AVFrame *frame = NULL;
+     int ret = 0;
+ 
++    if (ctx->inputs[ctx->nb_inputs-1]->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++        ret = ff_qsvvpp_filter_frame(qsv, ctx->inputs[ctx->nb_inputs-1], NULL);
++        ctx->inputs[ctx->nb_inputs-1]->dstpad->flags &= ~AVFILTERPAD_FLAG_ASYNC;
++        ctx->inputs[ctx->nb_inputs-1]->dst->ready = 100; // mark as ready (low priority) to check if more input frames are available
++        if (qsv->got_frame)
++            qsv->got_frame = 0;
++        return ret;
++    }
++
+     for (int i = 0; i < ctx->nb_inputs; i++) {
+         ret = ff_framesync_get_frame(fs, i, &frame, 0);
+         if (ret == 0)
+@@ -83,7 +92,9 @@ static int process_frame(FFFrameSync *fs)
+ 
+     if (ret == 0 && qsv->got_frame == 0) {
+         for (int i = 0; i < ctx->nb_inputs; i++)
+-            FF_FILTER_FORWARD_WANTED(ctx->outputs[0], ctx->inputs[i]);
++            if (ff_outlink_frame_wanted(ctx->outputs[0]))
++                ff_inlink_request_frame(ctx->inputs[i]);
++            //FF_FILTER_FORWARD_WANTED(ctx->outputs[0], ctx->inputs[i]);
+ 
+         ret = FFERROR_NOT_READY;
+     }
+@@ -156,6 +167,7 @@ static int config_output(AVFilterLink *outlink)
+         is[i].PixelAlphaEnable = 0;
+     }
+ 
++    sctx->base.hwctx.async_depth = 1; // TODO: make configurable
+     return ff_qsvvpp_init(ctx, &sctx->qsv_param);
+ }
+ 
+diff --git a/libavfilter/vf_vpp_qsv.c b/libavfilter/vf_vpp_qsv.c
+index 5356103e00..7c13fc3f43 100644
+--- a/libavfilter/vf_vpp_qsv.c
++++ b/libavfilter/vf_vpp_qsv.c
+@@ -734,6 +734,11 @@ static int activate(AVFilterContext *ctx)
+ 
+     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+ 
++    if (inlink->dstpad->flags & AVFILTERPAD_FLAG_ASYNC) {
++        ret = ff_qsvvpp_filter_frame(qsv, inlink, NULL);
++        return ret;
++    }
++
+     if (!qsv->eof) {
+         ret = ff_inlink_consume_frame(inlink, &in);
+         if (ret < 0)
+@@ -749,7 +754,8 @@ static int activate(AVFilterContext *ctx)
+     if (qsv->session) {
+         if (in || qsv->eof) {
+             ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
+-            av_frame_free(&in);
++            if (in)
++                av_frame_free(&in);
+             if (ret == AVERROR(EAGAIN))
+                 goto not_ready;
+             else if (ret < 0)
+@@ -977,7 +983,7 @@ static const AVOption qsvscale_options[] = {
+     { "w",      "Output video width(0=input video width, -1=keep input video aspect)",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str = "iw"   }, .flags = FLAGS },
+     { "h",      "Output video height(0=input video height, -1=keep input video aspect)", OFFSET(oh), AV_OPT_TYPE_STRING, { .str = "ih"   }, .flags = FLAGS },
+     { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
+-
++    { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
+ #if QSV_ONEVPL
+     { "mode",      "scaling & format conversion mode (mode compute(3), vd(4) and ve(5) are only available on some platforms)",    OFFSET(scale_mode),    AV_OPT_TYPE_INT,    { .i64 = 0}, 0, 5, FLAGS, "mode"},
+ #else

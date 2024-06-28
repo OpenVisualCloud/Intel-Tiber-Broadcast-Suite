@@ -1,0 +1,49 @@
+From 12fb9e39f758241fcd399c2cd6ac9620f29826b6 Mon Sep 17 00:00:00 2001
+From: "Wesierski, Dawid" <dawid.wesierski@intel.com>
+Date: Thu, 23 May 2024 18:38:57 +0200
+Subject: [PATCH 2/2] add stability patches for ffmpeg plugin
+
+---
+ ecosystem/ffmpeg_plugin/mtl_st20p_rx.c | 7 ++++++-
+ ecosystem/ffmpeg_plugin/mtl_st22p_rx.c | 7 ++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c b/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c
+index 7a990e7..eb91f66 100644
+--- a/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c
++++ b/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c
+@@ -178,7 +178,12 @@ static int mtl_st20p_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
+   struct st_frame* frame;
+ 
+   dbg("%s(%d), start\n", __func__, s->idx);
+-  frame = st20p_rx_get_frame(s->rx_handle);
++  for (int i = 0; i < 5; i++) {
++    frame = st20p_rx_get_frame(s->rx_handle);
++    if (frame)
++      break;
++  }
++
+   if (!frame) {
+     info(ctx, "%s(%d), st20p_rx_get_frame timeout\n", __func__, s->idx);
+     return AVERROR(EIO);
+diff --git a/ecosystem/ffmpeg_plugin/mtl_st22p_rx.c b/ecosystem/ffmpeg_plugin/mtl_st22p_rx.c
+index 51abf57..2cb5126 100644
+--- a/ecosystem/ffmpeg_plugin/mtl_st22p_rx.c
++++ b/ecosystem/ffmpeg_plugin/mtl_st22p_rx.c
+@@ -298,7 +298,12 @@ static int mtl_st22p_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
+   struct st_frame* frame;
+ 
+   dbg("%s(%d), start\n", __func__, s->idx);
+-  frame = st22p_rx_get_frame(s->rx_handle);
++  for (int i = 0; i < 5; i++) {
++    frame = st22p_rx_get_frame(s->rx_handle);
++    if (frame)
++      break;
++  }
++
+   if (!frame) {
+     info(ctx, "%s(%d), st22p_rx_get_frame timeout\n", __func__, s->idx);
+     return AVERROR(EIO);
+-- 
+2.34.1
+
