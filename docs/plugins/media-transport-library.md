@@ -42,6 +42,11 @@ FFmpeg Media Transport Library Plugins Documentation
   - **Type**: Integer
   - **Default**: `112`
   - **Flags**: Encoding parameter
+  - **Expected**:
+    - Audio - `111`
+    - Video - `112`
+    - Ancillary - `113`
+    - ST22 - `114`
   - **Range**: `-1` to `INT_MAX`
 
 #### Rx Port Decoding Arguments
@@ -61,6 +66,11 @@ FFmpeg Media Transport Library Plugins Documentation
   - **Type**: Integer
   - **Default**: `112`
   - **Flags**: Decoding parameter
+  - **Expected**:
+    - Audio - `111`
+    - Video - `112`
+    - Ancillary - `113`
+    - ST22 - `114`
   - **Range**: `-1` to `INT_MAX`
 
 ## St20p Muxer Plugin Documentation for FFmpeg Media Transport Library.
