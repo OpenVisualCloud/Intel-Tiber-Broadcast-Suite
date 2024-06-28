@@ -1,6 +1,6 @@
-# Intel® Media Communications Mesh
+# Media Communications Mesh
 
-Documentation for FFmpeg Intel® Media Communications Mesh (further: Mesh) plugin.
+Documentation for FFmpeg Media Communications Mesh (further: Mesh) plugin.
 
 > 💡 _**Tip:** For up to date documentation refer to: [https://github.com/OpenVisualCloud/Media-Communications-Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)_
 
@@ -8,7 +8,7 @@ Documentation for FFmpeg Intel® Media Communications Mesh (further: Mesh) plugi
 
 > ⚠️ _**Important** This plugin requires Media Communications Mesh standalone and additional steps to run properly._
 
-## FFmpeg Intel® Media Communications Mesh Muxer Parameters Table
+## FFmpeg Media Communications Mesh Muxer Parameters Table
 
 ### Muxer plugin available params
 
@@ -38,7 +38,7 @@ Documentation for FFmpeg Intel® Media Communications Mesh (further: Mesh) plugi
 | `socket_name`  | Set the memif socket name for the media data reception.  | String           | `NULL`                |                                                  |
 | `interface_id` | Set the interface ID for the media data reception.       | Integer          | `0`                   |                                                  |
 
-## FFmpeg Intel® Media Communications Mesh Muxer Plugin Documentation
+## FFmpeg Media Communications Mesh Muxer Plugin Documentation
 
 The Mesh's Muxer plugin for FFmpeg is designed to handle the transmission of media data over a network using various protocols and payload types. Below are the input parameters that can be configured for the Mesh's Muxer plugin.
 
@@ -112,7 +112,7 @@ ffmpeg -i input.mp4 -c:v rawvideo -f mcm -ip_addr 192.168.1.100 -port 8000 -payl
 
 This command takes an `input.mp4` input file, processes the video as `rawvideo`, uses the Mesh's Muxer to send the data to `192.168.1.100` IP address on port `8000` with `st20` payload type, protocol type `auto`, `hd720` video size, `30` frames per second (frame rate), onto socket name `my_socket` with socket's interface ID set to `2`. Output is saved to `output.mcm` file.
 
-## FFmpeg Intel® Media Communications Mesh Demuxer Plugin
+## FFmpeg Media Communications Mesh Demuxer Plugin
 
 The Mesh's Demuxer plugin for FFmpeg is designed to handle the reception of media data over a network using various protocols and payload types. Below are the input parameters that can be configured for the Mesh's Demuxer plugin.
 

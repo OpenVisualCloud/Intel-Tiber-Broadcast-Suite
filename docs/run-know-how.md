@@ -4,7 +4,7 @@ Full Intel® Tiber™ Broadcast Suite pipeline command consists of `docker run [
 This document describes a docker-related part of command - all `[docker_parameters]` switches until the name of the image, called `video_production_image`.
 
 Information about the `[broadcast_suite_parameters]` part of the command may be found, depending on the plugin, under:
-- [FFmpeg Intel® Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
+- [FFmpeg Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
 - [Media Transport Library](plugins/media-transport-library.md)
 - [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
 - [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
