@@ -17,17 +17,17 @@ Following technologies must be enabled for Media Transport Library (MTL) to func
 
 ### 1.2 Install Docker build environment
 
-To build Docker build environment please refer to the official manual: [Docker installation](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository).
+To install Docker environment please refer to the official Docker Engine on Ubuntu installation manual's [Install using the apt repository](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) section.
 
 > **Note:** Do not skip `docker-buildx-plugin` installation, otherwise the `build.sh` script may not run properly.
 
 ### 1.3 Setup proxy
 
-Depending on the network environment it could be required to set up the proxy. In that case please refer to the official Docker proxy setup manual: [Configure Docker to use a proxy server](https://docs.docker.com/network/proxy/)
+Depending on the network environment it could be required to set up the proxy. In that case please refer to [Configure the Docker client](https://docs.docker.com/network/proxy/#configure-the-docker-client) section of _Configure Docker to use a proxy server_ guide.
 
 ### 1.4 Install Flex GPU driver
 
-To install Flex GPU dirver follow the instruction: [Ubuntu Install Steps](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps)
+To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps) part of the Installation guide for Intel® Data Center GPUs.
 
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
 
@@ -48,16 +48,13 @@ To install Flex GPU dirver follow the instruction: [Ubuntu Install Steps](https:
     ```shell
     export imtl_source_code=${PWD}
     ```
-4. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the instruction:
-    [Intel® E810 Series Ethernet Adapter driver install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/e810.md)
+4. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the [Intel® E810 Series Ethernet Adapter driver install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/e810.md) instruction.
 
     > **Note:** Please ensure Intel® Ethernet Adapter Complete Driver Pack is downloaded in a version specified in the instruction from a link containing the `MTL_VER` commit hash.
 
-5.  Install Data Plain with Media Transport Library patches included:
-    [Patched DPDK install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/build.md)
+5.  Install Data Plane with Media Transport Library patches included using Ubuntu-related steps from [Build Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/build.md).
     > **Note:** PIP package manager for Python reads proxy settings from environment variables, thus it might be required to re-setup proxy before proceeding, if sudo is used.
-6. Configure VFIO (IOMMU) required by PMD based DPDK:
-    [Configuration of the VFIO (IOMMU)](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/run.md)
+6. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/run.md), chapters 1-4, and (optionally) 7 for PTP configuration.
 
 7. From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, and E810 NIC's virtual controllers:
     ```shell
