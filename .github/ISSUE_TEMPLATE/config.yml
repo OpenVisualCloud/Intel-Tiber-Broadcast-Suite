@@ -1,0 +1,13 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Intel® Tiber™ Developer Cloud
+    url: https://www.intel.com/content/www/us/en/developer/tools/devcloud/services.html
+    about: Explore and evaluate the latest Intel® Tiber™ Developer Cloud products and learn about the Big Picture.
+
+  - name: Project Documentation
+    url: https://openvisualcloud.github.io/Intel-Tiber-Broadcast-Suite/
+    about: Check out our documentation for detailed information on how to use our project.
+
+  - name: Security Vulnerabilities
+    url: https://www.intel.com/content/www/us/en/security-center/vulnerability-handling-guidelines.html
+    about: Please report any security vulnerabilities in this project, [utilize the guidelines here](https://www.intel.com/content/www/us/en/security-center/vulnerability-handling-guidelines.html), contact the [project owners](mailto:michal.swirydczuk@intel.com) or [software architect](mailto:piotr.wysocki@intel.com).
