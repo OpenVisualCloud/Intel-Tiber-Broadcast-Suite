@@ -9,7 +9,7 @@
 - GPU Media Rendering: Utilizes Intel Flex GPU cards for efficient media rendering tasks. 
 - Intel® QSV and OneVPL libraries: These libraries support hardware-accelerated media processing with Intel Flex GPU cards, enhancing the performance of the Suite. 
 - DPC++ kernels: Although not supported in this release, the Suite is designed to enable custom effect filters used in video production in future releases. 
-- OpenGL/Vulcan integration: This feature, although not supported in this release, will allow display rendering effects in future versions. 
+- OpenGL/Vulcan feature integration. 
 - Performance features: The Suite includes several performance features such as memory management optimizations for page-aligned surface allocations, asynchronous execution of video pipeline filters to maximize GPU utilization, and high-throughput GPU-CPU memory data transfers. 
 - Media Communications Mesh Plugin: This plugin allows single or multiple instances of FFmpeg with Media Communications Mesh Plugin to connect to selected Media Proxy instance, enhancing the efficiency of the Suite. 
 - Support for PTP Time synchronization: This feature uses Media Transport Library PTP Time synchronization feature, enhancing the synchronization of the Suite. 
