@@ -51,7 +51,8 @@ Know-How
    docs/building-commands
    docs/run-know-how
    Documentation Build <docs/sphinx/build_docs>
-
+   CONTRIBUTING
+   CODE_OF_CONDUCT
 
 Security
 --------
@@ -62,7 +63,7 @@ Security
 
    docs/components/os-components-scans
    docs/components/libraries-scans
-   Security <security>
+   Security <SECURITY>
 
 Other
 --------
@@ -71,6 +72,7 @@ Other
    :maxdepth: 2
    :caption: Other:
 
-   License (LICENSE)
-   Third Party License (docs/ATTRIBUTION-RAW)
-   Third Party License Links (ATTRIBUTION)
+   License <LICENSE>
+   Third Party License <docs/attribution.md>
+   Third Party License Links <ATTRIBUTION>
+   Changelog <CHANGELOG>
