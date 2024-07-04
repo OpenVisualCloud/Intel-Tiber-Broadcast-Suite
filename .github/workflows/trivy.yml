@@ -4,7 +4,6 @@ on:
   workflow_call:
   workflow_dispatch:
     branches: [main]
-  pull_request:
 
 env:
   BUILD_TYPE: "Release"
