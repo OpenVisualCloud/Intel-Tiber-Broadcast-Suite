@@ -1,4 +1,4 @@
-@Library(['jenkins-common-pipelines', 'pact-shared-library']) _
+@Library(['jenkins-common-pipelines', 'pact-shared-library', 'vsval-gta-asset-library']) _
 
 def GtaStatusCheck = "daily testing"
 def relativeDir = 'vp-build'
@@ -107,21 +107,21 @@ pipeline {
                         extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: relativeDir]],
                         userRemoteConfigs: userRemoteConfigs
                     ])
+                    def dockerBuildArgs = ["--build-arg http_proxy",
+                                           "--build-arg https_proxy",
+                                           "-t ${env.IMAGE_TAG_NAME}_build_stage",
+                                           "--target buildstage",
+                                           "-f Dockerfile ."]
                     dir(relativeDir){
                         sh """
                           git config --global --add safe.directory \$(pwd)
-                          docker build \
-                            --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
-                            --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
-                            -t \"${IMAGE_TAG_NAME}_build_stage\" \
-                            --target buildstage \
-                            -f Dockerfile .
-                          docker build \
-                            --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
-                            --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
-                            -t \"${IMAGE_TAG_NAME}\" \
-                            -f Dockerfile .
-                                """
+                          docker build ${dockerBuildArgs.join(" ")}
+                        """
+
+                        dockerBuildArgs.remove("--target buildstage")
+                        dockerBuildArgs = dockerBuildArgs.collect { 
+                            it.contains('_build_stage') ? it.replaceAll( /_build_stage/, '' ) : it }
+                        sh """ docker build ${dockerBuildArgs.join(" ")}  """
                     }
                 }
             }
@@ -158,29 +158,36 @@ pipeline {
         stage('Upload'){
             steps {
                 script {
-                    def pr_head_sha = (env.GITHUB_PR_HEAD_SHA ? env.GITHUB_PR_HEAD_SHA : "manual_trigger")
                     dir(relativeDir){
-                        sh """
-                            set -x
-                            GIT_COMMIT=\$(git log --pretty=%H -n 1)
-                            GIT_SHA=${pr_head_sha}
-                            GIT_REPO_NAME=\$(echo ${env.GITHUB_REPO_FULL_NAME} | cut -d \"/\" -f2)
-                            echo '{\"video_production_sdb\":[\"'\${GIT_COMMIT}'\"], \
-                                       \"build.component_revision\":[\"'\${GIT_SHA}'\"], \
-                                       \"build.component_project\":[\"'\${GIT_REPO_NAME}'\"]}' > recipe.json
-                            gta-asset push --no-archive --properties-file recipe.json \
-                                       -u sys_vsval \
-                                       -p \"${ARTIFACTORY_SECRET}\" \
-                                       --root-url \"${env.ARTIFACTORY_URL}\" \
-                                       \"${env.JOB_FILE_ARTIFACTORY_PREFIX}\" \
-                                       \"${env.GTA_ASSET_NAME}\" \
-                                       \"${env.JOB_BASE_NAME}_${env.JOB_BUILD_ID}\" \
-                                       \"${UPLOAD_DIR}/\"
-                        """
+                        // https://repo/name -> repo/name
+                        def repoName = (env.GITHUB_REPO_FULL_NAME ? env.GITHUB_REPO_FULL_NAME.split('/')[1] : "none") 
+                        def pr_head_sha = (env.GITHUB_PR_HEAD_SHA ? env.GITHUB_PR_HEAD_SHA : "manual_trigger")
+                        dir(relativeDir){
+                            def propertiesFile = 'properties.json'
+                            writeFile file: propertiesFile, text: jsonStringFromMap([
+                                    "video_production_sdb": [pr_head_sha],
+                                    "build.component_revision": [pr_head_sha],
+                                    "build.component_project": [repoName]])
+                            def assetConfig = [ 
+                                creds: [
+                                    user: "sys_vsval",
+                                    password: env.ARTIFACTORY_SECRET,
+                                ],
+                                gtaAsset: [
+                                    rootUrl: env.ARTIFACTORY_URL,
+                                    repo: env.JOB_FILE_ARTIFACTORY_PREFIX,
+                                    assetName: env.GTA_ASSET_NAME,
+                                    assetVersion: "${env.JOB_BASE_NAME}_${env.JOB_BUILD_ID}",
+                                    localPath: env.UPLOAD_DIR,
+                                ],
+                                propertiesFile: propertiesFile
+                            ]
+                            gtaAssetUpload(assetConfig)
                     }
                 }
             }
-       }
+         }
+       }  
     }
     post{
         success{

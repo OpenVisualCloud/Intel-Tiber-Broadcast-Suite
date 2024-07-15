@@ -1,20 +1,31 @@
-#!/bin/bash 
+#!/bin/bash -x
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 TARGET_IMAGE=${1}
 
-git clone https://github.com/docker/docker-bench-security.git /tmp/
-TOOL_IMAGE=docker-bench-security:CI
-cd /tmp/docker-bench-security
-docker build --no-cache -t $TOOL_IMAGE --build-arg http_proxy --build-arg https_proxy .
+TOOL_VER=1.6.1
+TOOL_IMAGE=docker-bench-security:${TOOL_VER}
 
-cd ${SCRIPT_DIR}
+if [ ! -d /tmp/docker-bench-security ]
+then
+    CURRENT_DIR=$(pwd)
 
-TARGET_IMAGE=${TARGET_IMAGE}
+    git clone https://github.com/docker/docker-bench-security.git /tmp/docker-bench-security
+    cd /tmp/docker-bench-security
+    git checkout "v${TOOL_VER}"
+
+    docker build -t $TOOL_IMAGE --build-arg http_proxy --build-arg https_proxy .
+
+    cd ${CURRENT_DIR}
+fi 
+
+TARGET_IMAGE=${TARGET_IMAGE/.tar.gz/}
 IMAGE_NAME="${TARGET_IMAGE##*/}"
+IMAGE_NAME="${IMAGE_NAME/:/_}"
 
 
 HOST_OUTPUT_DIR=cisdockerbench_results
+rm -rf ${HOST_OUTPUT_DIR}
 mkdir -p ${HOST_OUTPUT_DIR}
 DOCKER_OUTPUT_DIR="/root/results"
 OUTPUT_NAME=docker_cis_report.txt
@@ -34,16 +45,24 @@ STD_VOLUMES=("/etc"
 for DIR in "${STD_VOLUMES[@]}"; do VOLUMES+="-v $DIR:$DIR:ro "; done
 
 # Sections of report applicable to pipeline framework
-OPTIONS="-c container_images,\
+OPTIONS=" docker_bench_security
+             container_images,\
             container_runtime,\
             docker_security_operations,\
             community_checks"
 
 DOCKER_BENCH_ARGS="$OPTIONS -i $IMAGE_NAME -l $OUTPUT_FILE"
 
+
+echo "stopping and remove running containers"
+docker stop $(docker ps -q)
+docker container prune -f
+
 # Run container in detached mode to trigger Container Runtime section
-docker run -td --name $IMAGE_NAME $TARGET_IMAGE
+docker run -td --name $IMAGE_NAME $IMAGE_NAME
 sleep 3
+
+sudo /tmp/docker-bench-security/docker-bench-security.sh  $DOCKER_BENCH_ARGS
 
 docker run --net host --pid host --userns host \
 --cap-add audit_control \
@@ -52,7 +71,8 @@ docker run --net host --pid host --userns host \
 -e http_proxy \
 -e https_proxy \
 $VOLUMES \
---label docker_bench_security $TOOL_IMAGE $DOCKER_BENCH_ARGS | tee ${HOST_OUTPUT_FILE}
+--label docker_bench_security \
+docker_bench_security $DOCKER_BENCH_ARGS | tee ${HOST_OUTPUT_FILE}
 
 
 NUM_OF_WARN_MSG=$(cat ${HOST_OUTPUT_FILE} | grep "WARN" -c)

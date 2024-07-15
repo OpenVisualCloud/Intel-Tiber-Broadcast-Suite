@@ -15,29 +15,10 @@ def setSdlStatusCheck(String state){
     }
 }
 
-def scan(String type, String tar_image){
-
-    def _cmd =[
-        hadolint: "jenkins/scripts/hadolint.sh" ,
-        trivy: "jenkins/scripts/trivy.sh ${tar_image}",
-        schellcheck: "jenkins/scripts/shellcheck.sh",
-        mcAffee: "${env.DOCKER_ABI} \"cd /opt/; jenkins/scripts/mcafee_scan.sh\"",
-        docker_benchmark: "jenkins/scripts/docker_cis_benchmark.sh"
-    ]
-    def _artifacts_path =[
-        hadolint: "Hadolint/hadolint-Dockerfile*" ,
-        trivy: "Trivy/*",
-        schellcheck: "shellcheck_logs/*",
-        mcAffee: "Malware/*",
-        docker_benchmark: "cisdockerbench_results/*" 
-    ]
-    sh """
-    
-        ${_cmd[type]}
-    """
-    archiveArtifacts allowEmptyArchive: true, artifacts: "${_artifacts_path[type]}"
+def fetchArtifacts(String artifactsPath){
+    archiveArtifacts allowEmptyArchive: true, artifacts: "${artifactsPath}*"
+    sh """rm -rf ${artifactsPath} """
 }
-
 
 
 pipeline {
@@ -62,7 +43,7 @@ pipeline {
         COVERITY_PROJECT = "Software Defined Broadcast main"
         COVERITY_FOLDER = "CoverityEvidence"
         COVERITY_STREAM = "sdb-ffmpeg-patch"
-        DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ -v /tmp:/tmp ${env.ABI_IMAGE} /bin/bash -c "
+        DOCKER_ABI="docker run --rm -v \$(pwd):/opt/ -v /tmp:/tmp ${env.ABI_IMAGE}  /bin/bash -c "
     }
     stages {
         stage("set status"){
@@ -74,172 +55,112 @@ pipeline {
                 }
             }
         }
-        stage("build coverity docker"){
+        stage("Hadolint"){
             steps{
                 script{
-                        def imageFullPath = params.tar_docker_image
-                        def imageName = imageFullPath.replaceAll(/^.*\/|\..*$/,"")
-                        sh """
-                            cd ${env.WORKSPACE}
-                            git config --global --add safe.directory \$(pwd)
-                            cd jenkins/docker/coverity
-                            docker build \
-                                --build-arg http_proxy=http://proxy-dmz.intel.com:912 \
-                                --build-arg https_proxy=http://proxy-dmz.intel.com:912 \
-                                --build-arg no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8 \
-                                --build-arg IMAGE_TAG_NAME=${imageName} \
-                                -t \"coverity_image_${params.parent_job_id}\" -f Dockerfile .
-                        """
+                    dir(params.relative_dir){
+                        sh """ jenkins/scripts/hadolint.sh """
+                        fetchArtifacts("Hadolint/hadolint-Dockerfile")
                     }
+                }
+            } 
+        }
+        stage("Trivy"){
+            steps{
+                script{
+                    dir(params.relative_dir){
+                        sh """ 
+                            rm -rf Trivy
+                            mkdir Trivy
+                            jenkins/scripts/trivy_image_scan.sh ${params.tar_docker_image}
+                            jenkins/scripts/trivy_dockerfile_scan.sh
+                        """
+                        fetchArtifacts("Trivy/")
+                    }
+                }
+            } 
+        }
+        stage("Shellcheck"){
+            steps{
+                script{
+                    dir(params.relative_dir){
+                        sh """ jenkins/scripts/shellcheck.sh """
+                        fetchArtifacts("shellcheck_logs/")
+                    }
+                }
+            } 
+        }
+        stage("McAfee"){
+            steps{
+                script{
+                    dir(params.relative_dir){
+                        sh """ ${env.DOCKER_ABI} \"cd /opt/; jenkins/scripts/mcafee_scan.sh\" """
+                        fetchArtifacts("Malware/")
+                    }
+                }
+            } 
+        }
+        stage("Protex"){
+            steps{
+                script{
+                    withCredentials([usernamePassword(
+                        credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
+                        usernameVariable: 'USERNAME',
+                        passwordVariable: 'PASSWORD')]){
+                        dir(params.relative_dir){                                    
+                            sh"""
+                                ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
+                                    --scan_server ${env.PROTEX_SERVER} \
+                                    --scan_project ${env.PROTEX_PROJECT} \
+                                    --username ${USERNAME} \
+                                    --password ${PASSWORD} \
+                                    --ing_path \".\" \
+                                    --report_type xlsx \
+                                    --report_config cos \
+                                    --report_config obl \
+                                    --scan_output ${env.PROTEX_FOLDER}\"
+                                 sudo chown -R \${USER}:\${USER} Logs
+                                 sudo chown -R \${USER}:\${USER} OWRBuild
+                                    
+                            """
+                            fetchArtifacts("OWRBuild/${env.PROTEX_FOLDER}/")
+                        }
+                    }
+                }
             }
         }
-        stage("scans"){
-            parallel {
-                stage("Hadolint"){
-                    steps{
-                        script{
-                            dir("Hadolint-scan"){
-                                sh """ cp -r ${params.relative_dir}/* . """
-                                scan("hadolint", "")
-                            }
-                        }
-                    } 
-                }
-                stage("Trivy"){
-                    steps{
-                        script{
-                            dir("Trivy-scan"){
-                                sh """ cp -r ${params.relative_dir}/* . """
-                                scan("trivy", params.tar_docker_image)
-                            }
-                        }
-                    } 
-                }
-                stage("Schellcheck"){
-                    steps{
-                        script{
-                            dir("Shellcheck-scan"){
-                                sh """ cp -r ${params.relative_dir}/* . """
-                                scan("schellcheck", "")
-                            }
-                        }
-                    } 
-                }
-                stage("McAfee"){
-                    steps{
-                        script{
-                            dir("Mcafee_scan"){
-                                sh """ cp -r ${params.relative_dir}/* . """
-                                scan("mcAffee", "")
-                            }
-                        }
-                    } 
-                }
-                stage("Protex"){
-                    steps{
-                        script{
-                            withCredentials([usernamePassword(
-                                credentialsId: 'de62b8cb-2c0a-4a67-83ea-cc51c7486c05',
-                                usernameVariable: 'USERNAME',
-                                passwordVariable: 'PASSWORD')]){
-                                dir("Protex-scan"){                                    
-                                    sh"""
-                                      cp -r ${params.relative_dir}/* .
-                                      ${env.DOCKER_ABI} \"cd /opt/; abi ip_scan scan \
-                                            --scan_server ${env.PROTEX_SERVER} \
-                                            --scan_project ${env.PROTEX_PROJECT} \
-                                            --username ${USERNAME} \
-                                            --password ${PASSWORD} \
-                                            --ing_path \".\" \
-                                            --report_type xlsx \
-                                            --report_config cos \
-                                            --report_config obl \
-                                            --scan_output ${env.PROTEX_FOLDER}\"
-                                        sudo chown -R $USER:$USER ./*
-                                    """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${env.PROTEX_FOLDER}/*"
-                                // Protex run in docker as root, it creates files as root on host machine.
-                                // jenkins cleanup cannot remove those files( permision denied 13), 
-                                // so they needs to be removed manually
-                                sh """ sudo rm -rf OWRBuild/ """
-                                }
-                            }
-                        }
+        stage("Docker CIS"){
+            steps{
+                script{
+                    dir(params.relative_dir){
+                        sh """ jenkins/scripts/docker_cis_benchmark.sh ${params.tar_docker_image} """
+                        fetchArtifacts("cisdockerbench_results/")
                     }
                 }
-                stage("Coverity"){
-                    steps{
-                        script{
-                        withCredentials([usernamePassword(
-                            credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
-                            usernameVariable: 'USERNAME',
-                            passwordVariable: 'PASSWORD')]){
-                                dir("Coverity-scan"){
-                                    sh """
-                                        cp -r ${params.relative_dir}/* .
-                                        docker run \
-                                        -e \"COVERITY_SERVER=${env.COVERITY_SERVER}\" \
-                                        -e \"COVERITY_USR=${USERNAME}\" \
-                                        -e \"COVERITY_PSW=${PASSWORD}\" \
-                                        -e \"WORKSPACE=${env.COVERITY_FOLDER}\" \
-                                        coverity_image_${params.parent_job_id} \
-                                        /bin/bash -c \"coverity ${env.COVERITY_STREAM}\"
-
-                                    """
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/${COVERITY_FOLDER}/*"
-                                }
-                            }
-                        }
-                    }
-                }
-                stage("Docker CIS"){
-                    steps{
-                        script{
-                            dir("Docker-CIS"){
-                                sh """ cp -r ${params.relative_dir}/* . """
-                                scan("docker_benchmark", "")
-                            }
-                        }
-                    } 
-                }
-            }
+            } 
         }
     }
     post{
-        always{
-            script{
-                dir("Protex-scan")
-                    // Protex run in docker as root, it creates files as root on host machine.
-                    // jenkins cleanup cannot remove those files( permision denied 13), 
-                    // so they needs to be removed manually
-                    sh """ sudo rm -rf OWRBuild/ """
-                dir("coverity")
-                    // Protex run in docker as root, it creates files as root on host machine.
-                    // jenkins cleanup cannot remove those files( permision denied 13), 
-                    // so they needs to be removed manually
-                    sh """ sudo rm -rf OWRBuild/ """
-            }
-        }
         success{
             script {
                     if(params.github_repo_status_url){
                         setSdlStatusCheck("success")
                     }
-                }
+            }
         }
         failure{
             script {
                     if(params.github_repo_status_url){
                         setSdlStatusCheck("fail")
                     }
-                }
+            }
         }
         aborted{
             script {
                     if(params.github_repo_status_url){
                         setSdlStatusCheck("aborted")
                     }
-                }
+            }
         }
     }
 }
