@@ -15,7 +15,7 @@ pipeline {
             steps{
                 script{
                     def repo = 'https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline.git'
-                    def branches = [[name: 'lgrab/fix_coverity_docker']]
+                    def branches = [[name: 'main']]
                     def userRemoteConfigs = [[
                         credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
                         url: repo
