@@ -11,6 +11,7 @@ docker run -it \
   --cap-add ALL \
   -v $(pwd):/config \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+  -v /var/run/imtl:/var/run/imtl \
   -v /dev/null:/dev/null \
   --device=/dev/urandom \
   -v /tmp/hugepages:/tmp/hugepages \

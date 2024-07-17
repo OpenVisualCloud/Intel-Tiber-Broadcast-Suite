@@ -17,7 +17,7 @@ These scripts are created for validation purposes.
 | ❌NO | [IMTL_test.sh](./IMTL_test.sh) | The script uses IMTL\*.sh scripts. Script generates gradient movie, send it and receives on the same network interface using IMTL, compress and compare input and output video using checksums. It will print message if everything succeeded or not. | TEST SUCCEEDED or FAILED | `Unrecognized option 'src_addr'.` and other errors appear |
 | ❌NO | [multiviewer_test.sh](./multiviewer_test.sh) | The script uses multiviewer\*.sh scripts. It generates 4 identical gradient 4K videos in y210le format. Then it scales them to half of size and put them in 2x2 grid 4K video in the same format. It compares CPU video checksum with GPU video checksum. It will print message if everything succeeded or not. | TEST SUCCEEDED or FAILED | `Unrecognized option 'filter_complex_frames'.` when running `multiviewer_4sources_GPU.sh` |
 
-NOTES: In case of failures please check if first_run.sh was executed after system reboot and if `--cpuset-cpus="..."` and `-e MTL_PARAM_LCORES="..."` contain valid values.\
+NOTES: In case of failures please check if first_run.sh was executed after system reboot.\
 It is recommended to run scripts as root or using sudo.
 
 *25-frame sequence clips generated out of downloaded 4K TIF files from https://media.xiph.org/sintel/sintel-4k-tiff16/ by `wget https://media.xiph.org/sintel/sintel-4k-tiff16/00000${num}.tif` and `docker run --rm -v .../input_clips:/clips video_production_image -framerate 25 -pattern_type glob -i /clips/00000${num}*.tif -c:v rawvideo -pix_fmt y210le /clips/out${num}00.yuv`.

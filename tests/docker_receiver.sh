@@ -12,6 +12,7 @@ docker run -it \
   -v $(pwd):/config \
   -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+  -v /var/run/imtl:/var/run/imtl \
   -v /dev/null:/dev/null \
   -v /tmp/hugepages:/tmp/hugepages \
   -v /hugepages:/hugepages \
@@ -20,8 +21,6 @@ docker run -it \
   --expose=20000-20170 \
   --ipc=host -v /dev/shm:/dev/shm \
   --cpuset-cpus="96-127" \
-  -e MTL_PARAM_LCORES="123-127" \
-  -e MTL_PARAM_DATA_QUOTA=10356 \
   video_production_image \
   -y \
   -an \

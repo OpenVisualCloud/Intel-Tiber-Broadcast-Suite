@@ -44,9 +44,9 @@ To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu
     cd Media-Transport-Library
     git reset ${MTL_VER} --hard
     ```
-3. While in `Media-Transport-Library` folder, set `imtl_source_code` variable with:
+3. While in `Media-Transport-Library` folder, set `mtl_source_code` variable with:
     ```shell
-    export imtl_source_code=${PWD}
+    export mtl_source_code=${PWD}
     ```
 4. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the [Intel® E810 Series Ethernet Adapter driver install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/e810.md) instruction.
 
@@ -98,6 +98,15 @@ Change number of cores used to build by make can be changed  by _--build-arg npr
 ```shell
 docker build --build-arg nproc=1 -t video_production_image -f Dockerfile .
 ```
+
+Build the mtl manager docker
+
+```shell
+cd "$mtl_source_code"/manager
+docker build -t mtl-manager:latest .
+cd -
+```
+
 
 ## 3. Test run the image
 

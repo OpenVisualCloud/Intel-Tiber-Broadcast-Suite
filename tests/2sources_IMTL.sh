@@ -9,6 +9,7 @@ docker run \
   --device /dev/vfio \
   --cap-add ALL \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+  -v /var/run/imtl:/var/run/imtl \
   -v /dev/null:/dev/null \
   -v /tmp/hugepages:/tmp/hugepages \
   -v /hugepages:/hugepages \

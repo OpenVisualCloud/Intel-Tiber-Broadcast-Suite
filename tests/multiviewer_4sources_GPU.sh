@@ -12,6 +12,7 @@ docker run \
   -v $(pwd):/videos \
   -v /usr/lib/x86_64-linux-gnu/dri \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+  -v /var/run/imtl:/var/run/imtl \
   -v /dev/null:/dev/null \
   -v /tmp/hugepages:/tmp/hugepages \
   -v /hugepages:/hugepages \
@@ -20,8 +21,6 @@ docker run \
   --expose=20000-20170 \
   --ipc=host -v /dev/shm:/dev/shm \
   --cpuset-cpus="28-55" \
-  -e MTL_PARAM_LCORES="28-55" \
-  -e MTL_PARAM_DATA_QUOTA=10356 \
   video_production_image \
   -qsv_device /dev/dri/renderD128 \
   -hwaccel qsv -f rawvideo -pix_fmt y210le -s:v 3840x2160 -r 25 -i /videos/gradients.yuv \

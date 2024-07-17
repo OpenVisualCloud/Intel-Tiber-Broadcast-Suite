@@ -18,13 +18,12 @@ docker run -it \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
+   -v /var/run/imtl:/var/run/imtl \
    --network=my_net_801f0 \
    --ip=192.168.2.3 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus=30-40 \
-   -e MTL_PARAM_LCORES=35-40 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -y \
       -p_port 0000:4b:01.3 -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le  -video_size 3840x2160 -f mtl_st20p -i "0" \
       /videos/recv-upscale.yuv

@@ -11,6 +11,7 @@ docker run \
   --cap-add ALL \
   -v $(pwd):/config \
   -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+  -v /var/run/imtl:/var/run/imtl \
   -v /dev/null:/dev/null \
   -v /tmp/hugepages:/tmp/hugepages \
   -v /hugepages:/hugepages \
@@ -19,8 +20,6 @@ docker run \
   --expose=20000-20170 \
   --ipc=host -v /dev/shm:/dev/shm \
   --cpuset-cpus="84-111" \
-  -e MTL_PARAM_LCORES="84-111" \
-  -e MTL_PARAM_DATA_QUOTA=10356 \
   video_production_image \
   -y \
   -an \

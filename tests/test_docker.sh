@@ -258,6 +258,7 @@ run_imtl_rx_qsv_vsr () {
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -266,8 +267,6 @@ run_imtl_rx_qsv_vsr () {
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus=$7 \
-   -e MTL_PARAM_LCORES=$8 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -an -y -init_hw_device vaapi=va -init_hw_device qsv=qs@va -init_hw_device opencl=ocl@va -hwaccel qsv \
       -port 0000:b1:01.2 -local_addr $5 -rx_addr $6 -fps $3 -pix_fmt yuv422p10le \
       -video_size "$1"x"$2" -udp_port 20000 -payload_type 112 -f mtl_st20p -i "0" \
@@ -285,6 +284,7 @@ run_imtl_multiple_tx () {
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -293,8 +293,6 @@ run_imtl_multiple_tx () {
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus=$7 \
-   -e MTL_PARAM_LCORES=$8 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -loglevel quiet -video_size "$1"x"$2" -f rawvideo -pix_fmt $4 -i /videos/$INPUT_FILE_NAME \
       -filter_complex "[0:v]format=y210le,fps=25,split=4[in1][in2][in3][in4]" \
       -map "[in1]" -pix_fmt y210le -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20000 -payload_type 112 -f mtl_st20p - \
@@ -313,6 +311,7 @@ run_imtl_multiple_rx () {
       -v $(pwd):/videos \
       -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
       -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+      -v /var/run/imtl:/var/run/imtl \
       -v /dev/null:/dev/null \
       -v /tmp/hugepages:/tmp/hugepages \
       -v /hugepages:/hugepages \
@@ -321,8 +320,6 @@ run_imtl_multiple_rx () {
       --expose=20000-20170 \
       --ipc=host -v /dev/shm:/dev/shm \
       --cpuset-cpus=$7 \
-      -e MTL_PARAM_LCORES=$8 \
-      -e MTL_PARAM_DATA_QUOTA=10356 \
          video_production_image -y -loglevel quiet \
          -qsv_device /dev/dri/renderD128 -hwaccel_output_format qsv \
          -thread_queue_size 32768 \
@@ -358,8 +355,6 @@ imtl_latest_tx () {
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus=$7 \
-   -e MTL_PARAM_LCORES=$8 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -loglevel quiet -video_size "$1"x"$2" -f rawvideo -pix_fmt $4 -i /videos/$INPUT_FILE_NAME -filter:v fps=$3 \
       -p_port 0000:b1:01.1 -p_sip $5 -p_tx_ip $6 -udp_port 20000 -payload_type 112 -f mtl_st20p -
 }
@@ -374,6 +369,7 @@ imtl_latest_rx () {
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -382,8 +378,6 @@ imtl_latest_rx () {
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus=$7 \
-   -e MTL_PARAM_LCORES=$8 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image -y -loglevel quiet \
       -qsv_device /dev/dri/renderD128 -hwaccel qsv \
       -p_port 0000:b1:01.4 -p_sip $5 -p_rx_ip $6 -fps $3 -pix_fmt $4 \
@@ -514,6 +508,7 @@ elif [ $1 == "imtl_qsv" ]; then
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -522,8 +517,6 @@ elif [ $1 == "imtl_qsv" ]; then
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus="32-63" \
-   -e MTL_PARAM_LCORES="59-63" \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image 
       # -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/input_1080p_y210le_500_frames.yuv \
       # -filter:v fps=59.94 -total_sessions 1 -port 0000:b1:01.1 -local_addr "192.168.2.1" -tx_addr "192.168.2.2" -udp_port 20000 -payload_type 112 -f mtl_st20p -
@@ -538,6 +531,7 @@ elif [ $1 == "imtl_qsv" ]; then
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -546,8 +540,6 @@ elif [ $1 == "imtl_qsv" ]; then
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus="96-127" \
-   -e MTL_PARAM_LCORES="123-127" \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image #\
       # -loglevel quiet \
       # -framerate 25 \
@@ -567,6 +559,7 @@ elif [ $1 == "imtl_jxs" ]; then
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -575,8 +568,6 @@ elif [ $1 == "imtl_jxs" ]; then
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus="32-63" \
-   -e MTL_PARAM_LCORES="59-63" \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image 
       # -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/input_1080p_y210le_500_frames.yuv \
       # -filter:v fps=59.94 -total_sessions 1 -port 0000:b1:01.1 -local_addr "192.168.2.1" -tx_addr "192.168.2.2" -udp_port 20000 -payload_type 112 -f mtl_st20p -
@@ -591,6 +582,7 @@ elif [ $1 == "imtl_jxs" ]; then
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -599,8 +591,6 @@ elif [ $1 == "imtl_jxs" ]; then
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus="96-127" \
-   -e MTL_PARAM_LCORES="123-127" \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image #\
       # -loglevel quiet \
       # -framerate 25 \
@@ -680,6 +670,7 @@ elif [ $1 == "imtl_qsv_vsr" ]; then
       -v $(pwd):/videos \
       -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
       -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+      -v /var/run/imtl:/var/run/imtl \
       -v /dev/null:/dev/null \
       -v /tmp/hugepages:/tmp/hugepages \
       -v /hugepages:/hugepages \
@@ -688,8 +679,6 @@ elif [ $1 == "imtl_qsv_vsr" ]; then
       --expose=20000-20170 \
       --ipc=host -v /dev/shm:/dev/shm \
       --cpuset-cpus="96-127" \
-      -e MTL_PARAM_LCORES="123-127" \
-      -e MTL_PARAM_DATA_QUOTA=10356 \
          video_production_image -loglevel quiet -an -y -total_sessions 1 -port 0000:b1:01.2 -local_addr 192.168.2.2 -rx_addr 192.168.2.1 -fps 59.94 -pix_fmt yuv422p10le \
          -video_size 1920x1080 -udp_port 20000 -payload_type 112 -f mtl_st20p -i "k" -vframes 2000 -f rawvideo /dev/null -y
          
@@ -715,6 +704,7 @@ elif [ $1 == "imtl_qsv_jxs" ]; then
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -723,8 +713,6 @@ elif [ $1 == "imtl_qsv_jxs" ]; then
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus="32-63" \
-   -e MTL_PARAM_LCORES="59-63" \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image 
       # -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/input_1080p_y210le_500_frames.yuv \
       # -filter:v fps=59.94 -total_sessions 1 -port 0000:b1:01.1 -local_addr "192.168.2.1" -tx_addr "192.168.2.2" -udp_port 20000 -payload_type 112 -f mtl_st20p -
@@ -739,6 +727,7 @@ elif [ $1 == "imtl_qsv_jxs" ]; then
    -v $(pwd):/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -747,8 +736,6 @@ elif [ $1 == "imtl_qsv_jxs" ]; then
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --cpuset-cpus="96-127" \
-   -e MTL_PARAM_LCORES="123-127" \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
       video_production_image #\
       # -loglevel quiet \
       # -framerate 25 \
