@@ -32,17 +32,16 @@ To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
 
 ### 1.5 Install and configure host's NIC drivers and related software
-> **Note:** Links to MTL repository below contain used commit hash `2f1c2a3be417065a4dc9276e2d7344d768e95118` as a part of the link. If needed, replace it with the value from `MTL_VER` variable read in first step.
 
-1. Gather information about currently used Media Transport Library version (commit hash) with:
+1. Gather information about currently used Media Transport Library tag with:
     ```shell
     grep "MTL_VER=" Dockerfile | awk -F "=" '{print gensub(/ \\/,"","g",$NF)}'
     ```
-2. Clone Media Transport Library repository and checkout to the commit detected in a previous step with
+2. Clone Media Transport Library repository and checkout to the tag detected in a previous step with
     ```shell
     git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git
     cd Media-Transport-Library
-    git reset ${MTL_VER} --hard
+    git checkout <tag>
     ```
 3. While in `Media-Transport-Library` folder, set `mtl_source_code` variable with:
     ```shell
