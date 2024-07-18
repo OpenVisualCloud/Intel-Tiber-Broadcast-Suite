@@ -21,7 +21,6 @@ fi
 
 TARGET_IMAGE=${TARGET_IMAGE/.tar.gz/}
 IMAGE_NAME="${TARGET_IMAGE##*/}"
-IMAGE_NAME="${IMAGE_NAME/:/_}"
 
 
 HOST_OUTPUT_DIR=cisdockerbench_results
@@ -62,8 +61,6 @@ docker container prune -f
 docker run -td --name $IMAGE_NAME $IMAGE_NAME
 sleep 3
 
-sudo /tmp/docker-bench-security/docker-bench-security.sh  $DOCKER_BENCH_ARGS
-
 docker run --net host --pid host --userns host \
 --cap-add audit_control \
 -e DOCKER_CONTENT_TRUST \
@@ -72,7 +69,7 @@ docker run --net host --pid host --userns host \
 -e https_proxy \
 $VOLUMES \
 --label docker_bench_security \
-docker_bench_security $DOCKER_BENCH_ARGS | tee ${HOST_OUTPUT_FILE}
+${TOOL_IMAGE} $DOCKER_BENCH_ARGS | tee ${HOST_OUTPUT_FILE}
 
 
 NUM_OF_WARN_MSG=$(cat ${HOST_OUTPUT_FILE} | grep "WARN" -c)
