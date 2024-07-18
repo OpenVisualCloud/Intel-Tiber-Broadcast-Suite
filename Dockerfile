@@ -33,7 +33,7 @@ ENV \
   FFMPEG_COMMIT_ID=n6.1.1 \
   XDP_VER=d7edea3590052581c5fda5f8cfa40ae7be94f05c \
   BPF_VER=42065ea6627ff6e1ab4c65e51042a70fbf30ff7c \
-  MTL_VER=2f1c2a3be417065a4dc9276e2d7344d768e95118 \
+  MTL_VER=MTL_enabling_for_Intel_Tiber_Broadcast_Suite \
   MCM_VER=24.06.01 \
   JPEG_XS_VER=0.9.0 \
   DPDK_VER=23.11
@@ -203,7 +203,7 @@ WORKDIR /tmp/Media-Transport-Library
 RUN \
   echo "**** DOWNLOAD MTL ****" && \
   curl -Lf \
-    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/${MTL_VER}.tar.gz | \
+    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/Media-Transport-Library
 
 WORKDIR /tmp/dpdk
