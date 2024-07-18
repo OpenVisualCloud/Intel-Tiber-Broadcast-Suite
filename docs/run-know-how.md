@@ -32,7 +32,6 @@ docker run -it \
    --ip=192.168.2.2 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=20-40 \
    video_production_image  [broadcast_suite_parameters]
 ```
 

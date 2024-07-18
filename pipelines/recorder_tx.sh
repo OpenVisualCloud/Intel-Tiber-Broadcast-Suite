@@ -23,7 +23,6 @@ docker run -it \
    --ip=192.168.2.1 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=11-20 \
       video_production_image \
       -video_size 3840x2160 -f rawvideo -pix_fmt yuv422p10le -i /videos/src/2160p_yuv422_10b.yuv -filter:v fps=25 \
       -p_port 0000:4b:01.2 -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -f mtl_st20p -

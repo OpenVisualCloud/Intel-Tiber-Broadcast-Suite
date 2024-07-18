@@ -22,7 +22,6 @@ docker run -it \
    -v /var/run/imtl:/var/run/imtl \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=20-40 \
    --net=host \
    -e MCM_MEDIA_PROXY_PORT=8003 \
       video_production_image -y \
