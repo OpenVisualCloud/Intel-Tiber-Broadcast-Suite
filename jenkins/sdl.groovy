@@ -17,7 +17,6 @@ def setSdlStatusCheck(String state){
 
 def fetchArtifacts(String artifactsPath){
     archiveArtifacts allowEmptyArchive: true, artifacts: "${artifactsPath}*"
-    sh """rm -rf ${artifactsPath} """
 }
 
 
@@ -76,6 +75,8 @@ pipeline {
                             jenkins/scripts/trivy_dockerfile_scan.sh
                         """
                         fetchArtifacts("Trivy/")
+                        fetchArtifacts("Trivy/dockerfile/")
+                        fetchArtifacts("Trivy/image/")
                     }
                 }
             } 
