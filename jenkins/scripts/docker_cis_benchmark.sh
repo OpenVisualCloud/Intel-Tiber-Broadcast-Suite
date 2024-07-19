@@ -40,11 +40,7 @@ STD_VOLUMES=("/etc"
 for DIR in "${STD_VOLUMES[@]}"; do VOLUMES+="-v $DIR:$DIR:ro "; done
 
 # Sections of report applicable to pipeline framework
-OPTIONS="-c docker_bench_security,\
-            docker_security_operations,\
-            container_images,\
-            container_runtime,\
-            community_checks"
+OPTIONS="-c docker_bench_security,docker_security_operations,container_images,container_runtime,community_checks"
 
 DOCKER_BENCH_ARGS="$OPTIONS -i $IMAGE_NAME -l $OUTPUT_FILE"
 
