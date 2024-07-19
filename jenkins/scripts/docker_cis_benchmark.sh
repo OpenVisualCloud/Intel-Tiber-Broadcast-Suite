@@ -6,18 +6,14 @@ TARGET_IMAGE=${1}
 TOOL_VER=1.6.1
 TOOL_IMAGE=docker-bench-security:${TOOL_VER}
 
-if [ ! -d /tmp/docker-bench-security ]
-then
-    CURRENT_DIR=$(pwd)
+CURRENT_DIR=$(pwd)
 
-    git clone https://github.com/docker/docker-bench-security.git /tmp/docker-bench-security
-    cd /tmp/docker-bench-security
-    git checkout "v${TOOL_VER}"
+git clone https://github.com/docker/docker-bench-security.git /tmp/docker-bench-security
+cd /tmp/docker-bench-security
+git checkout "v${TOOL_VER}"
+docker build -t $TOOL_IMAGE --build-arg http_proxy --build-arg https_proxy .
 
-    docker build -t $TOOL_IMAGE --build-arg http_proxy --build-arg https_proxy .
-
-    cd ${CURRENT_DIR}
-fi 
+cd ${CURRENT_DIR}
 
 TARGET_IMAGE=${TARGET_IMAGE/.tar.gz/}
 IMAGE_NAME="${TARGET_IMAGE##*/}"
