@@ -40,10 +40,10 @@ STD_VOLUMES=("/etc"
 for DIR in "${STD_VOLUMES[@]}"; do VOLUMES+="-v $DIR:$DIR:ro "; done
 
 # Sections of report applicable to pipeline framework
-OPTIONS=" docker_bench_security
-             container_images,\
-            container_runtime,\
+OPTIONS="-c docker_bench_security,\
             docker_security_operations,\
+            container_images,\
+            container_runtime,\
             community_checks"
 
 DOCKER_BENCH_ARGS="$OPTIONS -i $IMAGE_NAME -l $OUTPUT_FILE"
@@ -54,8 +54,7 @@ docker stop $(docker ps -q)
 docker container prune -f
 
 # Run container in detached mode to trigger Container Runtime section
-docker run -td --name $IMAGE_NAME $IMAGE_NAME
-sleep 3
+docker run -td --entrypoint sleep --name $IMAGE_NAME $IMAGE_NAME 10
 
 docker run --net host --pid host --userns host \
 --cap-add audit_control \
