@@ -52,7 +52,7 @@ pipeline {
                             docker run -v \"\$(pwd)\":/tmp/host \
                                         -e http_proxy=http://proxy-dmz.intel.com:912 \
                                         -e https_proxy=http://proxy-dmz.intel.com:912 \
-                                        -e no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8" \
+                                        -e no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8 \
                                         -e COVERITY_USR=${USERNAME} \
                                         -e COVERITY_PSW=${PASSWORD} \
                                         -e WORKSPACE=${env.COVERITY_FOLDER} \
