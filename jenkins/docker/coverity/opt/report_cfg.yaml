@@ -16,7 +16,7 @@ security-report:
     hide-lines-of-code: No
 report-cwe-version:
     owasp: 2021
-    sans: 2023
+    sans: 2022
 locale: en_US
 title-page:
   company-name: Intel® Corporation 
