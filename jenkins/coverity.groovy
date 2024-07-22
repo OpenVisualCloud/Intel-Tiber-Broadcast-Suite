@@ -48,19 +48,18 @@ pipeline {
                         credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
                         usernameVariable: 'USERNAME',
                         passwordVariable: 'PASSWORD')]){
-                        def docker_runtime_args = ["-v \"\$(pwd)\":/tmp/host",
-                                         "-e http_proxy=http://proxy-dmz.intel.com:912", 
-                                         "-e https_proxy=http://proxy-dmz.intel.com:912",
-                                         "-e no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8",
-                                         "-e COVERITY_SERVER=${env.COVERITY_SERVER}",
-                                         "-e COVERITY_USR=${USERNAME}",
-                                         "-e COVERITY_PSW=${PASSWORD}",
-                                         "-e WORKSPACE=${env.COVERITY_FOLDER}",
-                                         "-e coverity_image_${BUILD_ID}",
-                                         "-e COVERITY_SERVER=${env.COVERITY_SERVER}",
-                                         "-t coverity_image_${BUILD_ID} ",].join(" ")
                         sh """
-                            docker run ${docker_runtime_args} 
+                            docker run -v \"\$(pwd)\":/tmp/host \
+                                        -e http_proxy=http://proxy-dmz.intel.com:912 \
+                                        -e https_proxy=http://proxy-dmz.intel.com:912 \
+                                        -e no_proxy=localhost,intel.com,192.168.0.0/16,172.16.0.0/12,127.0.0.0/8,10.0.0.0/8" \
+                                        -e COVERITY_USR=${USERNAME} \
+                                        -e COVERITY_PSW=${PASSWORD} \
+                                        -e WORKSPACE=${env.COVERITY_FOLDER} \
+                                        -e coverity_image_${BUILD_ID} \
+                                        -e COVERITY_SERVER=${env.COVERITY_SERVER} \
+                                        coverity_image_${BUILD_ID}\
+                                        /bin/bash -c \"coverity\"
                             sudo chown -R \${USER}:\${USER} Logs
                             sudo chown -R \${USER}:\${USER} OWRBuild
                         """
@@ -98,7 +97,7 @@ pipeline {
         }
         always{
             script{
-                    archiveArtifacts allowEmptyArchive: true, artifacts: "OWRBuild/*"
+                    archiveArtifacts allowEmptyArchive: true, artifacts: "${WORKSPACE}/OWRBuild/CoverityEvidence/*"
                     archiveArtifacts allowEmptyArchive: true, artifacts: "cov_report*"
                     archiveArtifacts allowEmptyArchive: true, artifacts: "*.pdf"
 

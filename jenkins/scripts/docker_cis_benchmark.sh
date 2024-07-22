@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -xe
 
 
 TARGET_IMAGE=${1}
@@ -51,6 +51,7 @@ docker container prune -f
 
 # Run container in detached mode to trigger Container Runtime section
 docker run -td --entrypoint sleep --name $IMAGE_NAME $IMAGE_NAME 10
+
 
 docker run --net host --pid host --userns host \
 --cap-add audit_control \

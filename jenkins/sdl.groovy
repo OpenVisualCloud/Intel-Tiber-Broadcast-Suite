@@ -19,7 +19,6 @@ def fetchArtifacts(String artifactsPath){
     archiveArtifacts allowEmptyArchive: true, artifacts: "${artifactsPath}*"
 }
 
-
 pipeline {
     agent { 
         label 'video-production-build'

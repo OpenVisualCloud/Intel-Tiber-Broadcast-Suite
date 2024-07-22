@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /bin/bash -xe
 
 DIRS_TO_SCAN=( "./" 
                "./doc"
