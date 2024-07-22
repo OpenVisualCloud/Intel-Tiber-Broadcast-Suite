@@ -1,29 +1,34 @@
-# The following fields are required to be filled in: url, username, project, project-version, prepared-by
-
-version:
-    schema-version: 6
+cert-report:
+    target-level: L1
 connection:
     url: https://coverityent.devtools.intel.com/prod1/
     username: sys_vidprod
-project: Software Defined Broadcast
-title-page:
-    company-name: Intel
-    project-name: Software Defined Broadcast
-    project-version: v.2.5
-    organizational-unit-name: Network and Edge Group
-    organizational-unit-term: Business Unit
-    prepared-for: SDL
-    project-contact-email: sys_vidprod@intel.com
-    prepared-by: sys_vidprod@intel.com
-locale: en_US
-issue-cutoff-count: 4000
-cert-report:
-    target-level: L1
-ssir-report:
-    analysis-date:
-security-report:
-    assurance-level-score: 90
-    assurance-level: AL1
-    severity-mapping: Carrier grade
 disa-stig:
     version: V5
+issue-cutoff-count: 1000
+issue-kind: Quality, Security
+project: Intel® Tiber™ Broadcast Suite
+security-report:
+    assurance-level-score: 70
+    assurance-level: AL3
+    severity-mapping: Carrier Grade
+    severity-mapping-description: "Docker: application is run in isolated environment"
+    hide-lines-of-code: No
+report-cwe-version:
+    owasp: 2021
+    sans: 2023
+locale: en_US
+title-page:
+  company-name: Intel® Corporation 
+  logo: null
+  organizational-unit-name: Network and Edge Group
+  organizational-unit-term: Business Unit
+  prepared-by: sys_vidprod@intel.com
+  prepared-for: SDL
+  project-contact-email: andrzej.wilczynski@intel.com
+  project-name: Intel® Tiber™ Broadcast Suite
+  project-version: v24.07
+version:
+  schema-version: 6
+ssir-report:
+    analysis-date:
