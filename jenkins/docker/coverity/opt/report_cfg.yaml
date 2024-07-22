@@ -7,7 +7,7 @@ disa-stig:
     version: V5
 issue-cutoff-count: 1000
 issue-kind: Quality, Security
-project: Intel® Tiber™ Broadcast Suite
+project: Software Defined Broadcast # coverity project name
 security-report:
     assurance-level-score: 70
     assurance-level: AL3
