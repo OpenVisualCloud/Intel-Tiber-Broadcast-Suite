@@ -6,7 +6,7 @@ connection:
 disa-stig:
     version: V5
 issue-cutoff-count: 1000
-issue-kind: Quality, Security
+issue-kind: Quality,Security
 project: Software Defined Broadcast # coverity project name
 security-report:
     assurance-level-score: 70
@@ -16,19 +16,19 @@ security-report:
     hide-lines-of-code: No
 report-cwe-version:
     owasp: 2021
-    sans: 2022
+    sans: 2021
 locale: en_US
 title-page:
-  company-name: Intel® Corporation 
-  logo: null
-  organizational-unit-name: Network and Edge Group
-  organizational-unit-term: Business Unit
-  prepared-by: sys_vidprod@intel.com
-  prepared-for: SDL
-  project-contact-email: andrzej.wilczynski@intel.com
-  project-name: Intel® Tiber™ Broadcast Suite
-  project-version: v24.07
+    company-name: Intel® Corporation 
+    logo: null
+    organizational-unit-name: Network and Edge Group
+    organizational-unit-term: Business Unit
+    prepared-by: sys_vidprod@intel.com
+    prepared-for: SDL
+    project-contact-email: andrzej.wilczynski@intel.com
+    project-name: Intel® Tiber™ Broadcast Suite
+    project-version: v24.07
 version:
-  schema-version: 6
+    schema-version: 6
 ssir-report:
     analysis-date:
