@@ -13,7 +13,6 @@ security-report:
     assurance-level: AL3
     severity-mapping: Carrier Grade
     severity-mapping-description: "Docker: application is run in isolated environment"
-    hide-lines-of-code: No
 report-cwe-version:
     owasp: 2021
     sans: 2021
