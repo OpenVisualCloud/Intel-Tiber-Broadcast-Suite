@@ -24,6 +24,7 @@ docker run -it \
    -v "$(pwd)":/videos \
    -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
    -v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock \
+   -v /var/run/imtl:/var/run/imtl \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
@@ -31,9 +32,6 @@ docker run -it \
    --ip=192.168.2.2 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=20-40 \
-   -e MTL_PARAM_LCORES=30-40 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
    video_production_image  [broadcast_suite_parameters]
 ```
 
@@ -48,6 +46,7 @@ docker run -it \
 - `-v "$(pwd)":/videos`: Binds the current working directory on the host to `/videos` inside the container.
 - `-v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/`: Mounts the host's DRI drivers into the container.
 - `-v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock`: Shares a lock file between the host and the container.
+- `-v /var/run/imtl:/var/run/imtl`: Shares a mtl manager socket between the host and the container.
 - `-v /dev/null:/dev/null`: Makes `/dev/null` available inside the container.
 - `-v /tmp/hugepages:/tmp/hugepages`: Shares the hugepages directory for memory management optimizations.
 - `-v /hugepages:/hugepages`: Shares another hugepages directory.
@@ -56,6 +55,4 @@ docker run -it \
 - `--expose=20000-20170`: Exposes a range of ports for the container.
 - `--ipc=host -v /dev/shm:/dev/shm`: Shares the host's IPC namespace and mounts the shared memory directory.
 - `--cpuset-cpus=20-40`: Limits the container to specific CPUs on the host machine.
-- `-e MTL_PARAM_LCORES=30-40`: Sets the `MTL_PARAM_LCORES` environment variable inside the container.
-- `-e MTL_PARAM_DATA_QUOTA=10356`: Sets the `MTL_PARAM_DATA_QUOTA` environment variable inside the container.
 - `video_production_image`: Specifies the Docker image to be used for the container.

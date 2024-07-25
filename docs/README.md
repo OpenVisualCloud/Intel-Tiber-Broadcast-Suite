@@ -1,8 +1,5 @@
 # Intel® Tiber™ Broadcast Suite
 
-> [!TIP]
-> [Full Documentation](https://openvisualcloud.github.io/Intel-Tiber-Broadcast-Suite) for [Intel®](https://intel.com) [Tiber™ Broadcast Suite](https://openvisualcloud.github.io/Intel-Tiber-Broadcast-Suite).
-
 ## 1. Overview
 
 The pre-production Intel® Tiber™ Broadcast Suite, version 0.9, is a software-based package, modular video production pipeline, designed for creation of high-performance and high-quality solutions used in live video production.

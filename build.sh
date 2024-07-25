@@ -25,3 +25,23 @@ docker buildx build "${ENV_PROXY_ARGS[@]}" "$@" \
     "${SCRIPT_DIR}"
 
 docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image
+
+if docker images | grep -q "mtl-manager\s*latest"; then
+     echo -e '\e[32mmtl-manager:latest image exists. skipping the build\e[0m'
+     exit 0
+fi
+
+if [ -z "$mtl_source_code" ]; then
+    mtl_source_code=$(find "$HOME" -type d -name "Media-Transport-Library" -print -quit)
+
+    if [ -n "$mtl_source_code" ]  && [ -f "$mtl_source_code/manager/Dockerfile" ]; then
+        echo -e '\e[33mmtl_source_code variable is set to '"$mtl_source_code"'.\e[0m'
+    else
+        echo -e '\e[31m'"Media-Transport-Library manager directory not found in $HOME directory."'\e[0m'
+        echo -e '\e[33mMTL manager not installed\e[0m'
+        exit 0
+    fi
+fi
+
+cd "$mtl_source_code"/manager
+docker build -t mtl-manager:latest .
