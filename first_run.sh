@@ -61,3 +61,28 @@ while IFS= read -r line; do
         exit 2
     fi
 done <<< "$output"
+
+container_id=$(docker ps -aq -f name=^mtl-manager$)
+
+if [ -n "$container_id" ]; then
+    if [ "$(docker inspect -f '{{.State.Running}}' "$container_id")" = "true" ]; then
+        echo -e '\e[32mContainer mtl-manager is already running.\e[0m'
+    else
+        echo -e '\e[33mContainer mtl-manager exists but is not running. Removing it...\e[0m'
+        docker rm "$container_id"
+
+        docker run -d \
+          --name mtl-manager \
+          --privileged --net=host \
+          -v /var/run/imtl:/var/run/imtl \
+          -v /sys/fs/bpf:/sys/fs/bpf \
+          mtl-manager:latest
+    fi
+else
+    docker run -d \
+      --name mtl-manager \
+      --privileged --net=host \
+      -v /var/run/imtl:/var/run/imtl \
+      -v /sys/fs/bpf:/sys/fs/bpf \
+      mtl-manager:latest
+fi
