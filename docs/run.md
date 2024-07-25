@@ -110,9 +110,6 @@ Input streams from two ST2110-22 cameras are decoded using JPEG XS codec stored 
 ![JPEG XS MCM process](images/jpeg_xs-process.png)
 ![JPEG XS MCM](images/mcm_jpeg_xs.png)
 
-*Note*: The container environment for MCM `media_proxy` is Work in Progress.
-The temporary workaround is to run `media_proxy` in the host OS, so before you run the pipeline make sure you installed [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/README.md#basic-installation).
-
 Example command to run the pipeline:
 ```text
 session A > mcm_media_proxy_rx.sh
