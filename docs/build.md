@@ -32,21 +32,20 @@ To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
 
 ### 1.5 Install and configure host's NIC drivers and related software
-> **Note:** Links to MTL repository below contain used commit hash `2f1c2a3be417065a4dc9276e2d7344d768e95118` as a part of the link. If needed, replace it with the value from `MTL_VER` variable read in first step.
 
-1. Gather information about currently used Media Transport Library version (commit hash) with:
+1. Gather information about currently used Media Transport Library tag with:
     ```shell
     grep "MTL_VER=" Dockerfile | awk -F "=" '{print gensub(/ \\/,"","g",$NF)}'
     ```
-2. Clone Media Transport Library repository and checkout to the commit detected in a previous step with
+2. Clone Media Transport Library repository and checkout to the tag detected in a previous step with
     ```shell
     git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git
     cd Media-Transport-Library
-    git reset ${MTL_VER} --hard
+    git checkout <tag>
     ```
-3. While in `Media-Transport-Library` folder, set `imtl_source_code` variable with:
+3. While in `Media-Transport-Library` folder, set `mtl_source_code` variable with:
     ```shell
-    export imtl_source_code=${PWD}
+    export mtl_source_code=${PWD}
     ```
 4. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the [Intel® E810 Series Ethernet Adapter driver install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/e810.md) instruction.
 
@@ -98,6 +97,15 @@ Change number of cores used to build by make can be changed  by _--build-arg npr
 ```shell
 docker build --build-arg nproc=1 -t video_production_image -f Dockerfile .
 ```
+
+Build the mtl manager docker
+
+```shell
+cd "$mtl_source_code"/manager
+docker build -t mtl-manager:latest .
+cd -
+```
+
 
 ## 3. Test run the image
 

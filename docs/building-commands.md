@@ -217,4 +217,4 @@ For parameter `--cpuset-cpus` use information gathered in [Find proper NUMA node
 Dedicate a set of CPUs for specific container, e.g. `--cpuset-cpus=36-56`.
 
 ### CPUs for MTL
-Parameter called `MTL_PARAM_LCORES` should contain 4 CPU cores from chosen CPUset CPUs, e.g. `-e MTL_PARAM_LCORES=51-56`.
+Are choosen automatically and checked with mtl_manger.
