@@ -137,6 +137,19 @@ pipeline {
                             tar czf \${UPLOAD_DIR}/tests_repo_${JOB_BUILD_ID}.tar.gz .
                         """
                     }
+                    dir('/tmp/test-repo'){
+                        def repo = 'https://github.com/intel-innersource/applications.services.cloud.visualcloud.validation.itbs'
+                        def branches = [[name: 'main']]
+                        def userRemoteConfigs = [[
+                                credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
+                                url: repo ]]     
+                        checkout([
+                        $class: 'GitSCM',
+                        branches: branches,
+                        userRemoteConfigs: userRemoteConfigs
+                    ])
+                    sh """ tar czf \${UPLOAD_DIR}/itbs_tests_repo_${JOB_BUILD_ID}.tar.gz . """
+                  }    
                 }
             }
         }
