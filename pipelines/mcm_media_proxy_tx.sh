@@ -18,6 +18,7 @@
 #    -v /dev/hugepages1G:/dev/hugepages1G \
 #    -v /sys/fs/bpf:/sys/fs/bpf \
 #    -v /dev/shm:/dev/shm \
+#    -v /var/run/imtl:/var/run/imtl \
 #    -v /dev/vfio:/dev/vfio \
 #    --ipc=host \
 #    ger-is-registry.caas.intel.com/nex-vs-cicd-automation/mcm/media-proxy:latest \

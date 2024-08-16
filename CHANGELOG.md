@@ -21,3 +21,10 @@
 - Optimized Memory Management: Improvements in memory allocation that enhance performance and reduce latency. 
 - Asynchronous Execution: Video pipeline filters operate asynchronously to maximize GPU utilization. 
 - High-Throughput Transfers: Enhanced GPU-CPU memory data transfers for high-performance media streaming. 
+
+# Summary of Changes for Intel® Tiber™ Broadcast Suite - 24.07 Release:
+
+What's Changed
+- Move the lcore management to mtl-manager
+- Remove unnecessary MTL patch and adjust tag
+- Minor update to build.md

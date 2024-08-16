@@ -19,12 +19,10 @@ docker run -it \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
    -v /run/mcm:/run/mcm \
+   -v /var/run/imtl:/var/run/imtl \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-   --cpuset-cpus=0-20 \
    --net=host \
-   -e MTL_PARAM_LCORES=10-20 \
-   -e MTL_PARAM_DATA_QUOTA=10356 \
    -e MCM_MEDIA_PROXY_PORT=8002 \
       video_production_image \
          -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/src/1080p_yuv422_10b_1.yuv \
