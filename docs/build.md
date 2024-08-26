@@ -12,7 +12,7 @@ Steps to perform before run Intel® Tiber™ Broadcast Suite on host with Ubuntu
 Following technologies must be enabled for Media Transport Library (MTL) to function properly:
 - [Intel® Virtualization for Directed I/O (VT-d)](https://en.wikipedia.org/wiki/X86_virtualization#Intel_virtualization_(VT-x))
 - [Single-root input/output virtualization (SR-IOV)](https://en.wikipedia.org/wiki/Single-root_input/output_virtualization)
-- Bifurcation on PCI-E lanes of Intel® E810 Series Ethernet Adapter card may be required in some cases <!--TODO: Document which cases require bifurcation-->
+- For 200 GbE throughput on [Intel® Ethernet Network Adapter E810-2CQDA2 card](https://ark.intel.com/content/www/us/en/ark/products/210969/intel-ethernet-network-adapter-e810-2cqda2.html) a PCI-E lane bifurcation is required.
 
 
 ### 1.2 Install Docker build environment
