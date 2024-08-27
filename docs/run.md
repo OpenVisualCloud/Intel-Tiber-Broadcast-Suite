@@ -19,6 +19,59 @@ Video pipelines described below are built using Intel-optimized version of FFmpe
 
 `session A`, `session B` etc. mark separate shell (terminal) sessions. As the Suite is a containerized solution, those sessions can be opened on a single server or multiple servers - on systems connected with each other, after the ports are exposed and IP addresses aligned in pipeline commands.
 
+### Sample pipelines setup
+
+To execute Tiber pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing two raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
+
+#### **1.a** You can provide those yourself
+
+```
+# Create the src directory if it doesn't exist
+mkdir src;
+
+# Move your sample videos to the src directory
+cp name_of_your_wideo.yuv src/1080p_yuv422_10b_1.yuv
+cp name_of_your_wideo2.yuv src/1080p_yuv422_10b_2.yuv
+```
+
+#### **1.b** You can also use ffmpeg to generate wideos with this format
+```
+# Create the src directory if it doesn't exist
+mkdir -p src
+
+# Generate the first video
+ffmpeg -an -y -f lavfi \
+-i testsrc=d=5:s=1920x1080:r=25,format=yuv422p10le \
+-f rawvideo  src/1080p_yuv422_10b_1.yuv
+
+# Generate the second video
+ffmpeg -an -y -f lavfi \
+-i testsrc=d=5:s=1920x1080:r=25,format=yuv422p10le \
+-f rawvideo  src/1080p_yuv422_10b_2.yuv
+```
+
+#### **2.a** Setting Up VFIO-PCI Addresses
+To configure your VFIO-PCI (dpdk binded devices) for use, you'll need to add their PCI addresses to the VARIABLES.rc file located in your Current Working Directory (CWD). Follow these steps to ensure proper setup:
+```
+# Check your vfio-pci device PCI address
+dpdk-devbind.py -s
+```
+
+Next, create variables in the VARIABLES.rc file to store the PCI addresses for the transmit, receive, and processing devices. Use the following format:
+1. **VFIO_PORT_T** - Address for the transmit device.
+1. **VFIO_PORT_R** - Address for the receive device.
+1. **VFIO_PORT_PROC** - Address for the processing device.
+
+```
+# Example commands to set VFIO PCI addresses
+echo "VFIO_PORT_T=0000:b1:00.0" >> VARIABLES.rc
+echo "VFIO_PORT_R=0000:b1:00.1" >> VARIABLES.rc
+echo "VFIO_PORT_PROC=0000:b1:00.2" >> VARIABLES.rc
+```
+Make sure to replace 0000:b1:00.0, 0000:b1:00.1, and 0000:b1:00.2 with the actual PCI addresses you obtained from the dpdk-devbind.py command.
+
+By following these steps, you'll have correctly configured the necessary variables in your VARIABLES.rc file for your dpdk binded devices.
+
 ---
 
 ### Multiviewer

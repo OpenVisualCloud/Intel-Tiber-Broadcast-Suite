@@ -6,6 +6,15 @@
 # Intel® Tiber™ Broadcast Suite
 #
 
+. VARIABLES.rc
+
+# Check if VFIO_PORT_R is set
+if [ -z "$VFIO_PORT_R" ]; then
+    echo -e "\e[31mError: VFIO_PORT_R is not set.\e[0m"
+    echo "Use dpdk-devbind.py -s to check pci address of vfio device"
+    exit 1
+fi
+
 docker run -it \
    --user root\
    --privileged \
@@ -24,5 +33,5 @@ docker run -it \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
       video_production_image -y \
-      -p_port 0000:4b:01.3 -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -i "0" \
+      -p_port "${VFIO_PORT_R}" -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -i "0" \
       /videos/recv-multiviewer.yuv

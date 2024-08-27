@@ -3,5 +3,6 @@ docs/_build
 _build
 file*.json
 .reports
-pipelines/src
-pipelines/*.yuv
+src
+*.yuv
+VARIABLES.rc

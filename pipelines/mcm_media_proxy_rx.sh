@@ -6,6 +6,15 @@
 # Intel® Tiber™ Broadcast Suite
 #
 
+. VARIABLES.rc
+
+# Check if VFIO_PORT_R is set
+if [ -z "$VFIO_PORT_R" ]; then
+    echo -e "\e[31mError: VFIO_PORT_R is not set.\e[0m"
+    echo "Use dpdk-devbind.py -s to check pci address of vfio device"
+    exit 1
+fi
+
  docker run -it \
     --privileged \
     -u 0:0 \
@@ -24,6 +33,6 @@
     --expose 8000-9100 \
     ger-is-registry.caas.intel.com/nex-vs-cicd-automation/mcm/media-proxy:latest \
        /usr/local/bin/media_proxy \
-          -d 0000:4b:01.2 \
+          -d "${VFIO_PORT_R}" \
           -i 192.168.96.2 \
           -t 8003
