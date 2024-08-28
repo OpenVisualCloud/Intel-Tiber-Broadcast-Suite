@@ -1,4 +1,4 @@
-#! /bin/bash -xe
+#! /bin/bash -x
 
 DIRS_TO_SCAN=( "./"
                "./patches"
