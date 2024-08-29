@@ -21,6 +21,7 @@ help_message_arg_1 () {
    echo "   qsv            -  QSV filters only test"
    echo "   jxs            -  JPEG-XS codec only test"
    echo "   vsr            -  VSR codec only test"
+   echo "   cuda           -  CUDA scale filter test"
    echo "   imtl_qsv       -  IMTL transmission and QSV filters test"
    echo "   imtl_jxs       -  IMTL transmission and JPEG-XS coding test"
    echo "   imtl_qsv_vsr   -  IMTL transmission and JPEG-XS coding test"
@@ -175,6 +176,45 @@ run_qsv () {
       -map "[out_multiview]" -f rawvideo -pix_fmt $3 /videos/$OUTPUT_FILE_NAME > logs.txt
       # -filter_complex_frames 2 \
       # -filter_complex_policy 1 \
+}
+
+run_cuda_multiviewer () {
+   docker run -it \
+      --user root\
+      --privileged \
+      -v $(pwd):/videos \
+      -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
+      video_production_image -an -y \
+      -loglevel verbose \
+      -threads $(nproc) -video_size $1 -f rawvideo -pix_fmt $3 -i /videos/$INPUT_FILE_NAME \
+      -filter_complex "[0:v]format=$3,fps=$2,split=4[in1][in2][in3][in4]; \
+      [in1]scale=iw/2:ih/2:flags=area[f_out_1]; \
+      [in2]scale=iw/2:ih/2:flags=area[f_out_2]; \
+      [in3]scale=iw/2:ih/2:flags=area[f_out_3]; \
+      [in4]scale=iw/2:ih/2:flags=area[f_out_4]; \
+      [f_out_1][f_out_2][f_out_3][f_out_4]xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[out_mutiview]" -sws_flags area \
+      -map "[out_mutiview]" -f rawvideo -pix_fmt $3 /videos/$REF_FILE_NAME
+
+   docker run -it \
+      --user root\
+      --privileged \
+      --device=/dev/dri:/dev/dri \
+      -v $(pwd):/videos \
+      -v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/ \
+      video_production_image -threads $(nproc) -y -an \
+      -hwaccel cuda -hwaccel_output_format cuda \
+      -loglevel verbose \
+      -f rawvideo -pix_fmt $3 -s:v $1 \
+      -i /videos/$INPUT_FILE_NAME \
+      -filter_complex "[0:v]split=4[in1][in2][in3][in4]; \
+         [in1]hwupload_cuda,scale_cuda=w=iw/2:ih/2:[tile0];\
+         [in2]hwupload_cuda,scale_cuda=w=iw/2:ih/2:[tile1];\
+         [in3]hwupload_cuda,scale_cuda=w=iw/2:ih/2:[tile2];\
+         [in4]hwupload_cuda,scale_cuda=w=iw/2:ih/2:[tile3];\
+         [tile0]hwdownload,format=yuv420p[out0];[tile1]hwdownload,format=yuv420p[out1]; \
+         [tile2]hwdownload,format=yuv420p[out2];[tile3]hwdownload,format=yuv420p[out3]; \
+         [out0][out1][out2][out3]xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0[multiview]" \
+      -map "[multiview]" -f rawvideo /videos/$OUTPUT_FILE_NAME
 }
 
 run_vsr () {
@@ -399,6 +439,11 @@ elif [ $1 == "qsv" ]; then
    prepare_reference_file "3840x2160" "25" "y210le" "rawvideo" $INPUT_FILE_NAME
    run_qsv "3840x2160" "25" "y210le"
    equality_test "QSV" "3840x2160" "y210le" $OUTPUT_FILE_NAME $REF_FILE_NAME "rawvideo"
+
+elif [ $1 == "cuda" ]; then
+   prepare_reference_file "1920x1080" "25" "yuv420p" "rawvideo" $INPUT_FILE_NAME
+   run_cuda_multiviewer "1920x1080" "25" "yuv420p"
+   equality_test "CUDA" "1920x1080" "yuv420p" $OUTPUT_FILE_NAME $REF_FILE_NAME "rawvideo"
 
 elif [ $1 == "imtl" ]; then
    ###### TEST Multiple IMTL 4 streams | yuv422p10le | 1920x1080 #######

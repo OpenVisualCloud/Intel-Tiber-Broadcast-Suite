@@ -36,10 +36,18 @@ ENV \
   MTL_VER=MTL_enabling_for_Intel_Tiber_Broadcast_Suite \
   MCM_VER=24.06.01 \
   JPEG_XS_VER=0.9.0 \
-  DPDK_VER=23.11
+  DPDK_VER=23.11 \
+  FFNVCODED_VER=1889e62e2d35ff7aa9baca2bceb14f053785e6f1
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install dependencies
+RUN \
+  echo "**** ADD CUDA APT REPO ****" && \
+  apt-get update --fix-missing && \
+  apt-get install -y wget && \
+  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
+  dpkg -i cuda-keyring_1.1-1_all.deb
+
 RUN \
   echo "**** INSTALL BUILD PACKAGES ****" && \
   apt-get update --fix-missing && \
@@ -83,14 +91,17 @@ RUN \
     diffutils \
     gcc \
     xxd \
-    wget \
     zip \
     python3-pyelftools \
     systemtap-sdt-dev \
     sudo \
     libbsd-dev \
     ocl-icd-opencl-dev \
-    libcap2-bin && \
+    libcap2-bin \
+    ubuntu-drivers-common \
+    libc6-dev \
+    cuda-toolkit-12-6 \
+    libnvidia-compute-550 && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
@@ -333,6 +344,14 @@ RUN \
   cmake --build /tmp/mcm/sdk/out && \
   cmake --install /tmp/mcm/sdk/out
 
+WORKDIR /tmp/nv-codec-headers
+RUN \
+  echo "**** DOWNLOAD AND INSTALL FFNVCODED HEADERS ****" && \
+  curl -Lf https://github.com/FFmpeg/nv-codec-headers/archive/${FFNVCODED_VER}.tar.gz  | \
+    tar -zx --strip-components=1 -C /tmp/nv-codec-headers && \
+  make && \
+  make install PREFIX=/usr
+
 WORKDIR /tmp/ffmpeg/
 RUN \
   echo "**** APPLY MEDIA COMMUNICATIONS MESH PATCHES ****" && \
@@ -362,8 +381,14 @@ RUN \
     --enable-libipp \
     --enable-mcm \
     --enable-pthreads \
-    --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/" \
-    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib" \
+    --enable-ffnvcodec \
+    --enable-cuda \
+    --enable-cuvid \
+    --enable-nvenc \
+    --enable-nvdec \
+    --enable-cuda-llvm \
+    --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
+    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib -L/usr/local/cuda/lib64" \
     --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm' \
     --enable-cross-compile && \
   make
