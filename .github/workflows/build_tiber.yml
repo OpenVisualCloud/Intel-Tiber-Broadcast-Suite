@@ -44,6 +44,7 @@ jobs:
         file: Dockerfile
         context: .
         push: false
+        load: true
         tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
