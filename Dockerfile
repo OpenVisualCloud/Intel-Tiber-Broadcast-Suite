@@ -7,7 +7,7 @@
 #
 # build stage
 ARG IMAGE_CACHE_REGISTRY=docker.io
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS buildstage
+FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:24.04 AS buildstage
 
 ARG nproc=100
 
@@ -19,12 +19,7 @@ ENV \
 
 # versions
 ENV \
-  GMMLIB=22.3.12 \
-  IHD=23.3.5 \
-  LIBMFX=22.5.4 \
-  LIBVA=2.20.0 \
   LIBVMAF=2.3.1 \
-  LIBVPL=2023.3.1 \
   ONEVPL=23.3.4 \
   SVTAV1=1.7.0 \
   VULKANSDK=vulkan-sdk-1.3.268.0 \
@@ -53,6 +48,10 @@ RUN \
   apt-get update --fix-missing && \
   apt-get full-upgrade -y && \
   apt-get install --no-install-recommends -y \
+    libigdgmm-dev \
+    libva-dev \
+    intel-media-va-driver \
+    libvpl-dev \
     ca-certificates \
     build-essential \
     libarchive-tools \
@@ -104,58 +103,6 @@ RUN \
     libnvidia-compute-550 && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
-
-WORKDIR /tmp/libva
-RUN \
-  echo "**** DOWNLOAD LIBVA ****" && \
-  curl -Lf \
-    https://github.com/intel/libva/archive/${LIBVA}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/libva
-RUN \
-  echo "**** BUILD LIBVA ****" && \
-  meson setup build --strip -Dprefix=/usr -Dlibdir=/usr/lib/x86_64-linux-gnu -Ddefault_library=shared && \
-  ninja -j${nproc} -C build && \
-  meson install -C build && \
-  strip -d "/usr/lib/x86_64-linux-gnu/libva"*.so
-
-WORKDIR /tmp/gmmlib/build
-RUN \
-  echo "**** DOWNLOAD and BUILD GMMLIB ****" && \
-  curl -Lf \
-    https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-${GMMLIB}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/gmmlib && \
-  cmake \
-    -DCMAKE_BUILD_TYPE=Release .. && \
-  make && \
-  make install && \
-  strip -d /usr/local/lib/libigdgmm.so
-
-WORKDIR /tmp/ihd/build
-RUN \
-  echo "**** DOWNLOAD and BUILD IHD ****" && \
-  curl -Lf \
-    https://github.com/intel/media-driver/archive/refs/tags/intel-media-${IHD}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/ihd && \
-  cmake \
-    -DLIBVA_INSTALL_PATH=/usr/lib/x86_64-linux-gnu \
-    -DLIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri/  .. && \
-  make && \
-  make install && \
-  strip -d /usr/lib/x86_64-linux-gnu/dri/iHD_drv_video.so
-
-WORKDIR /tmp/libvpl/build
-RUN \
-  echo "**** DOWNLOAD and BUILD LIBVPL ****" && \
-  curl -Lf \
-    https://github.com/oneapi-src/oneVPL/archive/refs/tags/v${LIBVPL}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/libvpl && \
-  cmake \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu \
-    .. && \
-  cmake --build . --config Release && \
-  cmake --build . --config Release --target install && \
-  strip -d /usr/lib/x86_64-linux-gnu/libvpl.so
 
 COPY /patches /tmp/patches
 WORKDIR /tmp/onevpl/build
@@ -453,7 +400,7 @@ RUN \
 
 # runtime stage
 ARG IMAGE_CACHE_REGISTRY
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS finalstage
+FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:24.04 AS finalstage
 
 LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
@@ -481,6 +428,10 @@ RUN \
   apt-get update --fix-missing && \
   apt-get full-upgrade -y && \
   apt-get install --no-install-recommends -y \
+    libigdgmm12 \
+    libva2 \
+    intel-media-va-driver \
+    libvpl2 \
     sudo \
     ca-certificates \
     libtool \
