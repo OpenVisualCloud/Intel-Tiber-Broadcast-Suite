@@ -6,15 +6,21 @@
 # Intel® Tiber™ Broadcast Suite
 #
 # build stage
+
 ARG IMAGE_CACHE_REGISTRY=docker.io
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:24.04 AS buildstage
+ARG IMAGE_NAME=library/ubuntu:24.04@sha256:8a37d68f4f73ebf3d4efafbcf66379bf3728902a8038616808f04e34a9ab63ee
+
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS build-stage
 
 ARG nproc=100
+USER root
 
 # common env
 ENV \
   nproc=$nproc \
+  TZ="Europe/Warsaw" \
   DEBIAN_FRONTEND="noninteractive" \
+  PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/tmp/jpegxs/Build/linux/install/lib/pkgconfig \
   MAKEFLAGS=-j${nproc}
 
 # versions
@@ -40,10 +46,8 @@ RUN \
   echo "**** ADD CUDA APT REPO ****" && \
   apt-get update --fix-missing && \
   apt-get install -y wget && \
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
-  dpkg -i cuda-keyring_1.1-1_all.deb
-
-RUN \
+  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb && \
+  dpkg -i cuda-keyring_1.1-1_all.deb && \
   echo "**** INSTALL BUILD PACKAGES ****" && \
   apt-get update --fix-missing && \
   apt-get full-upgrade -y && \
@@ -89,6 +93,7 @@ RUN \
     pkg-config \
     diffutils \
     gcc \
+    gcc-multilib \
     xxd \
     zip \
     python3-pyelftools \
@@ -100,7 +105,8 @@ RUN \
     ubuntu-drivers-common \
     libc6-dev \
     cuda-toolkit-12-6 \
-    libnvidia-compute-550 && \
+    libnvidia-compute-550 \
+    libfdt-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
@@ -170,14 +176,8 @@ RUN \
   curl -Lf \
     https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/dpdk
-RUN \
-  echo "**** BUILD DPDK ****"  && \
-  git apply /tmp/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
-  meson build && \
-  ninja -C build && \
-  ninja -C build install
 
-# Build the xdp-tools project
+# Download and build the xdp-tools project
 WORKDIR /tmp/xdp-tools
 RUN curl -Lf https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz | \
       tar -zx --strip-components=1 -C /tmp/xdp-tools && \
@@ -189,6 +189,14 @@ RUN curl -Lf https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz 
     DESTDIR=/buildout make install && \
     make -C /tmp/xdp-tools/lib/libbpf/src install && \
     DESTDIR=/buildout make -C /tmp/xdp-tools/lib/libbpf/src install
+
+WORKDIR /tmp/dpdk
+RUN \
+  echo "**** BUILD DPDK ****"  && \
+  git apply /tmp/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
+  meson build && \
+  ninja -C build && \
+  ninja -C build install
 
 WORKDIR /tmp/Media-Transport-Library
 RUN \
@@ -209,7 +217,6 @@ RUN \
   ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
 
 ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
-ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig"
 
 WORKDIR /tmp/jpegxs/imtl-plugin
 RUN \
@@ -257,8 +264,6 @@ RUN \
   ./l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
   echo "source /opt/intel/oneapi/ipp/latest/env/vars.sh" | tee -a ~/.bash_profile
 
-ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
-
 WORKDIR /tmp/vsr
 RUN \
   echo "**** DOWNLOAD VIDEO SUPER RESOLUTION ****" && \
@@ -270,6 +275,8 @@ RUN \
   echo "**** BUILD VIDEO SUPER RESOLUTION ****" && \
   . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
   git -C /tmp/vsr/ apply /tmp/patches/vsr/0003-missing-header-fix.patch && \
+  # Clang 18 have bug that break compilation, force compiler to GCC
+  sed -i 's/clan//g' build.sh && \
   ./build.sh -DCMAKE_INSTALL_PREFIX="/tmp/vsr/install" -DENABLE_RAISR_OPENCL=ON
 
 RUN \
@@ -335,8 +342,8 @@ RUN \
     --enable-nvdec \
     --enable-cuda-llvm \
     --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
-    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib -L/usr/local/cuda/lib64" \
-    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm' \
+    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib -L/usr/local/cuda/lib64 -L/usr/lib64 -L/usr/local/lib" \
+    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm -lbpf -lxdp' \
     --enable-cross-compile && \
   make
 
@@ -398,9 +405,12 @@ RUN \
     /tmp/mcm/sdk/out/lib/libmcm_dp.so* \
     /buildout/usr/lib/x86_64-linux-gnu/
 
-# runtime stage
+# ===============================================//
+#         Tiber Suite final-stage
+# ===============================================//
+ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:24.04 AS finalstage
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS final-stage
 
 LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
@@ -414,7 +424,7 @@ LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
   LIBVA_DRIVERS_PATH="/usr/local/lib/x86_64-linux-gnu/dri" \
-  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu" \
+  LD_LIBRARY_PATH="/usr/lib64:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu" \
   NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
   NVIDIA_VISIBLE_DEVICES="all"
 
@@ -450,28 +460,84 @@ RUN \
     libjson-c5 \
     zlib1g \
     libelf1 \
-    libcap2-bin && \
+    libcap2-bin \
+    libfdt1 && \
   apt-get remove linux-libc-dev -y && \
   apt-get autoremove -y && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* &&\
   groupadd -g 2110 vfio && \
-  groupadd -g 1001 imtl && \
+  groupadd -g 1001 mtl && \
   groupadd -g 1002 mcm && \
-  useradd -m -s /bin/bash -G vfio,imtl,mcm -u 1003 ffmpeg-vpp && \
-  usermod -aG sudo ffmpeg-vpp
+  useradd -m -s /bin/bash -G vfio,mtl,mcm -u 1003 tiber && \
+  usermod -aG sudo tiber && \
+  mkdir -p /var/run/imtl /var/run/mcm /workspace && \
+  chown -R tiber:tiber /var/run/imtl /var/run/mcm /workspace && \
+  chmod 775 /var/run/imtl /var/run/mcm /workspace
 
-COPY --chown=ffmpeg-vpp --from=buildstage /buildout/ /
+VOLUME ["/var/run/imtl", "/var/run/mcm", "/workspace"]
+COPY --chown=tiber --from=build-stage /buildout/ /
 
 RUN ldconfig
 
 EXPOSE 8001/tcp 8002/tcp
-EXPOSE 20000-20100
-
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "ffmpeg" || exit 1
 
-USER "ffmpeg-vpp"
+USER "tiber"
 
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/bin/ffmpeg"]
+
+# ===============================================//
+#          MtlManager stage
+# ===============================================//
+ARG IMAGE_NAME
+ARG IMAGE_CACHE_REGISTRY
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS manager-stage
+
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
+LABEL org.opencontainers.image.title="Intel® MTL Manager"
+LABEL org.opencontainers.image.description="Intel® MTL Manager. Open Visual Cloud Media Transport Library Manager required for live software defined broadcast stack optimizations. Ubuntu release image"
+LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.vendor="Intel® Corporation"
+LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
+
+ENV DEBIAN_FRONTEND="noninteractive"
+ENV LD_LIBRARY_PATH="/usr/local/lib"
+ENV TZ=Europe/Warsaw
+
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+RUN \
+  apt-get update --fix-missing && \
+  apt-get full-upgrade -y && \
+  apt-get install --no-install-recommends -y \
+    sudo \
+    ca-certificates \
+    ethtool \
+    libelf1 \
+    libfdt1 && \
+  apt-get autoremove -y && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* && \
+  groupadd -g 2110 vfio && \
+  useradd -m -s /bin/bash -G vfio,root mtl && \
+  usermod -aG sudo mtl && \
+  mkdir -p /var/run/imtl /usr/local/lib/bpf && \
+  chown mtl:root /var/run/imtl
+
+VOLUME ["/var/run/imtl"]
+WORKDIR "/home/mtl/"
+# USER "mtl"
+USER "root"
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/local/bin/MtlManager /usr/local/bin/MtlManager
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/local/lib/libxdp.so.1 /usr/local/lib
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/lib64/libbpf.so.1 /usr/local/lib
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/local/lib/bpf/ /usr/local/lib/bpf
+COPY --chown=mtl --chmod=755 --from=build-stage /tmp/Media-Transport-Library/script/nicctl.sh /home/mtl/
+
+HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "MtlManager" || exit 1
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/MtlManager"]
