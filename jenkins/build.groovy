@@ -110,7 +110,7 @@ pipeline {
                     def dockerBuildArgs = ["--build-arg http_proxy",
                                            "--build-arg https_proxy",
                                            "-t ${env.IMAGE_TAG_NAME}_build_stage",
-                                           "--target buildstage",
+                                           "--target build-stage",
                                            "-f Dockerfile ."]
                     dir(relativeDir){
                         sh """
