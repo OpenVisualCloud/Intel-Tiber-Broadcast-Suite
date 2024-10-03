@@ -80,6 +80,10 @@ pipeline {
             regexpFilterExpression: '^(opened|reopened|synchronize).*$'
         )
     }
+    parameters {
+        string(name: 'BRANCH',    defaultValue: 'main', description: 'select branch to build')
+
+  }
     options {
         timestamps()
         timeout(time: 4, unit: 'HOURS')
@@ -90,7 +94,7 @@ pipeline {
                 script {
                     cleanWs()
                     def repo = 'https://github.com/intel-innersource/applications.services.cloud.visualcloud.vcdp.video-production-pipeline.git'
-                    def branches = [[name: 'main']]
+                    def branches = [[name: params.BRANCH ]]
                     def userRemoteConfigs = [[
                         credentialsId: '0febae38-30c4-4243-88f1-b85eb771452d',
                         url: repo
