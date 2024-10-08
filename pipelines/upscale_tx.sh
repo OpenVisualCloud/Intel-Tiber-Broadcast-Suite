@@ -33,5 +33,5 @@ docker run -it \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
       video_production_image \
-      -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/src/1080p_yuv422_10b.yuv -filter:v fps=25 \
+      -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i /videos/src/1080p_yuv422_10b_1.yuv -filter:v fps=25 \
       -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -f mtl_st20p -
