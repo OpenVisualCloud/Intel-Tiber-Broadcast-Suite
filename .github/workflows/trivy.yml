@@ -18,6 +18,9 @@ jobs:
   checkout_code:
     name: "Node Preparations for Intel® Tiber™ Broadcast Suite"
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      security-events: write
     steps:
     - name: Harden Runner
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -27,14 +30,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-  trivy-code-scan:
-    name: "Code-Scan for Intel® Tiber™ Broadcast Suite"
-    runs-on: ubuntu-22.04
-    needs: checkout_code
-    permissions:
-      contents: read
-      security-events: write
-    steps:
     - name: Run Trivy 'config' type vulnerability scanner.
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
       with:
@@ -50,14 +45,6 @@ jobs:
       with:
         sarif_file: 'trivy-config-tiber-results.sarif'
 
-  trivy-fs-scan:
-    name: "Code-FS-Scan for Intel® Tiber™ Broadcast Suite"
-    runs-on: ubuntu-22.04
-    needs: checkout_code
-    permissions:
-      contents: read
-      security-events: write
-    steps:
     - name: Run Trivy 'fs' type vulnerability scanner.
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
       with:
