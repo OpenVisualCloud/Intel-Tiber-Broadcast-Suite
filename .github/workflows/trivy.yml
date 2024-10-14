@@ -3,7 +3,11 @@ on:
   push:
   workflow_call:
   workflow_dispatch:
-    branches: [main]
+    inputs:
+      branch:
+        description: 'branch to run scans on'
+        default: 'main'
+        type: string
 
 env:
   BUILD_TYPE: "Release"
@@ -29,6 +33,8 @@ jobs:
 
     - name: Checkout code
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      with:
+        ref: ${{ inputs.branch }}
 
     - name: Run Trivy 'config' type vulnerability scanner.
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
