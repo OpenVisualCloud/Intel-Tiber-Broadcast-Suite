@@ -28,14 +28,14 @@ ENV \
   LIBVMAF=2.3.1 \
   ONEVPL=23.3.4 \
   SVTAV1=1.7.0 \
-  VULKANSDK=vulkan-sdk-1.3.268.0 \
+  VULKANSDK=vulkan-sdk-1.3.280.0 \
   VSR=v23.11 \
-  CARTWHEEL_COMMIT_ID=6.1 \
-  FFMPEG_COMMIT_ID=n6.1.1 \
+  CARTWHEEL_COMMIT_ID=7.0 \
+  FFMPEG_COMMIT_ID=n7.0.2 \
   XDP_VER=d7edea3590052581c5fda5f8cfa40ae7be94f05c \
   BPF_VER=42065ea6627ff6e1ab4c65e51042a70fbf30ff7c \
-  MTL_VER=MTL_enabling_for_Intel_Tiber_Broadcast_Suite \
-  MCM_VER=24.06.01 \
+  MTL_VER=v24.09 \
+  MCM_VER=24.09 \
   JPEG_XS_VER=0.9.0 \
   DPDK_VER=23.11 \
   FFNVCODED_VER=1889e62e2d35ff7aa9baca2bceb14f053785e6f1
@@ -242,18 +242,19 @@ RUN \
   echo "**** APPLY MTL PATCHES ****" && \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.c -rf /tmp/ffmpeg/libavdevice/ && \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.h -rf /tmp/ffmpeg/libavdevice/ && \
-  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/6.1/*.patch
+  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/7.0/*.patch
 
 RUN \
   echo "**** APPLY JPEG-XS PATCHES ****" && \
-  git -C /tmp/ffmpeg apply --whitespace=fix /tmp/jpegxs/ffmpeg-plugin/*.patch
+  git -C /tmp/ffmpeg apply --whitespace=fix /tmp/patches/jpegxs/*.patch
 
 RUN \
   echo "**** APPLY FFMPEG patches ****" && \
   git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/hwupload_async.diff && \
   git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/qsv_aligned_malloc.diff && \
   git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/qsvvpp_async.diff && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/filtergraph_async.diff
+  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/filtergraph_async.diff && \
+  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/ffmpeg_scheduler.diff
 
 WORKDIR /tmp
 RUN \
@@ -279,11 +280,11 @@ RUN \
   sed -i 's/clan//g' build.sh && \
   ./build.sh -DCMAKE_INSTALL_PREFIX="/tmp/vsr/install" -DENABLE_RAISR_OPENCL=ON
 
-RUN \
-  echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
-  git -C /tmp/ffmpeg apply /tmp/patches/vsr/0001-ffmpeg-raisr-filter.patch && \
-  git -C /tmp/ffmpeg apply /tmp/patches/vsr/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
-  cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
+# RUN \
+#   echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
+#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0001-ffmpeg-raisr-filter.patch && \
+#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
+#   cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
 
 WORKDIR /tmp/mcm
 RUN \
@@ -309,7 +310,7 @@ RUN \
 WORKDIR /tmp/ffmpeg/
 RUN \
   echo "**** APPLY MEDIA COMMUNICATIONS MESH PATCHES ****" && \
-  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/6.1/*.patch && \
+  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/7.0/*.patch && \
   cp -f /tmp/mcm/ffmpeg-plugin/mcm_* /tmp/ffmpeg/libavdevice/
 
 RUN \

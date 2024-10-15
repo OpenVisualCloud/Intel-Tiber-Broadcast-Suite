@@ -1,8 +1,19 @@
+From 4c268fcec26be72cbdc8fddd154033cc7cadf353 Mon Sep 17 00:00:00 2001
+From: Tomasz Szumski <tomasz.szumski@intel.com>
+Date: Mon, 26 Aug 2024 11:53:49 +0200
+Subject: [PATCH 3/5] qsvvpp_async
+
+---
+ libavfilter/qsvvpp.c       | 17 ++++++++++++++++-
+ libavfilter/vf_stack_qsv.c | 14 +++++++++++++-
+ libavfilter/vf_vpp_qsv.c   | 10 ++++++++--
+ 3 files changed, 37 insertions(+), 4 deletions(-)
+
 diff --git a/libavfilter/qsvvpp.c b/libavfilter/qsvvpp.c
-index 2c8e73e87d..d1e2a3c349 100644
+index 5cdba7d54a..f3e54493bb 100644
 --- a/libavfilter/qsvvpp.c
 +++ b/libavfilter/qsvvpp.c
-@@ -972,10 +972,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+@@ -966,10 +966,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
      QSVFrame         *in_frame, *out_frame;
      int               ret, ret1, filter_ret;
  
@@ -16,7 +27,7 @@ index 2c8e73e87d..d1e2a3c349 100644
          filter_ret = s->filter_frame(outlink, aframe.frame->frame);
          if (filter_ret < 0) {
              av_frame_free(&aframe.frame->frame);
-@@ -984,6 +986,11 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+@@ -978,6 +980,11 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
          aframe.frame->queued--;
          s->got_frame = 1;
          aframe.frame->frame = NULL;
@@ -28,7 +39,7 @@ index 2c8e73e87d..d1e2a3c349 100644
      };
  
      if (!picref)
-@@ -1013,6 +1020,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+@@ -1007,6 +1014,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
              if (ret == MFX_WRN_DEVICE_BUSY)
                  av_usleep(500);
          } while (ret == MFX_WRN_DEVICE_BUSY);
@@ -36,7 +47,7 @@ index 2c8e73e87d..d1e2a3c349 100644
  
          if (ret < 0 && ret != MFX_ERR_MORE_SURFACE) {
              /* Ignore more_data error */
-@@ -1033,6 +1041,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
+@@ -1027,6 +1035,7 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
              do {
                  ret1 = MFXVideoCORE_SyncOperation(s->session, aframe.sync, 1000);
              } while (ret1 == MFX_WRN_IN_EXECUTION);
@@ -44,21 +55,21 @@ index 2c8e73e87d..d1e2a3c349 100644
  
              if (ret1 < 0) {
                  ret = ret1;
-@@ -1048,6 +1057,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
-             aframe.frame->queued--;
+@@ -1043,6 +1052,12 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
              s->got_frame = 1;
              aframe.frame->frame = NULL;
-+        }
+         }
 +
 +        if (av_fifo_can_read(s->async_fifo)) {
 +            // request sync call
 +            inlink->dst->ready = 50;
 +            inlink->dstpad->flags |= AVFILTERPAD_FLAG_ASYNC;
-         }
++        }
      } while(ret == MFX_ERR_MORE_SURFACE);
  
+     if (ret < 0)
 diff --git a/libavfilter/vf_stack_qsv.c b/libavfilter/vf_stack_qsv.c
-index 3e6aefe44b..e1fa3fd073 100644
+index 3e6aefe44b..7679e8099e 100644
 --- a/libavfilter/vf_stack_qsv.c
 +++ b/libavfilter/vf_stack_qsv.c
 @@ -73,6 +73,15 @@ static int process_frame(FFFrameSync *fs)
@@ -97,7 +108,7 @@ index 3e6aefe44b..e1fa3fd073 100644
  }
  
 diff --git a/libavfilter/vf_vpp_qsv.c b/libavfilter/vf_vpp_qsv.c
-index 5356103e00..7c13fc3f43 100644
+index 598c85be09..2699ce480a 100644
 --- a/libavfilter/vf_vpp_qsv.c
 +++ b/libavfilter/vf_vpp_qsv.c
 @@ -734,6 +734,11 @@ static int activate(AVFilterContext *ctx)
@@ -129,5 +140,8 @@ index 5356103e00..7c13fc3f43 100644
 -
 +    { "async_depth", "Internal parallelization depth, the higher the value the higher the latency.", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, .flags = FLAGS },
  #if QSV_ONEVPL
-     { "mode",      "scaling & format conversion mode (mode compute(3), vd(4) and ve(5) are only available on some platforms)",    OFFSET(scale_mode),    AV_OPT_TYPE_INT,    { .i64 = 0}, 0, 5, FLAGS, "mode"},
+     { "mode",      "scaling & format conversion mode (mode compute(3), vd(4) and ve(5) are only available on some platforms)",    OFFSET(scale_mode),    AV_OPT_TYPE_INT,    { .i64 = 0}, 0, 5, FLAGS, .unit = "mode"},
  #else
+-- 
+2.45.1.windows.1
+
