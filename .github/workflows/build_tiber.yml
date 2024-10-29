@@ -32,13 +32,13 @@ jobs:
         sudo free -h
         sudo lsblk
 
-    - name: "Set swap to 8Gi"
+    - name: "Set swap to 20Gi"
       shell: bash
       run: |
         export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
         sudo swapoff $SWAP_FILE
         sudo rm $SWAP_FILE
-        sudo fallocate -l 8192M $SWAP_FILE
+        sudo fallocate -l 20480M $SWAP_FILE
         sudo chmod 600 $SWAP_FILE
         sudo mkswap $SWAP_FILE
         sudo swapon $SWAP_FILE
