@@ -27,11 +27,25 @@ jobs:
       with:
         egress-policy: audit
 
+    - name: "Memory and swap report before"
+      run: free -h
+
+    - name: "Set swap to 8Gi"
+      shell: bash
+      run: |
+        export SWAP_FILE=$(swapon --show=NAME | tail -n 1)
+        swapoff $SWAP_FILE
+        rm $SWAP_FILE
+        fallocate -l 8192M $SWAP_FILE
+        chmod 600 $SWAP_FILE
+        mkswap $SWAP_FILE
+        swapon $SWAP_FILE
+
+    - name: "Memory and swap report after"
+      run: free -h
+
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-
-    - name: "Configuration: QEMU for Docker setup"
-      uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
     - name: "Configuration: Docker with Buildx Toolkit set up"
       uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
