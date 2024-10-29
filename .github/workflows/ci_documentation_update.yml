@@ -5,6 +5,8 @@ on:
   workflow_dispatch:
     branches: [main]
 
+permissions:  read-all
+
 jobs:
   publishGitHubPages:
     name: Publish GitHub Pages
