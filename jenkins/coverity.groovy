@@ -45,7 +45,7 @@ pipeline {
             steps{
                 script{
                     withCredentials([usernamePassword(
-                        credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
+                        credentialsId: 'SDB-faceless-account',
                         usernameVariable: 'USERNAME',
                         passwordVariable: 'PASSWORD')]){
                         sh """
@@ -71,7 +71,7 @@ pipeline {
             steps{
                 script{
                     withCredentials([usernamePassword(
-                        credentialsId: 'bbff5d12-094b-4009-9dce-b464d51f96d4',
+                        credentialsId: 'SDB-faceless-account',
                         usernameVariable: 'USERNAME',
                         passwordVariable: 'PASSWORD')]){
                         sh """

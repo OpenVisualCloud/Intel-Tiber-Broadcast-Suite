@@ -27,7 +27,7 @@ RUN wget -nv -P /tmp https://ubit-artifactory-or.intel.com/artifactory/coverity-
 RUN chmod +x /tmp/cov-reports-linux64-${COVERITY_VER}.sh \
     && /tmp/cov-reports-linux64-${COVERITY_VER}.sh \
     -q -console -dir /OWR/Tools/cov_report/${COVERITY_VER}
-ENV PATH "${PATH}:/OWR/Tools/cov_report/${COVERITY_VER}/bin"
+ENV PATH "${PATH}:/OWR/Tools/cov_report/${COVERITY_VER}/bin:/root/.local/bin"
 
 # Install ABI
 RUN apt-get update -y \
@@ -38,11 +38,11 @@ RUN apt-get update -y \
     python3-venv \
     python3-dev \
     libkrb5-dev \
-    wget \
+    libfreetype6-dev \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
-RUN python3 -m pip install --upgrade pip setuptools wheel \
- && python3 -m pip install abi==${ABI_VER} --extra-index-url=https://ubit-artifactory-or.intel.com/artifactory/api/pypi/one-windows-pypi-local/simple
+RUN python3 -m pip install --break-system-packages --upgrade setuptools \
+ && python3 -m pip install --break-system-packages --user abi==${ABI_VER} --extra-index-url=https://ubit-artifactory-or.intel.com/artifactory/api/pypi/one-windows-pypi-local/simple
 
 COPY opt/* /usr/bin
 WORKDIR /tmp/host
