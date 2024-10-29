@@ -1,4 +1,5 @@
 #!/bin/bash
+
 . /opt/intel/oneapi/ipp/latest/env/vars.sh
 echo "**************** BUILD FFMPEG ****************"
 cd /tmp/ffmpeg

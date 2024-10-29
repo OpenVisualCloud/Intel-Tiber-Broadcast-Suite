@@ -1,4 +1,4 @@
-#! /bin/bash 
+#!/bin/bash
 
 # update report date
 sed -i 's|analysis-date:.*|analysis-date: '$(date +%m/%d/%Y)'|g' /usr/bin/report_cfg.yaml
@@ -26,6 +26,7 @@ export JAVA_HOME=/OWR/Tools/cov_report/2023.3.4/jre/bin/java
 . /opt/intel/oneapi/ipp/latest/env/vars.sh
 run_coverity "build_onevpl.sh" "sdb-onevpl-patch"
 run_coverity "build_mtl.sh" "sdb-mtl-patch"
+run_coverity "build_jpegxs.sh" "sdb-jpeg-xs-patch"
 run_coverity "build_vsr.sh" "sdb-vsr-patch"
 run_coverity "build_ffmpeg.sh" "sdb-ffmpeg-patch"
 exit 0

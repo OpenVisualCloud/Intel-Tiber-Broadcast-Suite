@@ -18,7 +18,7 @@ report-cwe-version:
     sans: 2021
 locale: en_US
 title-page:
-    company-name: Intel® Corporation 
+    company-name: Intel® Corporation
     logo: null
     organizational-unit-name: Network and Edge Group
     organizational-unit-term: Business Unit
