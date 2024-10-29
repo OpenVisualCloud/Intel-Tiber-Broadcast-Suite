@@ -105,7 +105,7 @@ RUN \
     ubuntu-drivers-common \
     libc6-dev \
     cuda-toolkit-12-6 \
-    libnvidia-compute-550 \
+    libnvidia-compute-550-server \
     libfdt-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*

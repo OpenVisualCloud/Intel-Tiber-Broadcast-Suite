@@ -25,11 +25,26 @@ To install Docker environment please refer to the official Docker Engine on Ubun
 
 Depending on the network environment it could be required to set up the proxy. In that case please refer to [Configure the Docker client](https://docs.docker.com/network/proxy/#configure-the-docker-client) section of _Configure Docker to use a proxy server_ guide.
 
-### 1.4 Install Flex GPU driver
+### 1.4 Install GPU driver
+#### 1.4.1 Intel Flex GPU driver
 
 To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps) part of the Installation guide for Intel® Data Center GPUs.
 
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
+
+#### 1.4.2 Nvidia GPU driver
+
+In case of using an Nvidia GPU, please follow the steps below:
+```
+sudo apt install --install-suggests nvidia-driver-550-server
+sudo apt install nvidia-utils-550-server
+```
+
+In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
+
+> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
+>* **Driver Version: 550.90.07**
+>* **CUDA Version: 12.4**
 
 ### 1.5 Install and configure host's NIC drivers and related software
 
