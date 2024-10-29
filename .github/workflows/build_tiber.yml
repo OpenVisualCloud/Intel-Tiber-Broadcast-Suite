@@ -28,21 +28,25 @@ jobs:
         egress-policy: audit
 
     - name: "Memory and swap report before"
-      run: free -h
+      run: |
+        sudo free -h
+        sudo lsblk
 
     - name: "Set swap to 8Gi"
       shell: bash
       run: |
-        export SWAP_FILE=$(swapon --show=NAME | tail -n 1)
-        swapoff $SWAP_FILE
-        rm $SWAP_FILE
-        fallocate -l 8192M $SWAP_FILE
-        chmod 600 $SWAP_FILE
-        mkswap $SWAP_FILE
-        swapon $SWAP_FILE
+        export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
+        sudo swapoff $SWAP_FILE
+        sudo rm $SWAP_FILE
+        sudo fallocate -l 8192M $SWAP_FILE
+        sudo chmod 600 $SWAP_FILE
+        sudo mkswap $SWAP_FILE
+        sudo swapon $SWAP_FILE
 
     - name: "Memory and swap report after"
-      run: free -h
+      run: |
+        sudo free -h
+        sudo lsblk
 
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
