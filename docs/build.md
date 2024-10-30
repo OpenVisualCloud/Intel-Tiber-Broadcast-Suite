@@ -49,48 +49,6 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 >* **Driver Version: 550.90.07**
 >* **CUDA Version: 12.4**
 
-#### 1.3.2 Nvidia GPU driver
-
-In case of using an Nvidia GPU, please follow the steps below:
-```
-sudo apt install --install-suggests nvidia-driver-550-server
-sudo apt install nvidia-utils-550-server
-```
-
-In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
-
-> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
->* **Driver Version: 550.90.07**
->* **CUDA Version: 12.4**
-
-#### 1.3.2 Nvidia GPU driver
-
-In case of using an Nvidia GPU, please follow the steps below:
-```
-sudo apt install --install-suggests nvidia-driver-550-server
-sudo apt install nvidia-utils-550-server
-```
-
-In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
-
-> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
->* **Driver Version: 550.90.07**
->* **CUDA Version: 12.4**
-
-#### 1.3.2 Nvidia GPU driver
-
-In case of using an Nvidia GPU, please follow the steps below:
-```
-sudo apt install --install-suggests nvidia-driver-550-server
-sudo apt install nvidia-utils-550-server
-```
-
-In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
-
-> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
->* **Driver Version: 550.90.07**
->* **CUDA Version: 12.4**
-
 ### 1.4. Install and configure host's NIC drivers and related software
 
 1. If you didn't do it already, then download the project from GitHub repo.
