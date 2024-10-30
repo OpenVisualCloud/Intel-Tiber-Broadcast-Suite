@@ -6,7 +6,7 @@
 # Intel® Tiber™ Broadcast Suite
 #
 
-. VARIABLES.rc
+. VARIABLES.rc 2>/dev/null
 
 # Check if VFIO_PORT_T is set
 if [ -z "$VFIO_PORT_T" ]; then
@@ -14,6 +14,35 @@ if [ -z "$VFIO_PORT_T" ]; then
     echo "Use dpdk-devbind.py -s to check pci address of vfio device"
     exit 1
 fi
+
+function help() {
+    echo "Usage: $0 [-l]"
+    echo
+    echo "Options:"
+    echo "  -l    Run the pipeline on bare metal locally."
+    echo
+    echo "For more information, please refer to docs/run.md."
+    exit 0
+}
+
+while getopts "lh" opt; do
+    case ${opt} in
+        l )
+            echo "Running pipeline on bare metal locally..."
+            ffmpeg \
+            -video_size 3840x2160 -f rawvideo -pix_fmt yuv422p10le -i src/2160p_yuv422_10b.yuv -filter:v fps=25 \
+            -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -f mtl_st20p -
+            exit 0
+            ;;
+        h )
+            help
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            help
+            ;;
+    esac
+done
 
 docker run -it \
    --user root\

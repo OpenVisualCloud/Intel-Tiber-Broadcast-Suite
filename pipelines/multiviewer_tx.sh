@@ -6,7 +6,7 @@
 # Intel® Tiber™ Broadcast Suite
 #
 
-. VARIABLES.rc
+. VARIABLES.rc 2>/dev/null
 
 # Check if VFIO_PORT_T is set
 if [ -z "$VFIO_PORT_T" ]; then

@@ -1,8 +1,13 @@
-
 docs/_build
 _build
 file*.json
 .reports
+NVMUpdatePackage
+
+# pipeline configuration and input files
 src
 *.yuv
 VARIABLES.rc
+
+# local installation directory
+local_debians

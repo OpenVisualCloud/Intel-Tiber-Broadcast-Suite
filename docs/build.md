@@ -6,7 +6,7 @@ Building of the Intel® Tiber™ Broadcast Suite is based on docker container bu
 
 Steps to perform before run Intel® Tiber™ Broadcast Suite on host with Ubuntu operating system installed.
 
-### 1.1 BIOS settings
+### 1.1. BIOS settings
 > **Note:** It is recommended to properly setup BIOS settings before proceeding. Depending on manufacturer, labels may vary. Please consult an instruction manual or ask a platform vendor for detailed steps.
 
 Following technologies must be enabled for Media Transport Library (MTL) to function properly:
@@ -14,25 +14,28 @@ Following technologies must be enabled for Media Transport Library (MTL) to func
 - [Single-root input/output virtualization (SR-IOV)](https://en.wikipedia.org/wiki/Single-root_input/output_virtualization)
 - For 200 GbE throughput on [Intel® Ethernet Network Adapter E810-2CQDA2 card](https://ark.intel.com/content/www/us/en/ark/products/210969/intel-ethernet-network-adapter-e810-2cqda2.html) a PCI-E lane bifurcation is required.
 
+### 1.2. Install Docker
 
-### 1.2 Install Docker build environment
+> **Note:**  This step is optional if you want to install Intel® Tiber™ Broadcast Suite locally.
+
+#### 1.2.1. Install Docker build environment
 
 To install Docker environment please refer to the official Docker Engine on Ubuntu installation manual's [Install using the apt repository](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) section.
 
 > **Note:** Do not skip `docker-buildx-plugin` installation, otherwise the `build.sh` script may not run properly.
 
-### 1.3 Setup proxy
+#### 1.2.2. Setup docker proxy
 
 Depending on the network environment it could be required to set up the proxy. In that case please refer to [Configure the Docker client](https://docs.docker.com/network/proxy/#configure-the-docker-client) section of _Configure Docker to use a proxy server_ guide.
 
-### 1.4 Install GPU driver
-#### 1.4.1 Intel Flex GPU driver
+### 1.3 Install GPU driver
+#### 1.3.1 Intel Flex GPU driver
 
 To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu-docs.intel.com/driver/installation.html#ubuntu-install-steps) part of the Installation guide for Intel® Data Center GPUs.
 
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
 
-#### 1.4.2 Nvidia GPU driver
+#### 1.3.2 Nvidia GPU driver
 
 In case of using an Nvidia GPU, please follow the steps below:
 ```
@@ -46,31 +49,122 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 >* **Driver Version: 550.90.07**
 >* **CUDA Version: 12.4**
 
-### 1.5 Install and configure host's NIC drivers and related software
+#### 1.3.2 Nvidia GPU driver
 
-1. Gather information about currently used Media Transport Library tag with:
-    ```shell
-    grep "MTL_VER=" Dockerfile | awk -F "=" '{print gensub(/ \\/,"","g",$NF)}'
+In case of using an Nvidia GPU, please follow the steps below:
+```
+sudo apt install --install-suggests nvidia-driver-550-server
+sudo apt install nvidia-utils-550-server
+```
+
+In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
+
+> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
+>* **Driver Version: 550.90.07**
+>* **CUDA Version: 12.4**
+
+#### 1.3.2 Nvidia GPU driver
+
+In case of using an Nvidia GPU, please follow the steps below:
+```
+sudo apt install --install-suggests nvidia-driver-550-server
+sudo apt install nvidia-utils-550-server
+```
+
+In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
+
+> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
+>* **Driver Version: 550.90.07**
+>* **CUDA Version: 12.4**
+
+#### 1.3.2 Nvidia GPU driver
+
+In case of using an Nvidia GPU, please follow the steps below:
+```
+sudo apt install --install-suggests nvidia-driver-550-server
+sudo apt install nvidia-utils-550-server
+```
+
+In case of any issues please follow [Nvidia GPU driver install steps](https://ubuntu.com/server/docs/nvidia-drivers-installation#heading--manual-driver-installation-using-apt)
+
+> **Note:** Supported version of Nvidia driver compatible with packages inside Docker container is
+>* **Driver Version: 550.90.07**
+>* **CUDA Version: 12.4**
+
+### 1.4. Install and configure host's NIC drivers and related software
+
+1. If you didn't do it already, then download the project from GitHub repo.
     ```
-2. Clone Media Transport Library repository and checkout to the tag detected in a previous step with
-    ```shell
-    git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git
-    cd Media-Transport-Library
-    git checkout <tag>
+    git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
+    cd Intel-Tiber-Broadcast-Suite
     ```
-3. While in `Media-Transport-Library` folder, set `mtl_source_code` variable with:
-    ```shell
-    export mtl_source_code=${PWD}
-    ```
-4. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs based on the [Intel® E810 Series Ethernet Adapter driver install steps](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/e810.md) instruction.
 
-    > **Note:** Please ensure Intel® Ethernet Adapter Complete Driver Pack is downloaded in a version specified in the instruction from a link containing the `MTL_VER` commit hash.
+1. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs.
 
-5.  Install Data Plane with Media Transport Library patches included using Ubuntu-related steps from [Build Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/build.md).
-    > **Note:** PIP package manager for Python reads proxy settings from environment variables, thus it might be required to re-setup proxy before proceeding, if sudo is used.
-6. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/2f1c2a3be417065a4dc9276e2d7344d768e95118/doc/run.md), chapters 1-4, and (optionally) 7 for PTP configuration.
+   1. Download ice driver.
+       ```shell
+       mkdir -p ${HOME}/ice_patched
+       . versions.env && wget -qO- $LINK_ICE_DRIVER | tar -xz -C ${HOME}/ice_patched
+       ```
 
-7. From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, and E810 NIC's virtual controllers:
+   1. Patch the ice driver.
+       ```shell
+        # Ensure the target directory exists
+        mkdir -p ${HOME}/Media-Transport-Library
+
+       # Download Media Transport Library:
+       . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
+
+       . versions.env && git -C ${HOME}/ice_patched/ice* apply ~/Media-Transport-Library/patches/ice_drv/${ICE_VER}/*.patch
+       ```
+
+   1. Install the ice driver.
+       ```shell
+       cd ${HOME}/ice_patched/ice-*/src
+       make
+       sudo make install
+       sudo rmmod irdma 2>/dev/null
+       sudo rmmod ice
+       sudo modprobe ice
+       cd -
+       ```
+
+   1. Check if the driver is installed properly, and if so clean up.
+        ```shell
+        # should give you output
+        sudo dmesg | grep "Intel(R) Ethernet Connection E800 Series Linux Driver - version Kahawai"
+        rm -rf ${HOME}/ice_patched ${HOME}/Media-Transport-Library
+        ```
+
+   1. Update firmware
+        ```shell
+        . versions.env && wget ${LINK_ICE_FIRMWARE}
+        unzip Release_*.zip
+        cd NVMUpdatePackage/E810
+        tar xvf E810_NVMUpdatePackage_v*_Linux.tar.gz
+        cd E810/Linux_x64/
+        sudo ./nvmupdate64e
+        ```
+
+    1. Verify installation
+        ```shell
+        # replace with your device
+        ethtool -i ens801f0
+        ```
+        Result should look like:
+        ```
+        driver: ice
+        version: Kahawai_1.14.9_20240613
+        firmware-version: 4.60 0x8001e8dc 1.3682.0
+        ```
+
+    > **Note:** if you encountered any problems please go to <https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md>.
+
+
+2. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/run.md), chapter 1, and (optionally) 7 for PTP configuration.
+
+
+1. From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, and E810 NIC's virtual controllers:
     ```shell
     sudo -E ./first_run.sh | tee virtual_functions.txt
     ```
@@ -78,15 +172,14 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 
     > **Note:** In order to avoid unnecessary reruns, preserve the command's output as a file to note which interface was bound to which Virtual Functions.
 
-## 2. Build
+## 2. Build Tiber™ using build.sh
 
-### 2.1. Using build.sh script
+### 2.1. Dockerized build with build.sh script
 > **Note:** This method recommended instead of 2.2 - layers are built in parallel, cross-compability is possible.
 
-Download the project from GitHub repo
+Access the project directory
 
 ```shell
-git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
 cd Intel-Tiber-Broadcast-Suite
 ```
 
@@ -98,32 +191,88 @@ Run build.sh script
 ./build.sh
 ```
 
-## 2.2. Alternative manual build method
+### 2.2. Alternative local, bare metal installation without docker
+
+You can install the Intel® Tiber™ Broadcast Suite localy on bare metal. This
+installation allows you to skip installing docker altogether.
+
+    ```shell
+    git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
+    cd Intel-Tiber-Broadcast-Suite
+    ./build.sh -l
+    ```
+
+### 2.3. Manual dockerized build method
 
 > **Note:** Below method does not require buildx, but lacks cross-compability and may prolongate the build process.
 
+Download, Patch, Build, and Install DPDK from source code
+
+   1. Download and Extract DPDK and MTL:
+        ```bash
+       . versions.env &&   curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
+
+        . versions.env && curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | tar -zx --strip-components=1 -C dpdk
+        ```
+
+   1. Apply Patches from Media Transport Library:
+        ```bash
+        # Apply patches:
+        . versions.env && cd dpdk && git apply ${HOME}/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch
+        ```
+
+
+   1. Build and Install DPDK:
+        ```bash
+        # Prepare the build directory:
+        meson build
+
+        # Build DPDK:
+        ninja -C build
+
+        # Install DPDK:
+        sudo ninja -C build install
+        ```
+
+   1. Clean Up:
+        ```bash
+        cd ..
+        rm -drf dpdk
+        ```
+
 Build image using Dockerfile
 ```shell
-docker build -t video_production_image -f Dockerfile .
+docker build $(cat versions.env | xargs -I {} echo --build-arg {}) -t video_production_image -f Dockerfile .
 ```
 
 Change number of cores used to build by make can be changed  by _--build-arg nproc={number of proc}_
 
 ```shell
-docker build --build-arg nproc=1 -t video_production_image -f Dockerfile .
+docker build $(cat versions.env | xargs -I {} echo --build-arg {}) --build-arg nproc=1 -t video_production_image -f Dockerfile .
 ```
 
 Build the mtl manager docker
 
 ```shell
-cd "$mtl_source_code"/manager
-docker build -t mtl-manager:latest .
+cd ${HOME}/Media-Transport-Library/manager
+docker build --build-arg VERSION=1.0.0.TIBER -t mtl-manager:latest .
 cd -
 ```
 
 
-## 3. Test run the image
+## 3. Test run
+
+### 3.1. For docker installation
 
 ```shell
 docker run --rm -it --user=root --privileged video_production_image --help
 ```
+
+### 3.2. For local installation
+```shell
+ffmpeg --help
+```
+
+
+## Go to the run.md instruction for more details on how to run the image
+#### [Running Intel® Tiber™ Broadcast Suite Pipelines](./run.md)

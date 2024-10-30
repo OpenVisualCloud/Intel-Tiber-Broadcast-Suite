@@ -23,30 +23,43 @@ ENV \
   PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/tmp/jpegxs/Build/linux/install/lib/pkgconfig \
   MAKEFLAGS=-j${nproc}
 
-# versions
-ENV \
-  LIBVMAF=2.3.1 \
-  ONEVPL=23.3.4 \
-  SVTAV1=1.7.0 \
-  VULKANSDK=vulkan-sdk-1.3.280.0 \
-  VSR=v23.11 \
-  CARTWHEEL_COMMIT_ID=7.0 \
-  FFMPEG_COMMIT_ID=n7.0.2 \
-  XDP_VER=d7edea3590052581c5fda5f8cfa40ae7be94f05c \
-  BPF_VER=42065ea6627ff6e1ab4c65e51042a70fbf30ff7c \
-  MTL_VER=v24.09 \
-  MCM_VER=24.09 \
-  JPEG_XS_VER=0.9.0 \
-  DPDK_VER=23.11 \
-  FFNVCODED_VER=1889e62e2d35ff7aa9baca2bceb14f053785e6f1
+# versions variables are contained in the versions.env
+ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEEL_COMMIT_ID FFMPEG_COMMIT_ID XDP_VER BPF_VER MTL_VER MCM_VER JPEG_XS_VER DPDK_VER FFNVCODED_VER LINK_CUDA_REPO FFMPEG_PLUGIN_VER"
+
+ARG \
+  LIBVMAF \
+  ONEVPL \
+  SVTAV1 \
+  VULKANSDK \
+  VSR \
+  CARTWHEEL_COMMIT_ID \
+  FFMPEG_COMMIT_ID \
+  XDP_VER \
+  BPF_VER \
+  MTL_VER \
+  MCM_VER \
+  JPEG_XS_VER \
+  DPDK_VER \
+  FFNVCODED_VER \
+  LINK_CUDA_REPO \
+  FFMPEG_PLUGIN_VER
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
+
+RUN for var in $REQUIRED_ENVIRONMENT_VARIABLES; do \
+      if [ -z "\${!var}" ]; then \
+        echo \$var = \${!var}; \
+        echo "Error: WRONG BUILD ARGUMENTS SEE docs/build.md "; \
+        exit 1; \
+      fi; \
+    done
+
 # Install dependencies
 RUN \
   echo "**** ADD CUDA APT REPO ****" && \
   apt-get update --fix-missing && \
   apt-get install -y wget && \
-  wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb && \
+  wget ${LINK_CUDA_REPO} && \
   dpkg -i cuda-keyring_1.1-1_all.deb && \
   echo "**** INSTALL BUILD PACKAGES ****" && \
   apt-get update --fix-missing && \
@@ -242,7 +255,7 @@ RUN \
   echo "**** APPLY MTL PATCHES ****" && \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.c -rf /tmp/ffmpeg/libavdevice/ && \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.h -rf /tmp/ffmpeg/libavdevice/ && \
-  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/7.0/*.patch
+  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/${FFMPEG_PLUGIN_VER}/*.patch
 
 RUN \
   echo "**** APPLY JPEG-XS PATCHES ****" && \
@@ -310,7 +323,7 @@ RUN \
 WORKDIR /tmp/ffmpeg/
 RUN \
   echo "**** APPLY MEDIA COMMUNICATIONS MESH PATCHES ****" && \
-  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/7.0/*.patch && \
+  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/${FFMPEG_PLUGIN_VER}/*.patch && \
   cp -f /tmp/mcm/ffmpeg-plugin/mcm_* /tmp/ffmpeg/libavdevice/
 
 RUN \

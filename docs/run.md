@@ -3,11 +3,11 @@
 > ⚠️ Make sure that all of the hosts used are set up according to the [host setup](build.md).
 
 > **Note:** This instruction regards running the predefined scripts from `pipelines` folder present in the root of the repository. For more information on how to prepare an own pipeline, see:
-- [Docker command breakdown](run-know-how.md)
-- [FFmpeg Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
-- [Media Transport Library](plugins/media-transport-library.md)
-- [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
-- [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
+> - [Docker command breakdown](run-know-how.md)
+> - [FFmpeg Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
+> - [Media Transport Library](plugins/media-transport-library.md)
+> - [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
+> - [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
 
 > **Note:** The scaling factors provided in this document consider the number of pixels in the image, instead of dimensions, e.g. scaling 1/4 means the number of overall pixel is down by 4, but the edges are divided by 2 (like in 3840x2160 -> 1920x1080).
 
@@ -21,7 +21,7 @@ Video pipelines described below are built using Intel-optimized version of FFmpe
 
 ### Sample pipelines setup
 
-To execute Tiber pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing two raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
+To execute Tiber pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing  three raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
 
 #### **1.a** You can provide those yourself
 
@@ -30,24 +30,30 @@ To execute Tiber pipelines, ensure you have a src folder in your Current Working
 mkdir src;
 
 # Move your sample videos to the src directory
-cp name_of_your_wideo.yuv src/1080p_yuv422_10b_1.yuv
-cp name_of_your_wideo2.yuv src/1080p_yuv422_10b_2.yuv
+cp name_of_your_video.yuv src/1080p_yuv422_10b_1.yuv
+cp name_of_your_video2.yuv src/1080p_yuv422_10b_2.yuv
+cp name_of_your_video3.yuv src/2160p_yuv422_10b.yuv
 ```
 
-#### **1.b** You can also use ffmpeg to generate wideos with this format
+#### **1.b** You can also use ffmpeg to generate videos with this format
 ```
 # Create the src directory if it doesn't exist
 mkdir -p src
 
-# Generate the first video
+# Generate the first 1080p video
 ffmpeg -an -y -f lavfi \
 -i testsrc=d=5:s=1920x1080:r=25,format=yuv422p10le \
 -f rawvideo  src/1080p_yuv422_10b_1.yuv
 
-# Generate the second video
+# Generate the second 1080p video
 ffmpeg -an -y -f lavfi \
 -i testsrc=d=5:s=1920x1080:r=25,format=yuv422p10le \
 -f rawvideo  src/1080p_yuv422_10b_2.yuv
+
+# Generate the 2160p video
+ffmpeg -an -y -f lavfi \
+-i testsrc=d=5:s=3840x2160:r=25,format=yuv422p10le \
+-f rawvideo src/2160p_yuv422_10b.yuv
 ```
 
 #### **2.a** Setting Up VFIO-PCI Addresses
@@ -71,6 +77,13 @@ echo "VFIO_PORT_PROC=0000:b1:00.2" >> VARIABLES.rc
 Make sure to replace 0000:b1:00.0, 0000:b1:00.1, and 0000:b1:00.2 with the actual PCI addresses you obtained from the dpdk-devbind.py command.
 
 By following these steps, you'll have correctly configured the necessary variables in your VARIABLES.rc file for your dpdk binded devices.
+
+---
+
+>📝 **Notice:** To run the pipelines using the bare-metal installation of the Tiber suite, include the `-l` argument with the pipeline scripts:
+```bash
+./pipelines/pipelines_script_example.sh -l
+```
 
 ---
 
