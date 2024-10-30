@@ -130,10 +130,10 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 
     > **Note:** In order to avoid unnecessary reruns, preserve the command's output as a file to note which interface was bound to which Virtual Functions.
 
-## 2. Build Tiber™ using build.sh
+## 2. Install Intel Tiber™ Broadcast Suite
 
-### 2.1. Dockerized build with build.sh script
-> **Note:** This method recommended instead of 2.2 - layers are built in parallel, cross-compability is possible.
+### Option #1: Build Docker image from Dockerfile using build.sh script
+> **Note:** This method is recommended instead of Option 2 - layers are built in parallel, cross-compability is possible.
 
 Access the project directory
 
@@ -149,18 +149,26 @@ Run build.sh script
 ./build.sh
 ```
 
-### 2.2. Alternative local, bare metal installation without docker
+### Option #2: Local installation from Debian packages
 
 You can install the Intel® Tiber™ Broadcast Suite localy on bare metal. This
 installation allows you to skip installing docker altogether.
 
-    ```shell
-    git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
-    cd Intel-Tiber-Broadcast-Suite
-    ./build.sh -l
-    ```
+```shell
+git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
+cd Intel-Tiber-Broadcast-Suite
+./build.sh -l
+```
 
-### 2.3. Manual dockerized build method
+### Option #3: Install Docker image from Docker Hub
+Visit <https://hub.docker.com/r/intel/intel-tiber-broadcast-suite/> Intel® Tiber™ Broadcast Suite image docker hub to select the most appropriate version.
+
+Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub
+```shell
+docker pull intel/intel-tiber-broadcast-suite:latest
+```
+
+### Option #4: Build Docker image from Dockerfile manually
 
 > **Note:** Below method does not require buildx, but lacks cross-compability and may prolongate the build process.
 
