@@ -15,6 +15,18 @@ if [ -z "$VFIO_PORT_T" ]; then
     exit 1
 fi
 
+while getopts "l" opt; do
+    case ${opt} in
+        l )
+            echo "Media proxy cannot run without docker"
+            exit 0
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
+    esac
+done
+
  docker run -it \
     --privileged \
     -u 0:0 \

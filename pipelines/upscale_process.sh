@@ -15,6 +15,37 @@ if [ -z "$VFIO_PORT_PROC" ]; then
     exit 1
 fi
 
+function help() {
+    echo "Usage: $0 [-l]"
+    echo
+    echo "Options:"
+    echo "  -l    Run the pipeline on bare metal locally."
+    echo
+    echo "For more information, please refer to docs/run.md."
+    exit 0
+}
+
+while getopts "lh" opt; do
+    case ${opt} in
+        l )
+            echo "Running pipeline on bare metal locally..."
+            ffmpeg -y \
+              -init_hw_device vaapi=va -init_hw_device opencl@va \
+              -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le  -video_size 1920x1080 -f mtl_st20p -i "0" \
+              -vf "format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le" \
+              -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_tx_ip 192.168.2.3 -udp_port 20000 -payload_type 112 -f mtl_st20p -
+            exit 0
+            ;;
+        h )
+            help
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            help
+            ;;
+    esac
+done
+
 docker run -it \
    --user root\
    --privileged \

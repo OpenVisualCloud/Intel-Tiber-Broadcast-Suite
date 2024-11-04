@@ -15,6 +15,36 @@ if [ -z "$VFIO_PORT_T" ]; then
     exit 1
 fi
 
+function help() {
+    echo "Usage: $0 [-l]"
+    echo
+    echo "Options:"
+    echo "  -l    Run the pipeline on bare metal locally."
+    echo
+    echo "For more information, please refer to docs/run.md."
+    exit 0
+}
+
+while getopts "lh" opt; do
+    case ${opt} in
+        l )
+            echo "Running pipeline on bare metal locally..."
+            ffmpeg -y \
+                -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/src/1080p_yuv422_10b_1.yuv -filter:v fps=25 \
+                -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -f mtl_st20p -
+            exit 0
+            ;;
+        h )
+            help
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            help
+            ;;
+    esac
+done
+
+
 docker run -it \
    --user root\
    --privileged \

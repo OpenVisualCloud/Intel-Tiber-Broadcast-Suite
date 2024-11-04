@@ -39,6 +39,7 @@ function copy_nicctl_script()
 {
     local script_result=""
     script_result="0"
+
     prompt 'Starting copy_nicctl_script sequence.'
     if [ ! -f "/usr/local/bin/nicctl.sh" ]; then
         docker create --name mtl-tmp mtl-manager:latest 2>&1 && \
@@ -46,6 +47,15 @@ function copy_nicctl_script()
         docker rm mtl-tmp 2>&1
         script_result="$?"
     fi
+
+    if [ "$script_result" != "0" ]; then
+        . versions.env 2>&1 &&
+        STRIPPED_VER=${MTL_VER#v} 2>&1 &&
+        wget -O /usr/local/bin/nicctl.sh https://raw.githubusercontent.com/OpenVisualCloud/Media-Transport-Library/refs/heads/maint-"${STRIPPED_VER}"/script/nicctl.sh  2>&1 &&
+        chmod +x /usr/local/bin/nicctl.sh 2>&1
+        script_result="$?"
+    fi
+
     if [ "$script_result" == "0" ]; then
         prompt 'Finished copy_nicctl_script sequence. Success.'
         return 0
@@ -140,7 +150,7 @@ function setup_mtl_manager_container
               --privileged --net=host \
               -v /var/run/imtl:/var/run/imtl \
               -v /sys/fs/bpf:/sys/fs/bpf \
-              mtl-manager:latest
+              mtl-manager:latest || return 2
         fi
     else
         docker run -d \
@@ -148,10 +158,31 @@ function setup_mtl_manager_container
           --privileged --net=host \
           -v /var/run/imtl:/var/run/imtl \
           -v /sys/fs/bpf:/sys/fs/bpf \
-          mtl-manager:latest
+          mtl-manager:latest || return 2
     fi
     prompt 'Finished run sequence for mtl-manager:latest image. Success.'
 }
+
+while getopts "l" opt; do
+    case ${opt} in
+    l )
+        setup_vfio_subsytem
+        setup_hugepages
+        setup_nic_virtual_functions
+
+        if ! setup_mtl_manager_container 1>/dev/null 2>&1 && ! pgrep -x "MtlManager" > /dev/null; then 
+            prompt 'Now starting Mtl Manager'
+            nohup sudo MtlManager > /dev/null 2>&1 &
+            prompt 'Mtl Manager running in background'
+        fi
+
+        exit 0
+    ;;
+    \? )
+        exit 1
+        ;;
+    esac
+done
 
 setup_jq_package
 setup_vfio_subsytem

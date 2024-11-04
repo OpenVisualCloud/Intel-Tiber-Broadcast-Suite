@@ -135,7 +135,7 @@ function download_install_debian {
     if sudo dpkg -i $folder_path/*.deb >>$log_file 2>&1; then
         return 0
     else
-        if [ -f "${folder_path}/download.tar.gz"]; then
+        if [ -f "${folder_path}/download.tar.gz" ]; then
             rm -f "${folder_path}/download.tar.gz"
         fi
         echo -e $CLEAR_LINE
@@ -373,6 +373,16 @@ function mtl_build {
         return 2
     fi
 
+    if ! (sudo apt-get -y install make m4 clang llvm zlib1g-dev libelf-dev libpcap-dev libcap-ng-dev gcc-multilib && \
+          cd ${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/Media-Transport-Library/manager &&
+          meson setup build &&
+          meson compile -C build &&
+          sudo meson install -C build &&
+          cd -) >>$log_file 2>&1; then
+          echo
+        echo -e $RED[ERROR] MTL manager build failed $NC
+        return 2
+    fi
 }
 
 function dpdk_download_patch_build {
@@ -676,11 +686,11 @@ function install_locally {
         progress_function 50 100 dpdk_download_patch_build          || return 10
 
         if ! (download_install_debian $LINK_MTL_DEBIAN_v2204_ZIP mtl &&
-              progress_bar 55 &&
+              progress_bar 55 100 &&
               download_install_debian $LINK_JPEG_XS_DEBIAN_v2204_ZIP jpegxs &&
-              progress_bar 60 &&
+              progress_bar 60 100 &&
               download_install_debian $LINK_MCM_DEBIAN_v2204_ZIP mcm &&
-              progress_bar 65 &&
+              progress_bar 65 100 &&
               download_install_debian $LINK_FFMPEG_DEBIAN_v2204_ZIP ffmpeg); then
             progress_bar 50 100
             progress_function 55 100 mtl_build                      || return 9

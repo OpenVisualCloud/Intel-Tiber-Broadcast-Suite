@@ -82,7 +82,7 @@ By following these steps, you'll have correctly configured the necessary variabl
 
 >📝 **Notice:** To run the pipelines using the bare-metal installation of the Tiber suite, include the `-l` argument with the pipeline scripts:
 ```bash
-./pipelines/pipelines_script_example.sh -l
+./pipelines/<pipelines_script_example>.sh -l
 ```
 
 ---

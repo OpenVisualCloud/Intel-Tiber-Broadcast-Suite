@@ -15,6 +15,49 @@ if [ -z "$VFIO_PORT_T" ]; then
     exit 1
 fi
 
+function help() {
+    echo "Usage: $0 [-l]"
+    echo
+    echo "Options:"
+    echo "  -l    Run the pipeline on bare metal locally."
+    echo
+    echo "For more information, please refer to docs/run.md."
+    exit 0
+}
+
+while getopts "lh" opt; do
+    case ${opt} in
+        l )
+            echo "Running pipeline on bare metal locally..."
+            ffmpeg \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_1.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_2.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_1.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_2.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_1.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_2.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_1.yuv \
+              -video_size 1920x1080 -f rawvideo -pix_fmt yuv422p10le -i src/1080p_yuv422_10b_2.yuv \
+              -map 0:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 1:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20001 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 2:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20002 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 3:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20003 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 4:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20004 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 5:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20005 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 6:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20006 -payload_type 112 -fps 25 -f mtl_st20p - \
+              -map 7:v -p_port "${VFIO_PORT_T}" -p_sip 192.168.2.1 -p_tx_ip 192.168.2.2 -udp_port 20007 -payload_type 112 -fps 25 -f mtl_st20p -
+            exit 0
+            ;;
+        h )
+            help
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            help
+            ;;
+    esac
+done
+
 docker run -it \
    --user root\
    --privileged \

@@ -35,6 +35,12 @@ To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu
 
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
 
+Use vainfo command to check the gpu installation
+```shell
+vainfo
+```
+
+
 #### 1.3.2 Nvidia GPU driver
 
 In case of using an Nvidia GPU, please follow the steps below:
@@ -121,15 +127,6 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 
 2. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/run.md), chapter 1, and (optionally) 7 for PTP configuration.
 
-
-1. From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, and E810 NIC's virtual controllers:
-    ```shell
-    sudo -E ./first_run.sh | tee virtual_functions.txt
-    ```
-    > **Note:** Please ensure the command is executed with `-E` switch, to copy all the necessary environment variables. Lack of the switch may cause the script to fail silently.
-
-    > **Note:** In order to avoid unnecessary reruns, preserve the command's output as a file to note which interface was bound to which Virtual Functions.
-
 ## 2. Install Intel Tiber™ Broadcast Suite
 
 ### Option #1: Build Docker image from Dockerfile using build.sh script
@@ -176,7 +173,7 @@ Download, Patch, Build, and Install DPDK from source code
 
    1. Download and Extract DPDK and MTL:
         ```bash
-       . versions.env &&   curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
+       . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
 
         . versions.env && curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | tar -zx --strip-components=1 -C dpdk
         ```
@@ -226,15 +223,36 @@ cd -
 ```
 
 
-## 3. Test run
+## 3. Running Intel Tiber™ Broadcast Suite
 
-### 3.1. For docker installation
+### 3.1. First run script
+
+> **Note:** first_run.sh needs to be run after every reset of the machine
+
+From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, E810 NIC's virtual controllers and runs MtlManager docker container:
+
+```shell
+sudo -E ./first_run.sh | tee virtual_functions.txt
+```
+> **Note:** Please ensure the command is executed with `-E` switch, to copy all the necessary environment variables. Lack of the switch may cause the script to fail silently.
+
+When running the Intel Tiber™ Broadcast Suite locally, please execute first_run with the -l argument.
+```shell
+sudo -E ./first_run.sh -l | tee virtual_functions.txt
+```
+This script will start the Mtl Manager locally. To avoid issues with core assignment in Docker, ensure that the Mtl Manager is running. The Mtl Manager is typically run within a Docker container, but the `-l` argument allows it to be executed directly from the terminal.
+
+> **Note:** Ensure that `MtlManager` is running when using the Intel Tiber™ Broadcast Suite locally. You can check this by running `pgrep -l "MtlManager"`. If it is not running, start it with the command `sudo MtlManager`.
+
+> **Note:** In order to avoid unnecessary reruns, preserve the command's output as a file to note which interface was bound to which Virtual Functions.
+
+### 3.2. Test docker installation
 
 ```shell
 docker run --rm -it --user=root --privileged video_production_image --help
 ```
 
-### 3.2. For local installation
+### 3.3. Test local installation
 ```shell
 ffmpeg --help
 ```
