@@ -21,6 +21,9 @@ jobs:
     name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
+    permissions:
+      contents: read
+      security-events: write
     steps:
     - name: "Preparation: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -69,8 +72,8 @@ jobs:
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
       with:
         image-ref: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-        format: "sarif"
         output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+        format: "sarif"
 
     - name: "Finish: Upload Trivy scan results to GitHub Security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
