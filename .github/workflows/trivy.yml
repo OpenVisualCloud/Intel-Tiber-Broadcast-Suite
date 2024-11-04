@@ -1,6 +1,7 @@
 name: Trivy for Intel® Tiber™ Broadcast Suite
 on:
   push:
+  pull_request:
   workflow_call:
   workflow_dispatch:
     inputs:
