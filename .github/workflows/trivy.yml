@@ -9,6 +9,7 @@ on:
         default: 'main'
         type: string
 
+
 env:
   BUILD_TYPE: "Release"
   DOCKER_IMAGE_NAME: "docker.io/ovc/tiber-broadcast-suite"
