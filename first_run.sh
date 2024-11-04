@@ -10,31 +10,10 @@ set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${SCRIPT_DIR}/scripts/common.sh"
-. "${SCRIPT_DIR}/scripts/autodetect.sh"
 
 TIBER_STACK_DEBUG="${TIBER_STACK_DEBUG:-1}" # (future) Force where possible instead of try to configure
-TIBER_USE_PM="${TIBER_USE_PM:-$PM}"         # Package manager to use in script
 rm -f /tmp/kahawai_lcore.lock               # Remove MtlManager legacy indicator/switch if exists
 print_logo_anim                             # Print intel animated terminal logo
-
-function setup_package_manager()
-{
-    local PM=""
-    if [[ -x "$(command -v "$TIBER_USE_PM")" ]]; then
-        PM="${TIBER_USE_PM}"
-    elif [[ -x "$(command -v dnf)" ]]; then
-        PM='dnf'
-    elif [[ -x "$(command -v apt)" ]]; then
-        PM='apt'
-    else
-        error "No known pkg manager found. Try to re-run with variable, example:"
-        error "export TIBER_USE_PM=\"apt\""
-        return 1
-    fi
-    prompt "Setting pkg manager to $PM."
-    echo "$PM"
-    return 0
-}
 
 function setup_jq_package()
 {

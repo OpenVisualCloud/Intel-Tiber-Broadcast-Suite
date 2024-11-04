@@ -3,6 +3,46 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
+COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+REPO_DIR="$(readlink -f "${COMMON_SCRIPT_DIR}/..")"
+
+export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
+export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
+
+# Package manager to use in script can be overriden using TIBER_USE_PM variable:
+export PM="${TIBER_USE_PM:-apt}"
+export TZ="${TZ:-Europe/Warsaw}"
+export NPROC="${NPROC:-$(nproc)}"
+export DEBIAN_FRONTEND="noninteractive"
+
+export MTL_DIR="${MTL_DIR:-${BUILD_DIR}/mtl}"
+export ICE_VER="${ICE_VER:-1.14.9}"
+export ICE_DIR="{$ICE_DIR:-${DRIVERS_DIR}/ice/${ICE_VER}}"
+export IAVF_VER="${IAVF_VER:-4.12.5}"
+export IAVF_DIR="${IAVF_DIR:-${DRIVERS_DIR}/iavf/${IAVF_VER}}"
+export IRDMA_DMID="${IRDMA_DMID:-832291}"
+export IRDMA_VER="${IRDMA_VER:-1.15.11}"
+export IRDMA_DIR="${IRDMA_DIR:-${DRIVERS_DIR}/irdma/${IRDMA_VER}}"
+
+if ! grep "/root/.local/bin" <<< "${PATH}"; then
+    export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
+    export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH}"
+fi
+
+if [ -z "${DISABLE_COLOR_PRINT}" ]; then
+    export    PromptTBlue='\e[38;05;45m'
+    export    PromptHBlue='\e[38;05;33m'
+    export      ErrorHRed='\e[38;05;1m'
+    export WarningHPurple='\e[38;05;61m'
+    export          EndCl='\e[m'
+else
+    export    PromptTBlue=''
+    export    PromptHBlue=''
+    export      ErrorHRed=''
+    export WarningHPurple=''
+    export          EndCl=''
+fi
+
 function message() {
     local type=$1
     shift
@@ -10,91 +50,131 @@ function message() {
 }
 
 function prompt() {
-    local PomptHBlue='\e[38;05;33m';
-    local PomptTBlue='\e[38;05;45m';
-    message "${PomptHBlue}INFO${PomptTBlue}" "$*\e[m"
+    message "${PromptHBlue}INFO${PromptTBlue}" "$*${EndCl}"
 }
 
 function error() {
-    local ErrorHRed='\e[38;05;1m'
-    local PomptTBlue='\e[38;05;45m';
-    message "${ErrorHRed}ERROR${PomptTBlue}" "$*\e[m"
+    message "${ErrorHRed}ERROR${PromptTBlue}" "$*${EndCl}"
 }
 
 function warning() {
-    local WarningHPurple='\e[38;05;61m';
-    local PomptTBlue='\e[38;05;45m';
-    message "${WarningHPurple}WARN${PomptTBlue}" "$*\e[m"
+    message "${WarningHPurple}WARN${PromptTBlue}" "$*${EndCl}"
 }
 
 function get_user_input_confirm() {
+    local confirm
+    local confirm_string
     local confirm_default="${1:-0}"
-    shift
-    local confirm=""
-    local PomptHBlue='\e[38;05;33m';
-    local PomptTBlue='\e[38;05;45m';
+    confirm_string=( "(N)o" "(Y)es" )
 
-    prompt "$@"
-    echo -en "${PomptHBlue}CHOOSE:  YES / NO   (Y/N) [default: " >&2
-    [[ "$confirm_default" == "1" ]] && echo -en 'YES]: \e[m' >&2 || echo -en 'NO]: \e[m' >&2
-    read confirm
-    if [[ -z "$confirm" ]]
-    then
+    echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: ${EndCl}" >&2
+    read -r confirm
+    if [[ -z "$confirm" ]]; then
         confirm="$confirm_default"
     else
-        ( [[ $confirm == [yY] ]] || [[ $confirm == [yY][eE][sS] ]] ) && confirm="1" || confirm="0"
+        { [[ $confirm == [yY] ]] || [[ $confirm == [yY][eE][sS] ]]; } && confirm="1" || confirm="0"
     fi
     echo "${confirm}"
 }
 
 function get_user_input_def_yes() {
-    get_user_input_confirm 1 "$@"
+    get_user_input_confirm 1
 }
 
 function get_user_input_def_no() {
-    get_user_input_confirm 0 "$@"
+    get_user_input_confirm 0
 }
 
 function get_filename() {
-    local path=$1
-    echo ${path##*/}
+    local path="$1"
+    echo "${path##*/}"
 }
 
 function get_dirname() {
-    local path=$1
+    local path="$1"
     echo "${path%/*}/"
 }
 
 function get_extension() {
-    local filename=$(get_filename $1)
+    local filename
+    filename="$(get_filename "${1}")"
     echo "${filename#*.}"
 }
 
+function check_extension() {
+    local filename="$1"
+    local extension="$2"
+    if [ "${filename}" == "${filename%"${extension}"}" ]; then
+        echo "0"
+    else
+        echo "1"
+    fi
+}
+
 function get_basename() {
-    local filename=$(get_filename $1)
+    local filename
+    filename="$(get_filename "${1}")"
     echo "${filename%%.*}"
 }
 
-# Takes ID as first param and full path to output file as second for creating benchmark specific output file
-#  input: [path]/[file_base].[extension]
-# output: [path]/[file_base][id].[extension]
+# Extracts namespace and repository part from valid GitHub URL passed as argument.
+#  input: valid GitHub repository URL
+# output: two element string array, space separated
+function get_github_elements() {
+    local path_part
+    local path_elements
+    path_part="${1#*://github.com/}"
+    mapfile -t -d'/' path_elements <<< "${path_part}"
+    if [[ "${#path_elements[@]}" -lt "2" ]]; then
+        error "Invalid link passed to get_github_elements method."
+        return 1
+    fi
+    echo "${path_elements[0]} ${path_elements[1]}"
+}
+
+function get_github_namespace() {
+    cut -d' ' -f1 <<< "$(get_github_elements "$1")"
+}
+
+function get_github_repo() {
+    cut -d' ' -f2 <<< "$(get_github_elements "$1")"
+}
+
+# Adds sufix to base of filename from full path.
+# input[1]: string sufix to be added
+# input[2]: path string to be modified
+#   output: [path]/[file_base][id].[extension]
 function get_filepath_add_sufix() {
+    local dir_path
+    local file_base
+    local file_ext
     local file_sufix="${1}"
     local file_path="${2}"
-    local dir_path=$(get_dirname "${filepath}")
-    local file_base=$(get_basename "${filepath}")
-    local file_ext=$(get_extension "${filepath}")
-    echo "${dir_path}${file_base}${sufix}.${file_ext}"
+    dir_path="$(get_dirname "${file_path}")"
+    file_base="$(get_basename "${file_path}")"
+    file_ext="$(get_extension "${file_path}")"
+    echo "${dir_path}${file_base}${file_sufix}.${file_ext}"
 }
 
 function run_as_root_user()
 {
-    CMD_TO_EVALUATE="$@"
-    if [ "${EUID:-$(id -u)}" -eq 0 ]; then
-        eval "${CMD_TO_EVALUATE[@]}"
+    CMD_TO_EVALUATE="$*"
+    EFECTIVE_USER_ID="${EUID:-$(id -u)}"
+
+    if [ "${EFECTIVE_USER_ID}" -eq 0 ]; then
+        eval "${CMD_TO_EVALUATE[*]}"
     else
-        eval "sudo ${CMD_TO_EVALUATE[@]}" || echo 'Must be run as root. No sudo found.'
+        if which sudo 1>/dev/null; then
+            eval "sudo ${CMD_TO_EVALUATE[*]}"
+        else
+            error "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
+            error "- current [EUID=${EFECTIVE_USER_ID}]."
+            error "- sudo was not found in PATH."
+            error "Re-run the script as sudo or install sudo pkg. Exiting."
+            exit 1
+        fi
     fi
+    return 0
 }
 
 function github_api_call() {
@@ -212,12 +292,245 @@ function print_logo_sequence()
 
 function print_logo_anim()
 {
-    local number_of_sequences="${1:-1}"
-    local wait_between_frames="${2:-0.02}"
+    local number_of_sequences="${1:-2}"
+    local wait_between_frames="${2:-0.025}"
     clear
-    for (( pt=0; pt<${number_of_sequences}; pt++ ))
+    for (( pt=0; pt<number_of_sequences; pt++ ))
     do
-        print_logo_sequence ${wait_between_frames};
+        print_logo_sequence "${wait_between_frames}"
     done
 }
 
+function catch_error_print_debug() {
+    local _last_command_height=""
+    local -n _lineno="${1:-LINENO}"
+    local -n _bash_lineno="${2:-BASH_LINENO}"
+    local _last_command="${3:-${BASH_COMMAND}}"
+    local _code="${4:-0}"
+    local -a _output_array=()
+    _last_command_height="$(wc -l <<<"${_last_command}")"
+
+    _output_array+=(
+        '---'
+        "lines_history: [${_lineno} ${_bash_lineno[*]}]"
+        "function_trace: [${FUNCNAME[*]}]"
+        "exit_code: ${_code}"
+    )
+
+    if [[ "${#BASH_SOURCE[@]}" -gt '1' ]]; then
+        _output_array+=('source_trace:')
+        for _item in "${BASH_SOURCE[@]}"; do
+            _output_array+=("  - ${_item}")
+        done
+    else
+        _output_array+=("source_trace: [${BASH_SOURCE[*]}]")
+    fi
+
+    if [[ "${_last_command_height}" -gt '1' ]]; then
+        _output_array+=(
+            'last_command: ->'
+            "${_last_command}"
+        )
+    else
+        _output_array+=("last_command: ${_last_command}")
+    fi
+
+    _output_array+=('---')
+    error "${_output_array[@]}"
+}
+
+# Calling this function executes ERR and SIGINT signals trapping. Triggered trap calls catch_error_print_debug and exit 1
+function trap_error_print_debug() {
+    prompt "Setting trap for errors handling"
+    trap 'catch_error_print_debug "LINENO" "BASH_LINENO" "${BASH_COMMAND}" "${?}"; exit 1' SIGINT ERR
+    prompt "Trap set successfuly."
+}
+
+# GITHUB_CREDENTIALS="username:password"
+# URL construction: https://${GITHUB_CREDENTIALS}@github.com/${name}/archive/${version}.tar.gz
+# $1 - name
+# $2 - version
+# $3 - dest_dir
+function git_download_strip_unpack()
+{
+    # Version can be commit sha or tag, examples:
+    # version=d2515b90cc0ef651f6d0a6661d5a644490bfc3f3
+    # version=refs/tags/v${JPEG_XS_VER}
+    name="${1}"
+    version="${2}"
+    dest_dir="${3}"
+    filename="$(get_filename "${version}")"
+    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
+
+    mkdir -p "${dest_dir}"
+    curl -Lf "https://${creds}github.com/${name}/archive/${version}.tar.gz" -o "${dest_dir}/${filename}.tar.gz"
+    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
+    rm -f "${dest_dir}/${filename}.tar.gz"
+}
+
+# Downloads and strip unpack a file from URL ($1) to a target directory ($2)
+# $1 - URL to download
+# $2 - destination directory to strip unpack the tar.gz
+function wget_download_strip_unpack()
+{
+    local filename
+    local source_url="${1}"
+    local dest_dir="${2}"
+    filename="$(get_filename "${source_url}")"
+    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
+
+    mkdir -p "${dest_dir}"
+    curl -Lf "${source_url}" -o "${dest_dir}/${filename}.tar.gz"
+    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
+    rm -f "${dest_dir}/${filename}.tar.gz"
+}
+
+function get_and_patch_intel_drivers()
+{
+    set -x
+    if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
+        error "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
+        return 1
+    fi
+    wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
+    git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
+
+    pushd "${ICE_DIR}"
+    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch)
+    popd
+    set +x
+}
+
+function build_install_and_config_intel_drivers()
+{
+    set -x
+    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
+    make -j "${NPROC}" -C "${ICE_DIR}/src" install
+    pushd "${IRDMA_DIR}"
+    ./build.sh
+    popd
+    config_intel_rdma_driver
+    modprobe irdma
+    set +x
+}
+
+function config_intel_rdma_driver() {
+    #   \s - single (s)pace or tabulator
+    #   \d - single (d)igit
+    # ^\s* - starts with zero or more space/tabulators
+    # \s\+ - at least one or more space/tabulators
+    local PREFIX_REGEX='^\s*options\s\+irdma\s\+'
+    local PREFIX_NORM_ROCE='options irdma roce_ena=1'
+    local PREFIX_NORM_SEL='options irdma limits_sel=5'
+
+    prompt "Configuration of iRDMA starting."
+    touch "/etc/modprobe.d/irdma.conf"
+
+    prompt "Enabling RoCE."
+    if grep -e "${PREFIX_REGEX}roce_ena=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
+        sudo sed -i "s/${PREFIX_REGEX}roce_ena=\d/${PREFIX_NORM_ROCE}/g" /etc/modprobe.d/irdma.conf
+    else
+        echo "${PREFIX_NORM_ROCE}" | sudo tee -a /etc/modprobe.d/irdma.conf
+    fi
+    prompt "RoCE enabled."
+
+    prompt "Increasing Queue Pair limit."
+    if grep -e "${PREFIX_REGEX}limits_sel=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
+        sudo sed -i "s/${PREFIX_REGEX}limits_sel=\d/${PREFIX_NORM_SEL}/g" /etc/modprobe.d/irdma.conf
+    else
+        echo "${PREFIX_NORM_SEL}" | sudo tee -a /etc/modprobe.d/irdma.conf
+    fi
+    sudo dracut -f
+    prompt "Queue Pair limits_sel set to 5."
+    prompt "Configuration of iRDMA finished."
+}
+
+# Example usage: 
+#    PM="$(setup_package_manager)" && \
+#    $PM install python3
+function setup_package_manager()
+{
+    TIBER_USE_PM="${PM:-$1}"
+    if [[ -x "$(command -v "$TIBER_USE_PM")" ]]; then
+        export PM="${TIBER_USE_PM}"
+    elif [[ -x "$(command -v dnf)" ]]; then
+        export PM='dnf'
+    elif [[ -x "$(command -v apt)" ]]; then
+        export PM='apt'
+    else
+        error "No known pkg manager found. Try to re-run with variable, example:"
+        error "export PM=\"apt\""
+        return 1
+    fi
+    prompt "Setting pkg manager to ${PM}."
+    echo "${PM}"
+    return 0
+}
+
+function exec_command()
+{
+    # One of: yes|no|accept-new
+    SSH_STRICT_HOST_KEY_CHECKING="accept-new"
+    SSH_CMD="ssh -oStrictHostKeyChecking=${SSH_STRICT_HOST_KEY_CHECKING} -t -o"
+
+    local values_returned=""
+    local user_at_address=""
+    [[ "$#" -eq "2" ]] && user_at_address="${2}"
+    [[ "$#" -eq "3" ]] && user_at_address="${3}@${2}"
+
+    if [ "$#" -eq "1" ]; then
+        values_returned="$(eval "${1}")"
+    elif [[ "$#" -eq "2" ]] || [[ "$#" -eq "3" ]]; then
+        values_returned="$($SSH_CMD "RemoteCommand=eval \"${1}\"" "${user_at_address}" 2>/dev/null)"
+    else
+        error "Wrong arguments for exec_command(). Valid number is one of [1 2 3], got $#"
+        return 1
+    fi
+
+    if [ -z "$values_returned" ]; then
+        error "Unable to collect results or results are empty."
+        return 1
+    else
+        echo "${values_returned}"
+        return 0
+    fi
+}
+
+function get_hostname() {
+    exec_command 'hostname' "$@"
+}
+
+function get_intel_nic_device() {
+    exec_command "lspci | grep 'Intel Corporation.*\(810\|X722\)'" "$@"
+}
+
+function get_default_route_nic() {
+    exec_command "ip -json r show default | jq '.[0].dev' -r" "$@"
+}
+
+function get_cpu_arch() {
+    local arch=""
+
+    if ! arch="$(exec_command 'cat /sys/devices/cpu/caps/pmu_name' "$@")"; then echo "Got: $arch" && return 1; fi
+
+    case $arch in
+        icelake)
+            prompt "Xeon IceLake CPU (icx)"
+            echo "icx"
+            ;;
+        sapphire_rapids)
+            prompt "Xeon Sapphire Rapids CPU (spr)"
+            echo "spr"
+            ;;
+        skylake)
+            prompt "Xeon SkyLake"
+            echo "skl"
+            ;;
+        *)
+            error "Unsupported architecture: ${arch}. Please edit the script or setup the architecture manually."
+            return 1
+            ;;
+    esac
+    return 0
+}

@@ -1,37 +1,52 @@
-#!/bin/sh -ex
+#!/bin/bash
+set -x
+
+SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+if [ -z "${SCRIPT_DIR}" ] || [ ! -d "${SCRIPT_DIR}" ]; then
+    SCRIPT_DIR="$(pwd)"
+fi
+
+REPO_DIR="$(readlink -f "${SCRIPT_DIR}/../..")"
+if [ -z "${REPO_DIR}" ] || [ ! -d "${REPO_DIR}" ]; then
+    REPO_DIR="${SCRIPT_DIR}/../.."
+fi
+
+. "${REPO_DIR}/scripts/common.sh"
 
 # get the latest video_production_image.tar.gz
-IMAGE=${1}
+SDB_DOCKER_IMAGE="${1}"
 IMAGE_LOG="Trivy_video_production_image"
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 
-mkdir -p Trivy
-mkdir -p Trivy/image/
-chmod a+w Trivy
-touch Trivy/image/trivy_clean_reports_images
-touch Trivy/image/trivy_clean_reports_images_sbom
-TRIVY_PASS=true
+mkdir -p "${REPO_DIR}/Trivy/image/"
+touch "${REPO_DIR}Trivy/image/trivy_clean_reports_images" "${REPO_DIR}/Trivy/image/trivy_clean_reports_images_sbom"
+chmod -R a+w "${REPO_DIR}/Trivy"
 
-IMAGE_PASS=true
-trivy image --severity HIGH,CRITICAL --ignore-unfixed --no-progress --exit-code 1 --scanners vuln --format json -o Trivy/image/${IMAGE_LOG}.json --input ${IMAGE} --timeout 15m || IMAGE_PASS=false
-trivy convert --format template --template jenkins/scripts/trivy_report_template.tmpl -o Trivy/image/${IMAGE_LOG}.txt Trivy/image/${IMAGE_LOG}.json
-if [ "$IMAGE_PASS" = "true" ]; then
-    echo Trivy/${IMAGE_LOG}.txt >> Trivy/image/trivy_clean_reports_images
-else
-    TRIVY_PASS=false
-fi
-SPDX_PASS=true
-trivy image --no-progress --exit-code 1 --format spdx -o Trivy/image/${IMAGE_LOG}.spdx --input ${IMAGE} || SPDX_PASS=false
-if [ "$SPDX_PASS" = "true" ]; then
-    echo Trivy/${IMAGE_LOG}.spdx >> Trivy/image/trivy_clean_reports_images_sbom
-else
-    TRIVY_PASS=false
-fi
+trivy image --exit-code 1 --timeout 15m \
+    --severity HIGH,CRITICAL \
+    --ignore-unfixed \
+    --no-progress    \
+    --scanners vuln  \
+    --format json    \
+    --input "${SDB_DOCKER_IMAGE}" \
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.json" && \
+trivy convert         \
+    --format template \
+    --template "${REPO_DIR}/jenkins/scripts/trivy_report_template.tmpl" \
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.txt"     \
+    "Trivy/image/${IMAGE_LOG}.json"    && \
+echo "${REPO_DIR}/Trivy/${IMAGE_LOG}.txt" >> "${REPO_DIR}/Trivy/image/trivy_clean_reports_images"
 
-echo $TRIVY_PASS>Trivy/image/trivy_images_pass
+trivy image --exit-code 2 \
+    --no-progress    \
+    --format spdx    \
+    --input "${SDB_DOCKER_IMAGE}" \
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" && \
+echo "${REPO_DIR}/Trivy/${IMAGE_LOG}.spdx" >> "${REPO_DIR}/Trivy/image/trivy_clean_reports_images_sbom"
 
-echo "creating summary ..."
-python3 jenkins/scripts/trivy_images_summary.py Trivy/image/${IMAGE_LOG}.json Trivy/images_scan_summary.csv
-column -t -s, Trivy/images_scan_summary.csv > Trivy/images_scan_summary.txt
+prompt "Creating Intel--Tiber-Broadcast-Suite summary."
 
-echo "images scanning done"
+python3 "${REPO_DIR}/jenkins/scripts/trivy_images_summary.py" "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.json" "${REPO_DIR}/Trivy/images_scan_summary.csv"
+column -t -s, "${REPO_DIR}/Trivy/images_scan_summary.csv" > "${REPO_DIR}/Trivy/images_scan_summary.txt"
+
+prompt "Trivy Scanning of Intel--Tiber-Broadcast-Suite done." 
+chmod -R a+rw "${REPO_DIR}/Trivy"
