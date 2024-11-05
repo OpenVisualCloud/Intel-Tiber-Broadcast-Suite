@@ -8,7 +8,7 @@ SDB_DOCKER_IMAGE="${1}"
 IMAGE_LOG="Trivy_video_production_image"
 
 mkdir -p "Trivy/image/"
-chmod -R a+w "${REPO_DIR}/Trivy"
+chmod -R a+w "Trivy/image/"
 
 trivy image --exit-code 0 --timeout 15m \
     --severity HIGH,CRITICAL \
