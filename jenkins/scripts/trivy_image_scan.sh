@@ -22,6 +22,7 @@ touch "${REPO_DIR}Trivy/image/trivy_clean_reports_images" "${REPO_DIR}/Trivy/ima
 chmod -R a+w "${REPO_DIR}/Trivy"
 
 trivy image --exit-code 1 --timeout 15m \
+    --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
     --severity HIGH,CRITICAL \
     --ignore-unfixed \
     --no-progress    \
@@ -36,7 +37,9 @@ trivy convert         \
     "Trivy/image/${IMAGE_LOG}.json"    && \
 echo "${REPO_DIR}/Trivy/${IMAGE_LOG}.txt" >> "${REPO_DIR}/Trivy/image/trivy_clean_reports_images"
 
-trivy image --exit-code 2 \
+trivy image \
+    --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
+    --exit-code 2 \
     --no-progress    \
     --format spdx    \
     --input "${SDB_DOCKER_IMAGE}" \
