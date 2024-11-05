@@ -27,15 +27,11 @@ trivy image --exit-code 1 --timeout 15m \
     --ignore-unfixed \
     --no-progress    \
     --scanners vuln  \
-    --format json    \
+    --format table    \
     --input "${SDB_DOCKER_IMAGE}" \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.json" && \
-trivy convert         \
-    --format template \
-    --template "${REPO_DIR}/jenkins/scripts/trivy_report_template.tmpl" \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.txt"     \
-    "Trivy/image/${IMAGE_LOG}.json"    && \
-echo "${REPO_DIR}/Trivy/${IMAGE_LOG}.txt" >> "${REPO_DIR}/Trivy/image/trivy_clean_reports_images"
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.txt"
+
+
 
 trivy image \
     --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
@@ -43,13 +39,5 @@ trivy image \
     --no-progress    \
     --format spdx    \
     --input "${SDB_DOCKER_IMAGE}" \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" && \
-echo "${REPO_DIR}/Trivy/${IMAGE_LOG}.spdx" >> "${REPO_DIR}/Trivy/image/trivy_clean_reports_images_sbom"
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" 
 
-prompt "Creating Intel--Tiber-Broadcast-Suite summary."
-
-python3 "${REPO_DIR}/jenkins/scripts/trivy_images_summary.py" "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.json" "${REPO_DIR}/Trivy/images_scan_summary.csv"
-column -t -s, "${REPO_DIR}/Trivy/images_scan_summary.csv" > "${REPO_DIR}/Trivy/images_scan_summary.txt"
-
-prompt "Trivy Scanning of Intel--Tiber-Broadcast-Suite done." 
-chmod -R a+rw "${REPO_DIR}/Trivy"
