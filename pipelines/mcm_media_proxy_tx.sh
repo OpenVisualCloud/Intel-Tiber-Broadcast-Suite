@@ -18,7 +18,7 @@ fi
 while getopts "l" opt; do
     case ${opt} in
         l )
-            echo "Media proxy cannot run without docker"
+            media_proxy -d "${VFIO_PORT_T}" -i 192.168.96.1 -t 8002
             exit 0
             ;;
         \? )
@@ -43,7 +43,7 @@ done
     -v /dev/vfio:/dev/vfio \
     --ipc=host \
     --expose 8000-9100 \
-    ger-is-registry.caas.intel.com/nex-vs-cicd-automation/mcm/media-proxy:latest \
+    media-proxy:latest \
        /usr/local/bin/media_proxy \
           -d "${VFIO_PORT_T}" \
           -i 192.168.96.1 \

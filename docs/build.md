@@ -125,7 +125,17 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
     > **Note:** if you encountered any problems please go to <https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md>.
 
 
-2. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/run.md), chapter 1, and (optionally) 7 for PTP configuration.
+1. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/run.md), chapter 1, and (optionally) 7 for PTP configuration.
+
+### 1.5 Optional: Install MCM Proxy
+
+> **Note:** This step is required for the [MCM Proxy Pipelines](../pipelines/mcm_media_proxy_tx.sh).
+
+Please install the MCM Proxy
+[MCM Dockerized](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build)
+
+If you want to avoid using docker and want to run the mcm-proxy on bare metal
+[MCM instalation](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#getting-started)
 
 ## 2. Install Intel Tiber™ Broadcast Suite
 

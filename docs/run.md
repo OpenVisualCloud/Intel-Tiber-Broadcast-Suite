@@ -173,6 +173,8 @@ session B > jpeg_xs_rx.sh
 Two input streams from local drive are encoded using JPEG XS codec and send out via Media Communications Mesh using ST2110-22 streams.
 Input streams from two ST2110-22 cameras are decoded using JPEG XS codec stored on local drive.
 
+> ⚠️ **Warning:** You need to have the [MCM Proxy](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build) installed to run this pipeline.
+
 ![JPEG XS MCM process](images/jpeg_xs-process.png)
 ![JPEG XS MCM](images/mcm_jpeg_xs.png)
 
