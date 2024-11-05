@@ -15,14 +15,14 @@ trivy filesystem \
       --exit-code 0 \
       --scanners vuln \
       --format table \
-      -o Trivy/dockerfile/Source_code_Trivy.txt --timeout 30m ./Dockerfile  || COMPONENTS_PASS=false
+      -o Trivy/dockerfile/Source_code_Trivy.txt --timeout 30m ./Dockerfile  
 
 
 trivy filesystem \
       --no-progress \
       --exit-code 0 \
       --format spdx \
-      -o Trivy/dockerfile/Trivy_sbom.spdx ./Dockerfile || SPDX_PASS=false
+      -o Trivy/dockerfile/Trivy_sbom.spdx ./Dockerfile 
 
 # echo "creating summary ..."
 # python3 jenkins/scripts/trivy_dockerfile_summary.py Trivy/dockerfile/Source_code_Trivy.json Trivy/dockerfile_scan_summary.csv
