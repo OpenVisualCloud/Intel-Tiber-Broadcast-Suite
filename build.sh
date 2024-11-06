@@ -220,6 +220,7 @@ function install_dependencies {
         libc6-dev \
         cuda-toolkit-12-6 \
         libnvidia-compute-550 \
+        python3-pip \
         libfdt-dev 1>>$log_file 2>&1; then
         echo
         echo -e $RED[ERROR] apt-get installing dependencies failed $NC
