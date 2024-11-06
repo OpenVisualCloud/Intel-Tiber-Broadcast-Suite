@@ -28,8 +28,7 @@ trivy image --exit-code 1 --timeout 15m \
     --no-progress    \
     --scanners vuln  \
     --format table    \
-    --input "${SDB_DOCKER_IMAGE}" \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.txt"
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.txt" "${SDB_DOCKER_IMAGE}"
 
 
 
