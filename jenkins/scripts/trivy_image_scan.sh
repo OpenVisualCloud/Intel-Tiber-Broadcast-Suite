@@ -37,6 +37,5 @@ trivy image \
     --exit-code 2 \
     --no-progress    \
     --format spdx    \
-    --input "${SDB_DOCKER_IMAGE}" \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" 
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" "${SDB_DOCKER_IMAGE}"
 
