@@ -1,16 +1,16 @@
-From 3a86a941d36851b7460f36a913f70ea7a6b6fdbf Mon Sep 17 00:00:00 2001
+From fc7231bcda17b4c9c0c21ab8fb89b6aa7adc84f6 Mon Sep 17 00:00:00 2001
 From: Tomasz Szumski <tomasz.szumski@intel.com>
-Date: Thu, 22 Aug 2024 09:59:18 +0200
-Subject: [PATCH 5/5] ffmpeg_scheduler
+Date: Wed, 6 Nov 2024 18:05:15 +0100
+Subject: [PATCH] ffmpeg_scheduler
 
 ---
  fftools/ffmpeg.h        |   2 +
- fftools/ffmpeg_filter.c | 121 +++++++++++++++++++++++-----------------
+ fftools/ffmpeg_filter.c | 133 ++++++++++++++++++++++++----------------
  fftools/ffmpeg_opt.c    |   6 ++
- fftools/ffmpeg_sched.c  |  25 ++++++---
- fftools/thread_queue.c  |  16 +++++-
+ fftools/ffmpeg_sched.c  |  25 +++++---
+ fftools/thread_queue.c  |  16 ++++-
  fftools/thread_queue.h  |   8 ++-
- 6 files changed, 118 insertions(+), 60 deletions(-)
+ 6 files changed, 126 insertions(+), 64 deletions(-)
 
 diff --git a/fftools/ffmpeg.h b/fftools/ffmpeg.h
 index 6394cca1e7..ecb78ea691 100644
@@ -26,7 +26,7 @@ index 6394cca1e7..ecb78ea691 100644
  extern int auto_conversion_filters;
  
 diff --git a/fftools/ffmpeg_filter.c b/fftools/ffmpeg_filter.c
-index 171e47be9e..e82b400c12 100644
+index 171e47be9e..412d7e972b 100644
 --- a/fftools/ffmpeg_filter.c
 +++ b/fftools/ffmpeg_filter.c
 @@ -55,6 +55,8 @@ typedef struct FilterGraphPriv {
@@ -68,20 +68,21 @@ index 171e47be9e..e82b400c12 100644
      if ((ret = avfilter_graph_config(fgt->graph, NULL)) < 0)
          goto fail;
  
-@@ -1901,10 +1912,11 @@ static void send_command(FilterGraph *fg, AVFilterGraph *graph,
+@@ -1901,10 +1912,10 @@ static void send_command(FilterGraph *fg, AVFilterGraph *graph,
      }
  }
  
 -static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
 +static void choose_input(const FilterGraph *fg, const FilterGraphThread *fgt, int* inputs, int* count)
  {
-     int nb_requests, nb_requests_max = -1;
-     int best_input = -1;
+-    int nb_requests, nb_requests_max = -1;
+-    int best_input = -1;
++    int nb_requests;
 +    *count = 0;
  
      for (int i = 0; i < fg->nb_inputs; i++) {
          InputFilter *ifilter = fg->inputs[i];
-@@ -1914,15 +1926,13 @@ static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
+@@ -1914,15 +1925,13 @@ static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
              continue;
  
          nb_requests = av_buffersrc_get_nb_failed_requests(ifp->filter);
@@ -101,7 +102,7 @@ index 171e47be9e..e82b400c12 100644
  }
  
  static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
-@@ -2386,13 +2396,15 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+@@ -2386,19 +2395,21 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
  
      // graph not configured, just select the input to request
      if (!fgt->graph) {
@@ -119,7 +120,15 @@ index 171e47be9e..e82b400c12 100644
  
          // This state - graph is not configured, but all inputs are either
          // initialized or EOF - should be unreachable because sending EOF to a
-@@ -2406,7 +2418,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+         // filter without even a fallback format should fail
+-        av_assert0(0);
+-        return AVERROR_BUG;
++        //av_assert0(0);
++        //return AVERROR_BUG;
+     }
+ 
+     while (fgp->nb_outputs_done < fg->nb_outputs) {
+@@ -2406,7 +2417,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
  
          ret = avfilter_graph_request_oldest(fgt->graph);
          if (ret == AVERROR(EAGAIN)) {
@@ -128,7 +137,7 @@ index 171e47be9e..e82b400c12 100644
              break;
          } else if (ret < 0) {
              if (ret == AVERROR_EOF)
-@@ -2417,7 +2429,6 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
+@@ -2417,7 +2428,6 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
                         av_err2str(ret));
              return ret;
          }
@@ -136,7 +145,7 @@ index 171e47be9e..e82b400c12 100644
  
          // return after one iteration, so that scheduler can rate-control us
          if (did_step && fgp->have_sources)
-@@ -2686,8 +2697,8 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
+@@ -2686,8 +2696,8 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
          return AVERROR(ENOMEM);
      fd->wallclock[LATENCY_PROBE_FILTER_PRE] = av_gettime_relative();
  
@@ -147,17 +156,36 @@ index 171e47be9e..e82b400c12 100644
      if (ret < 0) {
          av_frame_unref(frame);
          if (ret != AVERROR_EOF)
-@@ -2751,6 +2762,9 @@ static int fg_thread_init(FilterGraphThread *fgt, const FilterGraph *fg)
+@@ -2715,6 +2725,7 @@ static void fg_thread_set_name(const FilterGraph *fg)
+ 
+ static void fg_thread_uninit(FilterGraphThread *fgt)
+ {
++
+     if (fgt->frame_queue_out) {
+         AVFrame *frame;
+         while (av_fifo_read(fgt->frame_queue_out, &frame, 1) >= 0)
+@@ -2728,6 +2739,8 @@ static void fg_thread_uninit(FilterGraphThread *fgt)
+ 
+     avfilter_graph_free(&fgt->graph);
+ 
++    av_freep(&fgt->inputs);
++
+     memset(fgt, 0, sizeof(*fgt));
+ }
+ 
+@@ -2751,6 +2764,11 @@ static int fg_thread_init(FilterGraphThread *fgt, const FilterGraph *fg)
      if (!fgt->frame_queue_out)
          goto fail;
  
 +    fgt->count = 0;
-+    fgt->inputs = malloc(sizeof(unsigned int) * fg->nb_inputs);
++    fgt->inputs = av_calloc(fg->nb_inputs, sizeof(unsigned int));
++    if (!fgt->inputs)
++        goto fail;
 +
      return 0;
  
  fail:
-@@ -2786,52 +2800,59 @@ static int filter_thread(void *arg)
+@@ -2786,52 +2804,59 @@ static int filter_thread(void *arg)
          InputFilter *ifilter;
          InputFilterPriv *ifp;
          enum FrameOpaque o;
@@ -176,8 +204,7 @@ index 171e47be9e..e82b400c12 100644
 -        }
 -        av_assert0(input_status >= 0);
 +        for (int i = 0; i < fgt.count; i++) {
- 
--        o = (intptr_t)fgt.frame->opaque;
++
 +            input_idx = fgt.inputs[i];
  
 -        o = (intptr_t)fgt.frame->opaque;
@@ -193,13 +220,18 @@ index 171e47be9e..e82b400c12 100644
 +            }
 +            av_assert0(input_status >= 0);
  
+-        o = (intptr_t)fgt.frame->opaque;
++            o = (intptr_t)fgt.frame->opaque;
+ 
 -        // message on the control stream
 -        if (input_idx == fg->nb_inputs) {
 -            FilterCommand *fc;
 +            o = (intptr_t)fgt.frame->opaque;
  
 -            av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
-+            o = (intptr_t)fgt.frame->opaque;
++            // message on the control stream
++            if (input_idx == fg->nb_inputs) {
++                FilterCommand *fc;
  
 -            fc = (FilterCommand*)fgt.frame->buf[0]->data;
 -            send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
@@ -207,14 +239,17 @@ index 171e47be9e..e82b400c12 100644
 -            av_frame_unref(fgt.frame);
 -            continue;
 -        }
-+            // message on the control stream
-+            if (input_idx == fg->nb_inputs) {
-+                FilterCommand *fc;
++                av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
  
 -        // we received an input frame or EOF
 -        ifilter   = fg->inputs[input_idx];
 -        ifp       = ifp_from_ifilter(ifilter);
-+                av_assert0(o == FRAME_OPAQUE_SEND_COMMAND && fgt.frame->buf[0]);
++                fc = (FilterCommand*)fgt.frame->buf[0]->data;
++                send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
++                             fc->all_filters);
++                av_frame_unref(fgt.frame);
++                continue;
++            }
  
 -        if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
 -            int hb_frame = input_status >= 0 && o == FRAME_OPAQUE_SUB_HEARTBEAT;
@@ -225,13 +260,6 @@ index 171e47be9e..e82b400c12 100644
 -        } else {
 -            av_assert1(o == FRAME_OPAQUE_EOF);
 -            ret = send_eof(&fgt, ifilter, fgt.frame->pts, fgt.frame->time_base);
-+                fc = (FilterCommand*)fgt.frame->buf[0]->data;
-+                send_command(fg, fgt.graph, fc->time, fc->target, fc->command, fc->arg,
-+                             fc->all_filters);
-+                av_frame_unref(fgt.frame);
-+                continue;
-+            }
-+
 +            // we received an input frame or EOF
 +            ifilter   = fg->inputs[input_idx];
 +            ifp       = ifp_from_ifilter(ifilter);
@@ -279,7 +307,7 @@ index 4b3f9789ba..2bf74e1d71 100644
          { .func_arg = opt_filter_complex },
          "create a complex filtergraph", "graph_description" },
 diff --git a/fftools/ffmpeg_sched.c b/fftools/ffmpeg_sched.c
-index ee3af45908..4aa2e5702b 100644
+index ee3af45908..5f8fc06c89 100644
 --- a/fftools/ffmpeg_sched.c
 +++ b/fftools/ffmpeg_sched.c
 @@ -44,6 +44,8 @@
@@ -332,7 +360,7 @@ index ee3af45908..4aa2e5702b 100644
          return ret;
  
 -    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, 0, QUEUE_FRAMES);
-+    if ((filter_complex_policy != POLICY_DYNAMIC) || (filter_complex_policy != POLICY_ROUNDROBIN))
++    if ((filter_complex_policy != POLICY_DYNAMIC) && (filter_complex_policy != POLICY_ROUNDROBIN))
 +        av_log(sch, AV_LOG_ERROR, "Unsupported filter complex scheduling policy: %d.\n", filter_complex_policy);
 +
 +    ret = queue_alloc(&fg->queue, fg->nb_inputs + 1, filter_complex_policy == POLICY_ROUNDROBIN ? fg->nb_inputs : 0, QUEUE_FRAMES, filter_complex_policy);
@@ -445,5 +473,5 @@ index 0cc8c71ebd..802ad0030d 100644
  
  /**
 -- 
-2.45.1.windows.1
+2.46.2.windows.1
 
