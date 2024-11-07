@@ -20,9 +20,11 @@ IMAGE_LOG="Trivy_video_production_image"
 mkdir -p "${REPO_DIR}/Trivy/image/"
 chmod -R a+w "${REPO_DIR}/Trivy"
 
+export TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db" 
+export TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db" 
+
 trivy image \
     --exit-code 2 \
-    --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
     --no-progress    \
     --format spdx    \
     --input "${SDB_DOCKER_IMAGE}" \
@@ -31,7 +33,6 @@ trivy image \
 
 trivy image --exit-code 1 --timeout 15m \
     --severity HIGH,CRITICAL \
-    --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
     --ignore-unfixed \
     --no-progress    \
     --scanners vuln  \
