@@ -18,27 +18,15 @@ SDB_DOCKER_IMAGE="${1}"
 IMAGE_LOG="Trivy_video_production_image"
 
 mkdir -p "${REPO_DIR}/Trivy/image/"
-touch "${REPO_DIR}Trivy/image/trivy_clean_reports_images"
 chmod -R a+w "${REPO_DIR}/Trivy"
-
-trivy image --exit-code 1 --timeout 15m \
-    --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
-    --severity HIGH,CRITICAL \
-    --ignore-unfixed \
-    --no-progress    \
-    --scanners vuln  \
-    --format table    \
-    --input "${SDB_DOCKER_IMAGE}" \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.txt" 
-
-
 
 trivy image \
     --db-repository public.ecr.aws/aquasecurity/trivy-db:2 \
     --exit-code 2 \
     --no-progress    \
     --format spdx    \
-    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" "${SDB_DOCKER_IMAGE}"
+    --input "${SDB_DOCKER_IMAGE}" \
+    -o "${REPO_DIR}/Trivy/image/${IMAGE_LOG}.spdx" 
 
 
 trivy image --exit-code 1 --timeout 15m \
