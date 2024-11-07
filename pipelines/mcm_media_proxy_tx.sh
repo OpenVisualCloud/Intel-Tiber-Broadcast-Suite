@@ -43,6 +43,7 @@ done
     -v /dev/vfio:/dev/vfio \
     --ipc=host \
     --expose 8000-9100 \
+    -e LD_LIBRARY_PATH=/usr/lib64/ \
     media-proxy:latest \
        /usr/local/bin/media_proxy \
           -d "${VFIO_PORT_T}" \

@@ -66,7 +66,7 @@ docker run -it \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
-   -v /run/mcm:/run/mcm \
+   -v /run/mcm:/var/run/mcm \
    -v /var/run/imtl:/var/run/imtl \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
