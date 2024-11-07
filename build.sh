@@ -63,6 +63,10 @@ function cleanup_directory {
         return 0
     fi
 
+    if [ -z "${log_file}" ] || [ ! -f "${log_file}" ]; then
+        log_file=/dev/null
+    fi
+
     if ! rm -drf "$dir_name" >>$log_file 2>&1; then
         echo -e $CLEAR_LINE
         echo -e $YELLOW[WARNING] $dir_name cleanup failed $NC
@@ -738,7 +742,7 @@ function docker_software_prerequisites {
 
     if [ ! -d "${HOME}/Media-Transport-Library" ] && ! (mkdir -p ${HOME}/Media-Transport-Library &&
           curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | \
-          tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library ) >>$log_file 2>&1; then
+          tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library ); then
         echo
         echo -e $RED[ERROR] MTL download failed $NC
         return 2
