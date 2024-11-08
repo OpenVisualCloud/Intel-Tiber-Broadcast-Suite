@@ -8,7 +8,7 @@ chmod a+w Trivy/dockerfile
 touch Trivy/dockerfile/trivy_clean_reports_source_code
 touch Trivy/dockerfile/trivy_clean_reports_source_code_sbom
 
-DOCKER_FILE =${1}
+DOCKER_FILE=${1}
 
 trivy filesystem \
       --severity HIGH,CRITICAL \
