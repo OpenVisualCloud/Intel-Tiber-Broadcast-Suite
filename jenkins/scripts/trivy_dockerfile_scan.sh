@@ -8,23 +8,23 @@ chmod a+w Trivy/dockerfile
 touch Trivy/dockerfile/trivy_clean_reports_source_code
 touch Trivy/dockerfile/trivy_clean_reports_source_code_sbom
 
-DOCKER_FILE=${1}
 
-trivy filesystem \
+
+trivy config \
       --severity HIGH,CRITICAL \
       --ignore-unfixed \
       --no-progress \
       --exit-code 0 \
       --scanners vuln \
       --format table \
-      -o Trivy/dockerfile/Source_code_Trivy.txt --timeout 30m ${DOCKER_FILE}  
+      -o Trivy/dockerfile/Source_code_Trivy.txt --timeout 30m .  
 
 
-trivy filesystem \
+trivy config \
       --no-progress \
       --exit-code 0 \
       --format spdx \
-      -o Trivy/dockerfile/Trivy_sbom.spdx ${DOCKER_FILE}
+      -o Trivy/dockerfile/Trivy_sbom.spdx .
 
 # echo "creating summary ..."
 # python3 jenkins/scripts/trivy_dockerfile_summary.py Trivy/dockerfile/Source_code_Trivy.json Trivy/dockerfile_scan_summary.csv
