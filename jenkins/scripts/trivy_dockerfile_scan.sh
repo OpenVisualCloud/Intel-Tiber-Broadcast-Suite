@@ -6,4 +6,4 @@ mkdir -p Trivy/dockerfile
 chmod a+w Trivy
 chmod a+w Trivy/dockerfile
 
-trivy conf --misconfig-scanners dockerfile -o Trivy/dockerfile/source_config.txt ./Dockerfile 
+trivy conf  -o Trivy/dockerfile/source_config.txt ./Dockerfile 
