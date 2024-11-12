@@ -119,7 +119,7 @@ pipeline {
                     dir(relativeDir){
                         sh """
                           git config --global --add safe.directory \$(pwd)
-                          docker build ${dockerBuildArgs.join(" ")}
+                          docker build $(cat versions.env | xargs -I {} echo --build-arg {}) ${dockerBuildArgs.join(" ")}
                         """
 
                         dockerBuildArgs.remove("--target buildstage")
