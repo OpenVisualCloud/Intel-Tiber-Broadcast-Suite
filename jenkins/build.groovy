@@ -125,7 +125,7 @@ pipeline {
                         dockerBuildArgs.remove("--target buildstage")
                         dockerBuildArgs = dockerBuildArgs.collect { 
                             it.contains('_build_stage') ? it.replaceAll( /_build_stage/, '' ) : it }
-                        sh """ docker build ${dockerBuildArgs.join(" ")}  """
+                        sh """ docker build $(cat versions.env | xargs -I {} echo --build-arg {}) ${dockerBuildArgs.join(" ")}  """
                     }
                 }
             }
