@@ -77,7 +77,7 @@ function setup_vfio_subsytem()
             udevadm trigger
         fi
     else
-        chmod 666 -R /dev/vfio
+        chmod 777 -R /dev/vfio
     fi
     prompt 'Finished setup_vfio_subsytem sequence. Success'
 }
@@ -115,8 +115,15 @@ function setup_docker_network()
 function setup_nic_virtual_functions()
 {
     prompt 'Starting create virtual functions sequence.'
-    output=$(get_intel_nic_device | cut -f1 -d' ' | awk '{print "0000:"$1}')
+
+    if [ -n "$E810_PCIE_SPECIFIED" ]; then
+        output=$(echo "$E810_PCIE_SPECIFIED" | tr ' ' '\n')
+        prompt "Selected NICs $E810_PCIE_SPECIFIED"
+    else
+        output=$(get_intel_nic_device | cut -f1 -d' ' | awk '{print "0000:"$1}')
+    fi
     IFS=$'\n'
+
 
     [ -f "/usr/local/bin/nicctl.sh" ] || copy_nicctl_script
     if [ "$?" -ne "0" ]; then
@@ -163,7 +170,18 @@ function setup_mtl_manager_container
     prompt 'Finished run sequence for mtl-manager:latest image. Success.'
 }
 
-while getopts "l" opt; do
+print_help() {
+    echo "Usage: $0 [-l] [-h] [-e PCIe_ADDRESSES]"
+    echo "Options:"
+    echo "  -l    For users running Intel® Tiber™ Broadcast Suite on bare metal."
+    echo "  -h    Display this help message."
+    echo "  -e    Specify the PCIe addresses for the E810 NIC."
+    echo "        By default, all PCIe E810 addresses are selected."
+    echo "        e.g. ./first_run.sh -e \"0000:4b:00.0 0000:4b:00.1 \""
+    exit 0
+}
+
+while getopts "lhe:" opt; do
     case ${opt} in
     l )
         setup_vfio_subsytem
@@ -177,6 +195,12 @@ while getopts "l" opt; do
         fi
 
         exit 0
+    ;;
+    h )
+        print_help
+    ;;
+    e )
+        E810_PCIE_SPECIFIED=${OPTARG}
     ;;
     \? )
         exit 1

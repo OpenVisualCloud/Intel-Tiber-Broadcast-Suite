@@ -31,7 +31,7 @@ while getopts "lh" opt; do
             echo "Running pipeline on bare metal locally..."
             ffmpeg -y \
                 -p_port "${VFIO_PORT_R}" -p_sip 192.168.2.3 -p_rx_ip 192.168.2.2 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -i "0" \
-                /src/recv-multiviewer.yuv
+                src/recv-multiviewer.yuv
             exit 0
             ;;
         h )

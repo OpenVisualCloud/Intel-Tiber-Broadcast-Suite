@@ -1,7 +1,7 @@
-### Alternative manual build method
+## Alternative manual build method
 > **Note:** This is not the recommended method of bare metal installation only use as a reference if you encounter erros during the build.sh execution
 
-#### 1.1 Installing dependencies
+### 1.1. Installing dependencies
 First, add the CUDA APT repository to your system.
 
 1. Update Package Lists
@@ -89,65 +89,7 @@ First, add the CUDA APT repository to your system.
             libfdt-dev
     ```
 
-#### 1.2.0 Install OneVPL using a Debian Package
-
-1. Depending on your distribution, assign the appropriate value:
-    ```bash
-    # for ubuntu lts 22.04
-    . versions.env && export LINK_ONEVPL_DEBIAN_ZIP=$LINK_ONEVPL_DEBIAN_v2204_ZIP
-    ```
-    ```bash
-    # for ubuntu lts 24.04
-    . versions.env && export LINK_ONEVPL_DEBIAN_ZIP=$LINK_ONEVPL_DEBIAN_v2404_ZIP
-    ```
-
-1. Download and Install the Debian Package:
-    ```bash
-    wget -O onevpl.zip $LINK_ONEVPL_DEBIAN_ZIP
-    mkdir onevpl && unzip onevpl.zip -d onevpl
-    sudo dpkg -i onevpl/*.deb
-    ```
-
-1. Clean Up:
-    ```bash
-    rm -rf onevpl onevpl.zip
-    ```
-
-#### 1.2.1 Alternative Step-by-Step Instructions to Download, Patch, and Clean Up OneVPL from source
-
-1. Create a Directory for OneVPL:
-    ```bash
-    mkdir onevpl
-    ```
-
-1. Download and Extract OneVPL:
-    ```bash
-    . versions.env && curl -Lf https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | tar -zx --strip-components=1 -C onevpl
-    ```
-
-1. Patch and build OneVPL:
-    ``` bash
-    # Navigate to the OneVPL Directory:
-    cd onevpl/build
-
-    #Apply Patches:
-    git apply ../patches/onevpl/*.patch
-
-    # Prepare then build OneVPL
-    cmake \
-            -DCMAKE_INSTALL_PREFIX=/usr \
-            -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu ..
-    make
-    sudo make install
-    ```
-
-1. Clean Up:
-    ```bash
-    cd -
-    rm -drf onevpl
-    ```
-
-#### 1.3 Step-by-Step Instructions to Download and install VMAF
+### 1.2. Step-by-Step Instructions to Download and install VMAF
 
 1. Create a Directory for VMAF:
     ```bash
@@ -176,7 +118,7 @@ First, add the CUDA APT repository to your system.
     rm -drf vmaf
     ```
 
-#### 1.4 Step-by-Step Instructions to Download, Build, and Clean Up SVT-AV1
+### 1.3. Step-by-Step Instructions to Download, Build, and Clean Up SVT-AV1
 
 1. Create a Directory for SVT-AV1:
     ```bash
@@ -208,7 +150,7 @@ First, add the CUDA APT repository to your system.
     rm -drf svt-av1
     ```
 
-#### 1.5 Download and Extract Vulkan Headers:
+### 1.4. Download and Extract Vulkan Headers:
 1. Download Vulkan Headers:
     ```bash
     . versions.env && curl -Lf https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VULKANSDK}.tar.gz | tar -zx --strip-components=1 -C vulkan-headers
@@ -232,7 +174,7 @@ First, add the CUDA APT repository to your system.
     rm -drf vulkan-headers
     ```
 
-#### 1.6 Download and Extract XDP-Tools and libbpf:
+### 1.5. Download and Extract XDP-Tools and libbpf:
 
 1. Download XDP-Tools and libbpf:
     ```bash
@@ -262,7 +204,9 @@ First, add the CUDA APT repository to your system.
     cd ..
     rm -drf xdp-tools
     ```
-#### 1.7.0 Install Media Transport Library using a Debian Package
+
+### 1.6. Media Transport Library
+#### 1.6.0. Option #1: Install Media Transport Library using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -286,7 +230,7 @@ First, add the CUDA APT repository to your system.
     rm -rf mtl mtl.zip
     ```
 
-#### 1.7.1 Alternatively Download and Build Media Transport Library (MTL) from source:
+#### 1.6.1. Option #2: Alternatively Download and Build Media Transport Library (MTL) from source:
 
 1. Download Media Transport Library:
     ```bash
@@ -303,8 +247,8 @@ First, add the CUDA APT repository to your system.
     # Run the build script:
     ./build.sh
     ```
-
-#### 1.8.0 Installing JPEG-XS Using a Debian Package
+### 1.7. JPEG-XS
+#### 1.7.0. Option #1 Installing JPEG-XS Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -328,7 +272,7 @@ First, add the CUDA APT repository to your system.
     rm -rf jpegxs jpegxs.zip
     ```
 
-#### 1.8.1 Alternatively Download, Build, and Install JPEG-XS from source code:
+#### 1.7.1. Option #2 Alternatively Download, Build, and Install JPEG-XS from source code:
 
 1. Download and Extract JPEG-XS:
     ```bash
@@ -355,7 +299,7 @@ First, add the CUDA APT repository to your system.
     # Run the build script:
     ./build.sh
     ```
-#### 1.9 Download, Install, and Set Up Intel IPP:
+### 1.8. Download, Install, and Set Up Intel IPP:
 
 1. Download Intel IPP:
     ```bash
@@ -381,7 +325,7 @@ First, add the CUDA APT repository to your system.
     rm -f l_ipp_oneapi_p_2021.10.1.16_offline.sh
     ```
 
-#### 1.10 Download, Patch, Build, and Install Video Super Resolution (VSR):
+### 1.9. Download, Patch, Build, and Install Video Super Resolution (VSR):
 
 1. Download and Extract VSR:
     ```bash
@@ -415,7 +359,9 @@ First, add the CUDA APT repository to your system.
     rm -drf vsr
     ```
 
-#### 1.11.0 Install Media Communications Mesh (MCM) Using a Debian Package
+### 1.10. Media Communications Mesh
+
+#### 1.10.0. Option #1 Install Media Communications Mesh (MCM) Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -439,7 +385,7 @@ First, add the CUDA APT repository to your system.
     rm -rf mcm mcm.zip
     ```
 
-#### 1.11.1 Alternatively Download, Build, and Install JPEG-XS froum source code:
+#### 1.10.1. Option #2 Alternatively Download, Build, and Install JPEG-XS froum source code:
 1. Download and Extract MCM:
     ```bash
     . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz | tar -zx --strip-components=1 -C mcm
@@ -461,7 +407,7 @@ First, add the CUDA APT repository to your system.
     ```
 
 
-#### 2.12 Download, Build, and Install FFmpeg NV-Codec-Headers:
+### 1.11. Download, Build, and Install FFmpeg NV-Codec-Headers:
 
 1. Download and Extract FFmpeg NV-Codec-Headers:
     ```bash
@@ -486,7 +432,8 @@ First, add the CUDA APT repository to your system.
     rm -drf nv-codec-headers
     ```
 
-#### 1.13.0 Install FFmpeg Using a Debian Package
+### 1.12. FFmpeg
+#### 1.12.0. Option #1 Install FFmpeg Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -505,7 +452,7 @@ First, add the CUDA APT repository to your system.
     sudo dpkg -i ffmpeg/*.deb
     ```
 
-#### 1.13.1 Alternatively Download, Patch, Build, and Install FFmpeg:
+#### 1.12.1. Option #2 Alternatively Download, Patch, Build, and Install FFmpeg:
 
 1. Download and Extract FFmpeg:
     ```bash
@@ -598,5 +545,5 @@ First, add the CUDA APT repository to your system.
     rm -drf ffmpeg cartwheel
     ```
 
-#### 2.0 Go to the run.md instruction for more details on how to run the image
-#### [Running Intel® Tiber™ Broadcast Suite Pipelines](./run.md)
+### 2.0. Go to the run.md instruction for more details on how to run the image
+**[Running Intel® Tiber™ Broadcast Suite Pipelines](./run.md)**

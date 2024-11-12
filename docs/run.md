@@ -22,12 +22,14 @@ Video pipelines described below are built using Intel-optimized version of FFmpe
 ### Sample pipelines setup
 
 To execute Tiber pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing  three raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
+Additionally, make sure you have the necessary environment variables set. You can use the VARIABLES.rc file in your Current Working Directory for that purpose.
 
-#### **1.a** You can provide those yourself
+#### 1. Providing input files
+##### 1.0. You can provide your own input files
 
 ```
 # Create the src directory if it doesn't exist
-mkdir src;
+mkdir src
 
 # Move your sample videos to the src directory
 cp name_of_your_video.yuv src/1080p_yuv422_10b_1.yuv
@@ -35,7 +37,7 @@ cp name_of_your_video2.yuv src/1080p_yuv422_10b_2.yuv
 cp name_of_your_video3.yuv src/2160p_yuv422_10b.yuv
 ```
 
-#### **1.b** You can also use ffmpeg to generate videos with this format
+##### 1.1. Alternatively, You Can Also Use FFmpeg to Generate Videos with This Format
 ```
 # Create the src directory if it doesn't exist
 mkdir -p src
@@ -56,7 +58,7 @@ ffmpeg -an -y -f lavfi \
 -f rawvideo src/2160p_yuv422_10b.yuv
 ```
 
-#### **2.a** Setting Up VFIO-PCI Addresses
+#### 2. Setting Up VFIO-PCI Addresses
 To configure your VFIO-PCI (dpdk binded devices) for use, you'll need to add their PCI addresses to the VARIABLES.rc file located in your Current Working Directory (CWD). Follow these steps to ensure proper setup:
 ```
 # Check your vfio-pci device PCI address
@@ -78,13 +80,15 @@ Make sure to replace 0000:b1:00.0, 0000:b1:00.1, and 0000:b1:00.2 with the actua
 
 By following these steps, you'll have correctly configured the necessary variables in your VARIABLES.rc file for your dpdk binded devices.
 
+#### 3. Optional for bare-metal
+
 ---
 
 >📝 **Notice:** To run the pipelines using the bare-metal installation of the Tiber suite, include the `-l` argument with the pipeline scripts:
-```bash
-./pipelines/<pipelines_script_example>.sh -l
-```
-
+>```bash
+>./pipelines/<pipelines_script_example>.sh -l
+>```
+> in local mode you also need to have kahawai.json in your Current Working Directory [kahawai.json](../kahawai.json)
 ---
 
 ### Multiviewer

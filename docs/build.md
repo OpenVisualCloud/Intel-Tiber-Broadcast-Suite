@@ -1,6 +1,31 @@
 # Build guide
 
-Building of the Intel® Tiber™ Broadcast Suite is based on docker container building.
+To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a series of steps involving BIOS configuration, driver installation, host machine setup, and package installation. Depending on your preference, you can install the suite as a Docker application (the recommended method) or directly on a bare metal machine.
+
+#### Table of contents
+- [Build guide](#build-guide)
+      - [Table of contents](#table-of-contents)
+  - [1. Prerequisites](#1-prerequisites)
+    - [1.1. BIOS settings](#11-bios-settings)
+    - [1.2. Install Docker](#12-install-docker)
+      - [1.2.1. Install Docker build environment](#121-install-docker-build-environment)
+      - [1.2.2. Setup docker proxy](#122-setup-docker-proxy)
+    - [1.3 Install GPU driver](#13-install-gpu-driver)
+      - [1.3.1 Intel Flex GPU driver](#131-intel-flex-gpu-driver)
+      - [1.3.2 Nvidia GPU driver](#132-nvidia-gpu-driver)
+    - [1.4. Install and configure host's NIC drivers and related software](#14-install-and-configure-hosts-nic-drivers-and-related-software)
+    - [1.5 Optional: Install MCM Proxy](#15-optional-install-mcm-proxy)
+  - [2. Install Intel Tiber™ Broadcast Suite](#2-install-intel-tiber-broadcast-suite)
+    - [Option #1: Build Docker image from Dockerfile using build.sh script](#option-1-build-docker-image-from-dockerfile-using-buildsh-script)
+    - [Option #2: Local installation from Debian packages](#option-2-local-installation-from-debian-packages)
+    - [Option #3: Install Docker image from Docker Hub](#option-3-install-docker-image-from-docker-hub)
+    - [Option #4: Build Docker image from Dockerfile manually](#option-4-build-docker-image-from-dockerfile-manually)
+  - [3. Running Intel Tiber™ Broadcast Suite](#3-running-intel-tiber-broadcast-suite)
+    - [3.1. First run script](#31-first-run-script)
+    - [3.2. Test docker installation](#32-test-docker-installation)
+    - [3.3. Test local installation](#33-test-local-installation)
+  - [Go to the run.md instruction for more details on how to run the image](#go-to-the-runmd-instruction-for-more-details-on-how-to-run-the-image)
+      - [Running Intel® Tiber™ Broadcast Suite Pipelines](#running-intel-tiber-broadcast-suite-pipelines)
 
 ## 1. Prerequisites
 
@@ -37,7 +62,7 @@ To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu
 
 Use vainfo command to check the gpu installation
 ```shell
-vainfo
+sudo vainfo
 ```
 
 
@@ -75,10 +100,12 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
        ```shell
         # Ensure the target directory exists
         mkdir -p ${HOME}/Media-Transport-Library
-
+       ```
+       ```shell
        # Download Media Transport Library:
        . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
-
+       ```
+       ```shell
        . versions.env && git -C ${HOME}/ice_patched/ice* apply ~/Media-Transport-Library/patches/ice_drv/${ICE_VER}/*.patch
        ```
 
@@ -97,6 +124,8 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
         ```shell
         # should give you output
         sudo dmesg | grep "Intel(R) Ethernet Connection E800 Series Linux Driver - version Kahawai"
+        ```
+        ```shell
         rm -rf ${HOME}/ice_patched ${HOME}/Media-Transport-Library
         ```
 
@@ -129,13 +158,13 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 
 ### 1.5 Optional: Install MCM Proxy
 
-> **Note:** This step is required for the [MCM Proxy Pipelines](../pipelines/mcm_media_proxy_tx.sh).
+> **Note:** This step is required for the **MCM Proxy Pipeline**:
+>  - [mcm_media_proxy_tx.sh](../pipelines/mcm_media_proxy_tx.sh)
+>  - [mcm_media_proxy_rx.sh](../pipelines/mcm_media_proxy_rx.sh)
 
 Please install the MCM Proxy
-[MCM Dockerized](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build)
+[MCM Dockerized](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build).
 
-If you want to avoid using docker and want to run the mcm-proxy on bare metal
-[MCM instalation](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#getting-started)
 
 ## 2. Install Intel Tiber™ Broadcast Suite
 
@@ -162,8 +191,6 @@ You can install the Intel® Tiber™ Broadcast Suite localy on bare metal. This
 installation allows you to skip installing docker altogether.
 
 ```shell
-git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
-cd Intel-Tiber-Broadcast-Suite
 ./build.sh -l
 ```
 
@@ -184,7 +211,8 @@ Download, Patch, Build, and Install DPDK from source code
    1. Download and Extract DPDK and MTL:
         ```bash
        . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
-
+       ```
+       ```bash
         . versions.env && curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | tar -zx --strip-components=1 -C dpdk
         ```
 
