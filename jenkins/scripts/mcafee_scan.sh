@@ -2,7 +2,7 @@
 mkdir -p Malware
 touch Malware/malware_clean_reports
 MALWARE_PASS=true
-for tool in mcafee; do
+for tool in clamav; do
   TOOL_PASS=true
   abi virus_scan --target Dockerfile --logtarget Malware --tool $tool || TOOL_PASS=false
   if [ "$TOOL_PASS" = "true" ]; then 
