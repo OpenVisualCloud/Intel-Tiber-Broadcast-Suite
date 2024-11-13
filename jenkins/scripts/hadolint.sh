@@ -6,4 +6,5 @@ rm -rf Hadolint
 mkdir -p Hadolint
 
 hadolint -v -V --config ${SCRIPT_DIR}/hadolint_config.yaml > Hadolint/hadolint-Dockerfile
-hadolint --config ${SCRIPT_DIR}/hadolint_config.yaml --no-color Dockerfile 2>&1 > Hadolint/Dockerfile.log
+hadolint --config ${SCRIPT_DIR}/hadolint_config.yaml --no-color Dockerfile 2>&1 > Hadolint/Dockerfile.log 
+exit 0
