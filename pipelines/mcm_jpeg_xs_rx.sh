@@ -15,12 +15,12 @@ function help() {
     echo "For more information, please refer to docs/run.md."
     exit 0
 }
+MCM_MEDIA_PROXY_PORT=8003
 
 while getopts "lh" opt; do
     case ${opt} in
         l )
             echo "Running pipeline on bare metal locally..."
-            MCM_MEDIA_PROXY_PORT=8003
             ./ffmpeg  -y \
                -f mcm \
                   -frame_rate 25 \
@@ -71,7 +71,7 @@ docker run -it \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
    --net=host \
-   -e MCM_MEDIA_PROXY_PORT=8003 \
+   -e MCM_MEDIA_PROXY_PORT=${MCM_MEDIA_PROXY_PORT} \
       video_production_image -y \
         -f mcm \
            -frame_rate 25 \

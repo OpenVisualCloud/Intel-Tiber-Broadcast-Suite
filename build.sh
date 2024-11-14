@@ -140,7 +140,7 @@ function download_install_debian {
         fi
     fi
 
-    if sudo dpkg -i $folder_path/*.deb >>$log_file 2>&1; then
+    if (sudo dpkg -i $folder_path/*.deb) >>$log_file 2>&1; then
         return 0
     else
         if [ -f "${folder_path}/download.tar.gz" ]; then
@@ -294,7 +294,7 @@ function libva_download_build_cleanup {
     fi
 
     # This package will block libvapi
-    sudo apt-get purge -y intel-media-va-driver >>$log_file 2>&1
+    (sudo apt-get purge -y intel-media-va-driver) >>$log_file 2>&1
 
     if ! (sudo apt-get install -y --reinstall intel-opencl-icd intel-level-zero-gpu level-zero \
           intel-media-va-driver-non-free libmfx1 libmfxgen1 libvpl2 \
