@@ -489,9 +489,8 @@ function jpegxs_download_build {
     fi
 }
 
-# TODO: In the released patch delete the no_proxy
 function ipp_download_build {
-    if ! (no_proxy="" wget --progress=dot:giga \
+    if ! (wget --progress=dot:giga \
           https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh) >>$log_file 2>&1; then
         echo
         echo -e ${RED}[ERROR] IPP download failed ${NC}
