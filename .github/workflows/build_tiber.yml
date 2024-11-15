@@ -76,3 +76,36 @@ jobs:
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
         sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+
+    - name: Run Trivy 'config' type vulnerability scan.
+      if: always()
+      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      with:
+        scan-type: 'config'
+        hide-progress: false
+        ignore-unfixed: true
+        format: 'sarif'
+        output: 'trivy-config-scan-tiber.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      if: always()
+      with:
+        sarif_file: 'trivy-config-scan-tiber.sarif'
+
+    - name: Run Trivy 'fs' type vulnerability scanner.
+      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      if: always()
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'sarif'
+        output: 'trivy-fs-scan-tiber.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      if: always()
+      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      with:
+        sarif_file: 'trivy-fs-scan-tiber.sarif'
