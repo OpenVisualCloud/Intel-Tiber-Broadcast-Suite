@@ -2,6 +2,8 @@
 
 > ⚠️ Make sure that all of the hosts used are set up according to the [host setup](build.md).
 
+> ⚠️ To run pipelines with Media Communications Mesh, make sure that [Media Communications Mesh Media Proxy is available](build.md#3-optional-install-media-communications-mesh-media-proxy).
+
 > **Note:** This instruction regards running the predefined scripts from `pipelines` folder present in the root of the repository. For more information on how to prepare an own pipeline, see:
 > - [Docker command breakdown](run-know-how.md)
 > - [FFmpeg Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
