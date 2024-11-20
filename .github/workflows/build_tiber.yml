@@ -72,8 +72,7 @@ jobs:
         push: false
         load: true
         tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"       
-        build-args: |
-          "${{ steps.read-build-args.outputs.build_args }}"
+        build-args: "${{ steps.read-build-args.outputs.build_args }}"
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
