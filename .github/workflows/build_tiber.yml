@@ -77,7 +77,7 @@ jobs:
         push: false
         load: true
         tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"       
-        build-args: ${{ fromJSON(env.build_args) }}
+        build-args: "${{ fromJSON(env.build_args) }}"
 
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
