@@ -62,7 +62,7 @@ jobs:
     - name: Read build arguments from version.env file
       id: read-build-args
       run: |
-        build_args=$(cat versions.env | xargs -I {} echo --build-arg {} | tr '\n' ' ')
+        build_args=$(cat versions.env | xargs -I {} echo {} | tr '\n' ',')
         echo "build_args=$build_args" >> $GITHUB_ENV
     
     - name: Print build arguments
