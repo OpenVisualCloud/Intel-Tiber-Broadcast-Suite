@@ -60,9 +60,9 @@ jobs:
         buildkitd-flags: --debug
   
     - name: Read build arguments from version.env file
-        id: read-build-args
-        run: |
-          build_args=$(cat versions.env | xargs -I {} echo --build-arg {})
+      id: read-build-args
+      run: |
+        build_args=$(cat versions.env | xargs -I {} echo --build-arg {})
 
     - name: "Validation: Build/Push Dokcerfile"
       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
