@@ -60,9 +60,9 @@ jobs:
         buildkitd-flags: --debug
   
 
-     - name: "Validation: Build/Push Dokcerfile"
-       run: | 
-          docker buildx build $(cat versions.env | xargs -I {} echo --build-arg {}) \
+    - name: "Validation: Build/Push Dokcerfile"
+      run: | 
+        docker buildx build $(cat versions.env | xargs -I {} echo --build-arg {}) \
                             --tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
                             --output type=image,push=true \
                             --target final-stage \
