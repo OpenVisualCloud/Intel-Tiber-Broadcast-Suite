@@ -58,15 +58,27 @@ jobs:
       uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
       with:
         buildkitd-flags: --debug
-  
+    - name: Read build arguments from version.env file
+      id: read-build-args
+      run: |
+        sed -i 's/\r//g' versions.env
+        lines=$(grep -v '^$' versions.env)
+        json_array=$(echo "$lines" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+        echo "build_args=$json_array" >> $GITHUB_ENV
+    
+    - name: Print build arguments
+      run: echo ${{ fromJSON(env.build_args) }}
 
     - name: "Validation: Build/Push Dokcerfile"
-      run: | 
-        docker buildx build $(cat versions.env | xargs -I {} echo --build-arg {}) \
-                            --tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
-                            --output type=image,push=true \
-                            --target final-stage \
-                            -f Dockerfile .
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        file: Dockerfile
+        context: .
+        push: false
+        load: true
+        tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"       
+        build-args: ${{ fromJSON(env.build_args) }}
+
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
