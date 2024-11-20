@@ -6,45 +6,69 @@
 # Intel® Tiber™ Broadcast Suite
 #
 # build stage
+
 ARG IMAGE_CACHE_REGISTRY=docker.io
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS buildstage
+ARG IMAGE_NAME=library/ubuntu:24.04@sha256:8a37d68f4f73ebf3d4efafbcf66379bf3728902a8038616808f04e34a9ab63ee
+
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS build-stage
 
 ARG nproc=100
+USER root
 
 # common env
 ENV \
   nproc=$nproc \
+  TZ="Europe/Warsaw" \
   DEBIAN_FRONTEND="noninteractive" \
+  PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/tmp/jpegxs/Build/linux/install/lib/pkgconfig \
   MAKEFLAGS=-j${nproc}
 
-# versions
-ENV \
-  GMMLIB=22.3.12 \
-  IHD=23.3.5 \
-  LIBMFX=22.5.4 \
-  LIBVA=2.20.0 \
-  LIBVMAF=2.3.1 \
-  LIBVPL=2023.3.1 \
-  ONEVPL=23.3.4 \
-  SVTAV1=1.7.0 \
-  VULKANSDK=vulkan-sdk-1.3.268.0 \
-  VSR=v23.11 \
-  CARTWHEEL_COMMIT_ID=6.1 \
-  FFMPEG_COMMIT_ID=n6.1.1 \
-  XDP_VER=d7edea3590052581c5fda5f8cfa40ae7be94f05c \
-  BPF_VER=42065ea6627ff6e1ab4c65e51042a70fbf30ff7c \
-  MTL_VER=MTL_enabling_for_Intel_Tiber_Broadcast_Suite \
-  MCM_VER=24.06.01 \
-  JPEG_XS_VER=0.9.0 \
-  DPDK_VER=23.11
+# versions variables are contained in the versions.env
+ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEEL_COMMIT_ID FFMPEG_COMMIT_ID XDP_VER BPF_VER MTL_VER MCM_VER JPEG_XS_VER DPDK_VER FFNVCODED_VER LINK_CUDA_REPO FFMPEG_PLUGIN_VER"
+
+ARG \
+  LIBVMAF \
+  ONEVPL \
+  SVTAV1 \
+  VULKANSDK \
+  VSR \
+  CARTWHEEL_COMMIT_ID \
+  FFMPEG_COMMIT_ID \
+  XDP_VER \
+  BPF_VER \
+  MTL_VER \
+  MCM_VER \
+  JPEG_XS_VER \
+  DPDK_VER \
+  FFNVCODED_VER \
+  LINK_CUDA_REPO \
+  FFMPEG_PLUGIN_VER
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
+
+RUN for var in $REQUIRED_ENVIRONMENT_VARIABLES; do \
+      if [ -z "\${!var}" ]; then \
+        echo \$var = \${!var}; \
+        echo "Error: WRONG BUILD ARGUMENTS SEE docs/build.md "; \
+        exit 1; \
+      fi; \
+    done
+
 # Install dependencies
 RUN \
+  echo "**** ADD CUDA APT REPO ****" && \
+  apt-get update --fix-missing && \
+  apt-get install -y wget && \
+  wget ${LINK_CUDA_REPO} && \
+  dpkg -i cuda-keyring_1.1-1_all.deb && \
   echo "**** INSTALL BUILD PACKAGES ****" && \
   apt-get update --fix-missing && \
   apt-get full-upgrade -y && \
   apt-get install --no-install-recommends -y \
+    libigdgmm-dev \
+    libva-dev \
+    intel-media-va-driver \
+    libvpl-dev \
     ca-certificates \
     build-essential \
     libarchive-tools \
@@ -82,69 +106,22 @@ RUN \
     pkg-config \
     diffutils \
     gcc \
+    gcc-multilib \
     xxd \
-    wget \
     zip \
     python3-pyelftools \
     systemtap-sdt-dev \
     sudo \
     libbsd-dev \
     ocl-icd-opencl-dev \
-    libcap2-bin && \
+    libcap2-bin \
+    ubuntu-drivers-common \
+    libc6-dev \
+    cuda-toolkit-12-6 \
+    libnvidia-compute-550-server \
+    libfdt-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
-
-WORKDIR /tmp/libva
-RUN \
-  echo "**** DOWNLOAD LIBVA ****" && \
-  curl -Lf \
-    https://github.com/intel/libva/archive/${LIBVA}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/libva
-RUN \
-  echo "**** BUILD LIBVA ****" && \
-  meson setup build --strip -Dprefix=/usr -Dlibdir=/usr/lib/x86_64-linux-gnu -Ddefault_library=shared && \
-  ninja -j${nproc} -C build && \
-  meson install -C build && \
-  strip -d "/usr/lib/x86_64-linux-gnu/libva"*.so
-
-WORKDIR /tmp/gmmlib/build
-RUN \
-  echo "**** DOWNLOAD and BUILD GMMLIB ****" && \
-  curl -Lf \
-    https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-${GMMLIB}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/gmmlib && \
-  cmake \
-    -DCMAKE_BUILD_TYPE=Release .. && \
-  make && \
-  make install && \
-  strip -d /usr/local/lib/libigdgmm.so
-
-WORKDIR /tmp/ihd/build
-RUN \
-  echo "**** DOWNLOAD and BUILD IHD ****" && \
-  curl -Lf \
-    https://github.com/intel/media-driver/archive/refs/tags/intel-media-${IHD}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/ihd && \
-  cmake \
-    -DLIBVA_INSTALL_PATH=/usr/lib/x86_64-linux-gnu \
-    -DLIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri/  .. && \
-  make && \
-  make install && \
-  strip -d /usr/lib/x86_64-linux-gnu/dri/iHD_drv_video.so
-
-WORKDIR /tmp/libvpl/build
-RUN \
-  echo "**** DOWNLOAD and BUILD LIBVPL ****" && \
-  curl -Lf \
-    https://github.com/oneapi-src/oneVPL/archive/refs/tags/v${LIBVPL}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/libvpl && \
-  cmake \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu \
-    .. && \
-  cmake --build . --config Release && \
-  cmake --build . --config Release --target install && \
-  strip -d /usr/lib/x86_64-linux-gnu/libvpl.so
 
 COPY /patches /tmp/patches
 WORKDIR /tmp/onevpl/build
@@ -212,14 +189,8 @@ RUN \
   curl -Lf \
     https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/dpdk
-RUN \
-  echo "**** BUILD DPDK ****"  && \
-  git apply /tmp/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
-  meson build && \
-  ninja -C build && \
-  ninja -C build install
 
-# Build the xdp-tools project
+# Download and build the xdp-tools project
 WORKDIR /tmp/xdp-tools
 RUN curl -Lf https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz | \
       tar -zx --strip-components=1 -C /tmp/xdp-tools && \
@@ -231,6 +202,14 @@ RUN curl -Lf https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz 
     DESTDIR=/buildout make install && \
     make -C /tmp/xdp-tools/lib/libbpf/src install && \
     DESTDIR=/buildout make -C /tmp/xdp-tools/lib/libbpf/src install
+
+WORKDIR /tmp/dpdk
+RUN \
+  echo "**** BUILD DPDK ****"  && \
+  git apply /tmp/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
+  meson build && \
+  ninja -C build && \
+  ninja -C build install
 
 WORKDIR /tmp/Media-Transport-Library
 RUN \
@@ -251,7 +230,6 @@ RUN \
   ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
 
 ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
-ENV PKG_CONFIG_PATH="/tmp/jpegxs/Build/linux/install/lib/pkgconfig"
 
 WORKDIR /tmp/jpegxs/imtl-plugin
 RUN \
@@ -277,18 +255,19 @@ RUN \
   echo "**** APPLY MTL PATCHES ****" && \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.c -rf /tmp/ffmpeg/libavdevice/ && \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.h -rf /tmp/ffmpeg/libavdevice/ && \
-  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/6.1/*.patch
+  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/${FFMPEG_PLUGIN_VER}/*.patch
 
 RUN \
   echo "**** APPLY JPEG-XS PATCHES ****" && \
-  git -C /tmp/ffmpeg apply --whitespace=fix /tmp/jpegxs/ffmpeg-plugin/*.patch
+  git -C /tmp/ffmpeg apply --whitespace=fix /tmp/patches/jpegxs/*.patch
 
 RUN \
   echo "**** APPLY FFMPEG patches ****" && \
   git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/hwupload_async.diff && \
   git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/qsv_aligned_malloc.diff && \
   git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/qsvvpp_async.diff && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/filtergraph_async.diff
+  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/filtergraph_async.diff && \
+  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/ffmpeg_scheduler.diff
 
 WORKDIR /tmp
 RUN \
@@ -298,8 +277,6 @@ RUN \
   chmod +x l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
   ./l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
   echo "source /opt/intel/oneapi/ipp/latest/env/vars.sh" | tee -a ~/.bash_profile
-
-ENV PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
 
 WORKDIR /tmp/vsr
 RUN \
@@ -312,13 +289,15 @@ RUN \
   echo "**** BUILD VIDEO SUPER RESOLUTION ****" && \
   . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
   git -C /tmp/vsr/ apply /tmp/patches/vsr/0003-missing-header-fix.patch && \
+  # Clang 18 have bug that break compilation, force compiler to GCC
+  sed -i 's/clan//g' build.sh && \
   ./build.sh -DCMAKE_INSTALL_PREFIX="/tmp/vsr/install" -DENABLE_RAISR_OPENCL=ON
 
-RUN \
-  echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
-  git -C /tmp/ffmpeg apply /tmp/patches/vsr/0001-ffmpeg-raisr-filter.patch && \
-  git -C /tmp/ffmpeg apply /tmp/patches/vsr/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
-  cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
+# RUN \
+#   echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
+#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0001-ffmpeg-raisr-filter.patch && \
+#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
+#   cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
 
 WORKDIR /tmp/mcm
 RUN \
@@ -333,10 +312,18 @@ RUN \
   cmake --build /tmp/mcm/sdk/out && \
   cmake --install /tmp/mcm/sdk/out
 
+WORKDIR /tmp/nv-codec-headers
+RUN \
+  echo "**** DOWNLOAD AND INSTALL FFNVCODED HEADERS ****" && \
+  curl -Lf https://github.com/FFmpeg/nv-codec-headers/archive/${FFNVCODED_VER}.tar.gz  | \
+    tar -zx --strip-components=1 -C /tmp/nv-codec-headers && \
+  make && \
+  make install PREFIX=/usr
+
 WORKDIR /tmp/ffmpeg/
 RUN \
   echo "**** APPLY MEDIA COMMUNICATIONS MESH PATCHES ****" && \
-  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/6.1/*.patch && \
+  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/${FFMPEG_PLUGIN_VER}/*.patch && \
   cp -f /tmp/mcm/ffmpeg-plugin/mcm_* /tmp/ffmpeg/libavdevice/
 
 RUN \
@@ -362,9 +349,15 @@ RUN \
     --enable-libipp \
     --enable-mcm \
     --enable-pthreads \
-    --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/" \
-    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib" \
-    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm' \
+    --enable-ffnvcodec \
+    --enable-cuda \
+    --enable-cuvid \
+    --enable-nvenc \
+    --enable-nvdec \
+    --enable-cuda-llvm \
+    --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
+    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib -L/usr/local/cuda/lib64 -L/usr/lib64 -L/usr/local/lib" \
+    --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm -lbpf -lxdp' \
     --enable-cross-compile && \
   make
 
@@ -426,9 +419,12 @@ RUN \
     /tmp/mcm/sdk/out/lib/libmcm_dp.so* \
     /buildout/usr/lib/x86_64-linux-gnu/
 
-# runtime stage
+# ===============================================//
+#         Tiber Suite final-stage
+# ===============================================//
+ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
-FROM ${IMAGE_CACHE_REGISTRY}/library/ubuntu:22.04 AS finalstage
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS final-stage
 
 LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
@@ -442,7 +438,7 @@ LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 ENV \
   DEBIAN_FRONTEND="noninteractive" \
   LIBVA_DRIVERS_PATH="/usr/local/lib/x86_64-linux-gnu/dri" \
-  LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu" \
+  LD_LIBRARY_PATH="/usr/lib64:/usr/local/lib:/usr/local/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu" \
   NVIDIA_DRIVER_CAPABILITIES="compute,video,utility" \
   NVIDIA_VISIBLE_DEVICES="all"
 
@@ -456,6 +452,10 @@ RUN \
   apt-get update --fix-missing && \
   apt-get full-upgrade -y && \
   apt-get install --no-install-recommends -y \
+    libigdgmm12 \
+    libva2 \
+    intel-media-va-driver \
+    libvpl2 \
     sudo \
     ca-certificates \
     libtool \
@@ -474,28 +474,84 @@ RUN \
     libjson-c5 \
     zlib1g \
     libelf1 \
-    libcap2-bin && \
+    libcap2-bin \
+    libfdt1 && \
   apt-get remove linux-libc-dev -y && \
   apt-get autoremove -y && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* &&\
   groupadd -g 2110 vfio && \
-  groupadd -g 1001 imtl && \
+  groupadd -g 1001 mtl && \
   groupadd -g 1002 mcm && \
-  useradd -m -s /bin/bash -G vfio,imtl,mcm -u 1003 ffmpeg-vpp && \
-  usermod -aG sudo ffmpeg-vpp
+  useradd -m -s /bin/bash -G vfio,mtl,mcm -u 1003 tiber && \
+  usermod -aG sudo tiber && \
+  mkdir -p /var/run/imtl /var/run/mcm /workspace && \
+  chown -R tiber:tiber /var/run/imtl /var/run/mcm /workspace && \
+  chmod 775 /var/run/imtl /var/run/mcm /workspace
 
-COPY --chown=ffmpeg-vpp --from=buildstage /buildout/ /
+VOLUME ["/var/run/imtl", "/var/run/mcm", "/workspace"]
+COPY --chown=tiber --from=build-stage /buildout/ /
 
 RUN ldconfig
 
 EXPOSE 8001/tcp 8002/tcp
-EXPOSE 20000-20100
-
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "ffmpeg" || exit 1
 
-USER "ffmpeg-vpp"
+USER "tiber"
 
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/bin/ffmpeg"]
+
+# ===============================================//
+#          MtlManager stage
+# ===============================================//
+ARG IMAGE_NAME
+ARG IMAGE_CACHE_REGISTRY
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS manager-stage
+
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
+LABEL org.opencontainers.image.title="Intel® MTL Manager"
+LABEL org.opencontainers.image.description="Intel® MTL Manager. Open Visual Cloud Media Transport Library Manager required for live software defined broadcast stack optimizations. Ubuntu release image"
+LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
+LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.vendor="Intel® Corporation"
+LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
+
+ENV DEBIAN_FRONTEND="noninteractive"
+ENV LD_LIBRARY_PATH="/usr/local/lib"
+ENV TZ=Europe/Warsaw
+
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+RUN \
+  apt-get update --fix-missing && \
+  apt-get full-upgrade -y && \
+  apt-get install --no-install-recommends -y \
+    sudo \
+    ca-certificates \
+    ethtool \
+    libelf1 \
+    libfdt1 && \
+  apt-get autoremove -y && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* && \
+  groupadd -g 2110 vfio && \
+  useradd -m -s /bin/bash -G vfio,root mtl && \
+  usermod -aG sudo mtl && \
+  mkdir -p /var/run/imtl /usr/local/lib/bpf && \
+  chown mtl:root /var/run/imtl
+
+VOLUME ["/var/run/imtl"]
+WORKDIR "/home/mtl/"
+# USER "mtl"
+USER "root"
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/local/bin/MtlManager /usr/local/bin/MtlManager
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/local/lib/libxdp.so.1 /usr/local/lib
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/lib64/libbpf.so.1 /usr/local/lib
+COPY --chown=mtl --chmod=755 --from=build-stage /usr/local/lib/bpf/ /usr/local/lib/bpf
+COPY --chown=mtl --chmod=755 --from=build-stage /tmp/Media-Transport-Library/script/nicctl.sh /home/mtl/
+
+HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "MtlManager" || exit 1
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/MtlManager"]

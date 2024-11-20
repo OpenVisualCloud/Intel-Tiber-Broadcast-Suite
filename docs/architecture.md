@@ -39,3 +39,4 @@ Intel Media Driver (IHD)|   23.3.5      |   [IHD](https://github.com/intel/media
 GMMLIB                  |   22.3.12     |   [GMMLIB](https://github.com/intel/gmmlib)
 Vulkan-Headers          |   1.3.268.0   |   [Vulkan](https://github.com/KhronosGroup/Vulkan-Headers)
 LIBVA                   |   2.20.0      |   [LIBVA](https://github.com/intel/libva)
+Nvidia CUDA plugin      |   commit SHA: `1889e62e2d35ff7aa9baca2bceb14f053785e6f1`  |   [Nvidia CUDA plugin](https://github.com/FFmpeg/nv-codec-headers)
