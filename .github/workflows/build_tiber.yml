@@ -59,14 +59,6 @@ jobs:
       with:
         buildkitd-flags: --debug
   
-    # - name: Read build arguments from version.env file
-    #   id: read-build-args
-    #   run: |
-    #     build_args=$(cat versions.env | xargs -I {} echo --build-arg {} | tr '\n' ' ')
-    #     echo "build_args=$build_args" >> $GITHUB_ENV
-    
-    # - name: Print build arguments
-    #   run: echo ${{ env.build_args }}
 
      - name: "Validation: Build/Push Dokcerfile"
        run: | 
@@ -75,14 +67,6 @@ jobs:
                             --output type=image,push=true \
                             --target final-stage \
                             -f Dockerfile .
-    #   uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
-    #   with:
-    #     file: Dockerfile
-    #     context: .
-    #     push: false
-    #     load: true
-    #     tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"       
-    #     build-args: "DUMMY=0 ${{ env.build_args }}"
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
