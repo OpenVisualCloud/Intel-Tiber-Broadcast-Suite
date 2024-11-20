@@ -16,6 +16,8 @@ env:
   DOCKER_IMAGE_NAME: "docker.io/ovc/tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
+  TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db" 
+  TRIVY_JAVA_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-java-db" 
 
 jobs:
   docker:
