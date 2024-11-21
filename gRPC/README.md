@@ -74,3 +74,75 @@ Constructor:
 - Initializes a CmdPassImpl instance and sets the global pointer.
 - Sets up signal handlers.
 - Calls Run to start the server.
+
+--------------------------------------------------------------------------------------------------------------------
+
+The `FFmpeg_wrapper_client.cc` file implements a gRPC client that sends FFmpeg commands to a gRPC server and handles the responses asynchronously. The client is designed to manage multiple requests concurrently and ensures that all requests are completed before shutting down.
+
+### Key Components
+**1. Includes and Using Declarations**:
+
+- Includes necessary headers for gRPC, standard I/O, and string manipulation.
+- Includes the generated protobuf headers for FFmpeg command wrapping.
+
+**2. CmdPassClient Class**:
+
+- Manages the client lifecycle and handles sending FFmpeg commands to the server.
+- Contains methods for initiating and processing asynchronous RPC calls.
+
+**3. Constructor**:
+
+- Initializes the gRPC channel and stub for communication with the server.
+- Starts a thread to process the completion queue for handling asynchronous responses.
+
+**4. Destructor**:
+
+- Shuts down the completion queue and joins the processing thread to ensure a clean shutdown.
+
+**5. FFmpegCmdExec Method**:
+
+- Constructs the request object from a vector of command pairs.
+- Initiates an asynchronous RPC call to the server.
+- Increments the count of pending requests.
+
+**6. AsyncCompleteRpc Method**:
+
+- Continuously processes responses from the completion queue.
+- Handles successful and failed RPC calls by printing appropriate messages.
+- Decrements the count of pending requests and notifies if all requests are completed.
+
+**7. WaitForAllRequests Method**:
+
+- Waits for all pending requests to be completed before proceeding.
+
+### Detailed Explanation
+
+**1. CmdPassClient Class**:
+
+- Takes the server interface and port as arguments.
+- Creates a gRPC channel and stub for communication with the server.
+- Starts a thread to process the completion queue for handling asynchronous responses.
+- Destructor:
+- Shuts down the completion queue to stop processing responses.
+- Joins the processing thread to ensure it has completed before the client is destroyed.
+
+**2. FFmpegCmdExec Method**:
+
+- Takes a vector of command pairs as input.
+- Constructs a ReqCmds request object and populates it with the command pairs.
+- Creates a new AsyncClientCall object to manage the asynchronous RPC call.
+- Increments the count of pending requests.
+- Initiates the asynchronous RPC call and sets up the response reader to handle the response.
+
+**3. AsyncCompleteRpc Method**:
+
+- Runs in a separate thread to process responses from the completion queue.
+- Continuously waits for responses and processes them as they arrive.
+- Handles successful responses by printing a success message.
+- Handles failed responses by printing error details.
+- Decrements the count of pending requests and notifies if all requests are completed.
+
+**4. WaitForAllRequests Method**:
+
+- Uses a condition variable to wait until all pending requests are completed.
+- Ensures that the client does not shut down until all requests have been processed.
