@@ -61,9 +61,8 @@ jobs:
 
     - name: "Validation: Build/Push Dokcerfile"
       run: | 
-        docker buildx build $(cat versions.env | xargs -I {} echo --build-arg {}) \
+        docker build $(cat versions.env | xargs -I {} echo --build-arg {}) \
                             --tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
-                            --output type=docker,push=false \
                             --target final-stage \
                             -f Dockerfile .
 
