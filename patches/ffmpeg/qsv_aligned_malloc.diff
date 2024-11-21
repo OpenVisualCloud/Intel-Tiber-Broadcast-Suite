@@ -1,5 +1,14 @@
+From 66386a5cbf993c485116fb1b1f2d6cc41e5e6fc6 Mon Sep 17 00:00:00 2001
+From: Tomasz Szumski <tomasz.szumski@intel.com>
+Date: Mon, 26 Aug 2024 11:53:24 +0200
+Subject: [PATCH 2/5] qsv_aligned_malloc
+
+---
+ libavutil/mem.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
 diff --git a/libavutil/mem.c b/libavutil/mem.c
-index 36b8940..6785701 100644
+index 62163b4cb3..2b87c1f62e 100644
 --- a/libavutil/mem.c
 +++ b/libavutil/mem.c
 @@ -96,21 +96,26 @@ static int size_mult(size_t a, size_t b, size_t *r)
@@ -33,3 +42,6 @@ index 36b8940..6785701 100644
  #endif
      /* Why 64?
       * Indeed, we should align it:
+-- 
+2.45.1.windows.1
+

@@ -6,30 +6,47 @@
 # Intel® Tiber™ Broadcast Suite
 #
 
-# docker run -it \
-#    --privileged \
-#    -u 0:0 \
-#    --net=host \
-#    --device=/dev/vfio:/dev/vfio \
-#    --device=/dev/dri:/dev/dri \
-#    -v /var/run/imtl:/var/run/imtl \
-#    -v /run/mcm:/run/mcm \
-#    -v /dev/hugepages:/dev/hugepages \
-#    -v /dev/hugepages1G:/dev/hugepages1G \
-#    -v /var/run/imtl:/var/run/imtl \
-#    -v /sys/fs/bpf:/sys/fs/bpf \
-#    -v /dev/shm:/dev/shm \
-#    -v /dev/vfio:/dev/vfio \
-#    --ipc=host \
-#    ger-is-registry.caas.intel.com/nex-vs-cicd-automation/mcm/media-proxy:latest \
-#       /usr/local/bin/media_proxy \
-#          -d 0000:32:11.1 \
-#          -i 192.168.96.2 \
-#          -t 8003
+. VARIABLES.rc 2>/dev/null
 
-# The container environment for MCM media_proxy is Work in Progress.
-# Temporary workaround:
-#  1. Install Media Communications Mesh
-#  2. Run media_proxy in the host OS.
-media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8003
+# Check if VFIO_PORT_R is set
+if [ -z "$VFIO_PORT_R" ]; then
+    echo -e "\e[31mError: VFIO_PORT_R is not set.\e[0m"
+    echo "Use dpdk-devbind.py -s to check pci address of vfio device"
+    exit 1
+fi
 
+while getopts "l" opt; do
+    case ${opt} in
+        l )
+            media_proxy -d "${VFIO_PORT_R}" -i 192.168.96.2 -t 8003
+            exit 0
+            ;;
+        \? )
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
+    esac
+done
+
+
+ docker run -it \
+    --privileged \
+    -u 0:0 \
+    --net=host \
+    --device=/dev/vfio:/dev/vfio \
+    --device=/dev/dri:/dev/dri \
+    -v /var/run/imtl:/var/run/imtl \
+    -v /run/mcm:/run/mcm \
+    -v /tmp/hugepages:/dev/hugepages \
+    -v /hugepages:/dev/hugepages1G \
+    -v /var/run/imtl:/var/run/imtl \
+    -v /sys/fs/bpf:/sys/fs/bpf \
+    -v /dev/shm:/dev/shm \
+    -v /dev/vfio:/dev/vfio \
+    --ipc=host \
+    --expose 8000-9100 \
+    -e LD_LIBRARY_PATH=/usr/lib64/ \
+    media-proxy:latest \
+       /usr/local/bin/media_proxy \
+          -d "${VFIO_PORT_R}" \
+          -i 192.168.96.2 \
+          -t 8003

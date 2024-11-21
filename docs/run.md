@@ -2,12 +2,14 @@
 
 > ⚠️ Make sure that all of the hosts used are set up according to the [host setup](build.md).
 
+> ⚠️ To run pipelines with Media Communications Mesh, make sure that [Media Communications Mesh Media Proxy is available](build.md#3-optional-install-media-communications-mesh-media-proxy).
+
 > **Note:** This instruction regards running the predefined scripts from `pipelines` folder present in the root of the repository. For more information on how to prepare an own pipeline, see:
-- [Docker command breakdown](run-know-how.md)
-- [FFmpeg Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
-- [Media Transport Library](plugins/media-transport-library.md)
-- [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
-- [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
+> - [Docker command breakdown](run-know-how.md)
+> - [FFmpeg Media Communications Mesh Muxer Parameters Table](plugins/media-communications-mesh.md)
+> - [Media Transport Library](plugins/media-transport-library.md)
+> - [FFmpeg Intel® JPEG XS Parameters Table](plugins/svt-jpeg-xs.md)
+> - [Raisr FFmpeg Filter Plugin Parameters Table](plugins/video-super-resolution.md)
 
 > **Note:** The scaling factors provided in this document consider the number of pixels in the image, instead of dimensions, e.g. scaling 1/4 means the number of overall pixel is down by 4, but the edges are divided by 2 (like in 3840x2160 -> 1920x1080).
 
@@ -19,6 +21,76 @@ Video pipelines described below are built using Intel-optimized version of FFmpe
 
 `session A`, `session B` etc. mark separate shell (terminal) sessions. As the Suite is a containerized solution, those sessions can be opened on a single server or multiple servers - on systems connected with each other, after the ports are exposed and IP addresses aligned in pipeline commands.
 
+### Sample pipelines setup
+
+To execute Tiber pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing  three raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
+Additionally, make sure you have the necessary environment variables set. You can use the VARIABLES.rc file in your Current Working Directory for that purpose.
+
+#### 1. Providing input files
+##### 1.0. You can provide your own input files
+
+```
+# Create the src directory if it doesn't exist
+mkdir src
+
+# Move your sample videos to the src directory
+cp name_of_your_video.yuv src/1080p_yuv422_10b_1.yuv
+cp name_of_your_video2.yuv src/1080p_yuv422_10b_2.yuv
+cp name_of_your_video3.yuv src/2160p_yuv422_10b.yuv
+```
+
+##### 1.1. Alternatively, You Can Also Use FFmpeg to Generate Videos with This Format
+```
+# Create the src directory if it doesn't exist
+mkdir -p src
+
+# Generate the first 1080p video
+ffmpeg -an -y -f lavfi \
+-i testsrc=d=5:s=1920x1080:r=25,format=yuv422p10le \
+-f rawvideo  src/1080p_yuv422_10b_1.yuv
+
+# Generate the second 1080p video
+ffmpeg -an -y -f lavfi \
+-i testsrc=d=5:s=1920x1080:r=25,format=yuv422p10le \
+-f rawvideo  src/1080p_yuv422_10b_2.yuv
+
+# Generate the 2160p video
+ffmpeg -an -y -f lavfi \
+-i testsrc=d=5:s=3840x2160:r=25,format=yuv422p10le \
+-f rawvideo src/2160p_yuv422_10b.yuv
+```
+
+#### 2. Setting Up VFIO-PCI Addresses
+To configure your VFIO-PCI (dpdk binded devices) for use, you'll need to add their PCI addresses to the VARIABLES.rc file located in your Current Working Directory (CWD). Follow these steps to ensure proper setup:
+```
+# Check your vfio-pci device PCI address
+dpdk-devbind.py -s
+```
+
+Next, create variables in the VARIABLES.rc file to store the PCI addresses for the transmit, receive, and processing devices. Use the following format:
+1. **VFIO_PORT_T** - Address for the transmit device.
+1. **VFIO_PORT_R** - Address for the receive device.
+1. **VFIO_PORT_PROC** - Address for the processing device.
+
+```
+# Example commands to set VFIO PCI addresses
+echo "VFIO_PORT_T=0000:b1:00.0" >> VARIABLES.rc
+echo "VFIO_PORT_R=0000:b1:00.1" >> VARIABLES.rc
+echo "VFIO_PORT_PROC=0000:b1:00.2" >> VARIABLES.rc
+```
+Make sure to replace 0000:b1:00.0, 0000:b1:00.1, and 0000:b1:00.2 with the actual PCI addresses you obtained from the dpdk-devbind.py command.
+
+By following these steps, you'll have correctly configured the necessary variables in your VARIABLES.rc file for your dpdk binded devices.
+
+#### 3. Optional for bare-metal
+
+---
+
+>📝 **Notice:** To run the pipelines using the bare-metal installation of the Tiber suite, include the `-l` argument with the pipeline scripts:
+>```bash
+>./pipelines/<pipelines_script_example>.sh -l
+>```
+> in local mode you also need to have kahawai.json in your Current Working Directory [kahawai.json](../kahawai.json)
 ---
 
 ### Multiviewer
@@ -107,11 +179,10 @@ session B > jpeg_xs_rx.sh
 Two input streams from local drive are encoded using JPEG XS codec and send out via Media Communications Mesh using ST2110-22 streams.
 Input streams from two ST2110-22 cameras are decoded using JPEG XS codec stored on local drive.
 
+> ⚠️ **Warning:** You need to have the [MCM Proxy](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build) installed to run this pipeline.
+
 ![JPEG XS MCM process](images/jpeg_xs-process.png)
 ![JPEG XS MCM](images/mcm_jpeg_xs.png)
-
-*Note*: The container environment for MCM `media_proxy` is Work in Progress.
-The temporary workaround is to run `media_proxy` in the host OS, so before you run the pipeline make sure you installed [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/README.md#basic-installation).
 
 Example command to run the pipeline:
 ```text
