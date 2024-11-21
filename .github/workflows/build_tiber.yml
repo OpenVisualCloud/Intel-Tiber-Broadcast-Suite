@@ -9,21 +9,22 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 env:
   BUILD_TYPE: "Release"
   DOCKER_IMAGE_NAME: "docker.io/ovc/tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
-  TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db" 
-  TRIVY_JAVA_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-java-db" 
+  TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db"
+  TRIVY_JAVA_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-java-db"
 
 jobs:
   docker:
     name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
+    permissions:
+      security-events: write
     steps:
     - name: "Preparation: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -35,14 +36,14 @@ jobs:
         sudo free -h
         sudo lsblk
 
-    - name: "Set swap to 20Gi"
+    - name: "Set swap to 30Gi"
       shell: bash
       run: |
         export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
         export NEW_SWAP_FILE="/mnt/swap"
         sudo swapoff $SWAP_FILE
         sudo rm $SWAP_FILE
-        sudo fallocate -l 20480M $NEW_SWAP_FILE
+        sudo fallocate -l 30720M $NEW_SWAP_FILE
         sudo chmod 600 $NEW_SWAP_FILE
         sudo mkswap $NEW_SWAP_FILE
         sudo swapon $NEW_SWAP_FILE
@@ -55,12 +56,20 @@ jobs:
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
+    - name: "Configuration: Docker with Buildx Toolkit set up"
+      uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+      with:
+        buildkitd-flags: --debug
+
     - name: "Validation: Build/Push Dokcerfile"
-      run: | 
-        docker build $(cat versions.env | xargs -I {} echo --build-arg {}) \
-                            --tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
-                            --target final-stage \
-                            -f Dockerfile .
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        file: Dockerfile
+        context: .
+        push: false
+        load: true
+        target: final-stage
+        tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
@@ -74,56 +83,61 @@ jobs:
       with:
         sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
 
-  Trivy-config-scan:
-      name: "trivy connfig scans"
-      runs-on: ubuntu-22.04
-      steps:
-      - name: "Preparation: Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
+  trivy-config-scan:
+    name: "trivy config scans"
+    runs-on: ubuntu-22.04
+    permissions:
+      security-events: write
+    steps:
+    - name: "Preparation: Harden Runner"
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
 
-      - name: "Preparation: Repository Checkout"
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-        
-      - name: Run Trivy 'config' type vulnerability scan.
-        uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
-        with:
-          scan-type: 'config'
-          hide-progress: false
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-config-scan-tiber.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+    - name: "Preparation: Repository Checkout"
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        if: always()
-        with:
-          sarif_file: 'trivy-config-scan-tiber.sarif'
-  Trivy-fs-scan:
-      name: "trivy fs scans"
-      runs-on: ubuntu-22.04
-      steps:
-      - name: "Preparation: Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
+    - name: Run Trivy 'config' type vulnerability scan.
+      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      with:
+        scan-type: 'config'
+        hide-progress: false
+        ignore-unfixed: true
+        format: 'sarif'
+        output: 'trivy-config-scan-tiber.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
 
-      - name: "Preparation: Repository Checkout"
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-      
-      - name: Run Trivy 'fs' type vulnerability scanner.
-        uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
-        with:
-          scan-type: 'fs'
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-fs-scan-tiber.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      if: always()
+      with:
+        sarif_file: 'trivy-config-scan-tiber.sarif'
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-            sarif_file: 'trivy-fs-scan-tiber.sarif'
+  trivy-fs-scan:
+    name: "trivy fs scans"
+    runs-on: ubuntu-22.04
+    permissions:
+      security-events: write
+    steps:
+    - name: "Preparation: Harden Runner"
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: "Preparation: Repository Checkout"
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+    - name: Run Trivy 'fs' type vulnerability scanner.
+      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'sarif'
+        output: 'trivy-fs-scan-tiber.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      if: always()
+      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      with:
+          sarif_file: 'trivy-fs-scan-tiber.sarif'

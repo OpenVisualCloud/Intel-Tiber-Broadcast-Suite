@@ -833,9 +833,11 @@ function install_in_docker_enviroment {
     IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
     IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
     IMAGE_TAG="${IMAGE_TAG:-latest}"
+    cat "${VERSIONS_ENVIRONMENT_FILE}" > "${SCRIPT_DIR}/.temp.env"
 
+    # "${VERSIONS_ENVIRONMENT_FILE}"
     docker buildx build "${ENV_PROXY_ARGS[@]}" \
-        $(cat "${VERSIONS_ENVIRONMENT_FILE}" | xargs -I {} echo --build-arg {}) \
+        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/Dockerfile" \
@@ -843,7 +845,7 @@ function install_in_docker_enviroment {
         "${SCRIPT_DIR}"
 
     docker buildx build "${ENV_PROXY_ARGS[@]}" \
-        $(cat "${VERSIONS_ENVIRONMENT_FILE}" | xargs -I {} echo --build-arg {}) \
+        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/Dockerfile" \

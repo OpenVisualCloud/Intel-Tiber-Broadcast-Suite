@@ -24,31 +24,17 @@ ENV \
   MAKEFLAGS=-j${nproc}
 
 # versions variables are contained in the versions.env
+ARG VERSIONS_ENVIRONMENT_FILE="versions.env"
 ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEEL_COMMIT_ID FFMPEG_COMMIT_ID XDP_VER BPF_VER MTL_VER MCM_VER JPEG_XS_VER DPDK_VER FFNVCODED_VER LINK_CUDA_REPO FFMPEG_PLUGIN_VER"
 
-ARG \
-  LIBVMAF \
-  ONEVPL \
-  SVTAV1 \
-  VULKANSDK \
-  VSR \
-  CARTWHEEL_COMMIT_ID \
-  FFMPEG_COMMIT_ID \
-  XDP_VER \
-  BPF_VER \
-  MTL_VER \
-  MCM_VER \
-  JPEG_XS_VER \
-  DPDK_VER \
-  FFNVCODED_VER \
-  LINK_CUDA_REPO \
-  FFMPEG_PLUGIN_VER
-
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
+COPY "${VERSIONS_ENVIRONMENT_FILE}" /etc/versions.env
+ENV BASH_ENV=/etc/versions.env
 
+# Check dependencies
 RUN for var in $REQUIRED_ENVIRONMENT_VARIABLES; do \
       if [ -z "\${!var}" ]; then \
-        echo \$var = \${!var}; \
+        echo \${var} = \${!var}; \
         echo "Error: WRONG BUILD ARGUMENTS SEE docs/build.md "; \
         exit 1; \
       fi; \
@@ -58,7 +44,7 @@ RUN for var in $REQUIRED_ENVIRONMENT_VARIABLES; do \
 RUN \
   echo "**** ADD CUDA APT REPO ****" && \
   apt-get update --fix-missing && \
-  apt-get install -y wget && \
+  apt-get install --no-install-recommends -y ca-certificates wget && \
   wget ${LINK_CUDA_REPO} && \
   dpkg -i cuda-keyring_1.1-1_all.deb && \
   echo "**** INSTALL BUILD PACKAGES ****" && \
@@ -69,7 +55,6 @@ RUN \
     libva-dev \
     intel-media-va-driver \
     libvpl-dev \
-    ca-certificates \
     build-essential \
     libarchive-tools \
     libnuma-dev \
