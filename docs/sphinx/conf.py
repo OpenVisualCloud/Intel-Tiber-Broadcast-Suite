@@ -14,10 +14,18 @@ from __future__ import annotations
 import os
 import sys
 
+
+def git_describe_tag():
+    try:
+        return os.popen('git describe --tags').read().strip()
+    except:
+        return ""
+
+
 project = 'Intel® Tiber™ Broadcast Suite'
 copyright = '2024, Intel Corporation'
 author = 'Intel Corporation'
-release = '0.9'
+release = git_describe_tag()
 
 extensions = [
     'myst_parser',

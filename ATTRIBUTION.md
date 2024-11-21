@@ -73,3 +73,7 @@ Third party programs and their corresponding required notices and/or license ter
 **Component:** OpenVisualCloud Video-Super-Resolution-Library<br>
 **Repository:** <https://github.com/OpenVisualCloud/Video-Super-Resolution-Library><br>
 **License:** <https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/blob/master/LICENSE>
+
+**Component:** Nv-Codec-Headers<br>
+**Repository:** <https://github.com/FFmpeg/nv-codec-headers><br>
+**License:** MIT License <https://github.com/FFmpeg/nv-codec-headers/blob/master/include/ffnvcodec/nvEncodeAPI.h>

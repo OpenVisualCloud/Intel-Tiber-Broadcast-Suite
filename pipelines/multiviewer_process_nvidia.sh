@@ -30,7 +30,7 @@ while getopts "lh" opt; do
         l )
             echo "Running pipeline on bare metal locally..."
             ffmpeg -y \
-                -qsv_device /dev/dri/renderD128 -hwaccel qsv \
+                -hwaccel cuda -hwaccel_output_format cuda \
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "0" \
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20001 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "1" \
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20002 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "2" \
@@ -39,17 +39,25 @@ while getopts "lh" opt; do
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20005 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "5" \
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20006 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "6" \
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20007 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "7" \
-                -filter_complex "[0:v]hwupload,scale_qsv=iw/4:ih/2[out0]; \
-                                [1:v]hwupload,scale_qsv=iw/4:ih/2[out1]; \
-                                [2:v]hwupload,scale_qsv=iw/4:ih/2[out2]; \
-                                [3:v]hwupload,scale_qsv=iw/4:ih/2[out3]; \
-                                [4:v]hwupload,scale_qsv=iw/4:ih/2[out4]; \
-                                [5:v]hwupload,scale_qsv=iw/4:ih/2[out5]; \
-                                [6:v]hwupload,scale_qsv=iw/4:ih/2[out6]; \
-                                [7:v]hwupload,scale_qsv=iw/4:ih/2[out7]; \
+                -filter_complex "[0:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled0]; \
+                                [1:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled1]; \
+                                [2:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled2]; \
+                                [3:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled3]; \
+                                [4:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled4]; \
+                                [5:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled5]; \
+                                [6:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled6]; \
+                                [7:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled7]; \
+                                [scaled0]hwdownload,format=y210le[out0]; \
+                                [scaled1]hwdownload,format=y210le[out0]; \
+                                [scaled2]hwdownload,format=y210le[out0]; \
+                                [scaled3]hwdownload,format=y210le[out0]; \
+                                [scaled4]hwdownload,format=y210le[out0]; \
+                                [scaled5]hwdownload,format=y210le[out0]; \
+                                [scaled6]hwdownload,format=y210le[out0]; \
+                                [scaled7]hwdownload,format=y210le[out0]; \
                                 [out0][out1][out2][out3] \
                                 [out4][out5][out6][out7] \
-                                xstack_qsv=inputs=8:\
+                                xstack=inputs=8:\
                                 layout=0_0|w0_0|0_h0|w0_h0|w0+w1_0|w0+w1+w2_0|w0+w1_h0|w0+w1+w2_h0, \
                                 format=y210le,format=yuv422p10le" \
                 -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_tx_ip 192.168.2.3 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -
@@ -83,7 +91,7 @@ docker run -it \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
       video_production_image -y \
-      -qsv_device /dev/dri/renderD128 -hwaccel qsv \
+      -hwaccel cuda -hwaccel_output_format cuda \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "0" \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20001 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "1" \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20002 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "2" \
@@ -92,17 +100,25 @@ docker run -it \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20005 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "5" \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20006 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "6" \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_rx_ip 192.168.2.1 -udp_port 20007 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -video_size 1920x1080 -f mtl_st20p -i "7" \
-      -filter_complex "[0:v]hwupload,scale_qsv=iw/4:ih/2[out0]; \
-                       [1:v]hwupload,scale_qsv=iw/4:ih/2[out1]; \
-                       [2:v]hwupload,scale_qsv=iw/4:ih/2[out2]; \
-                       [3:v]hwupload,scale_qsv=iw/4:ih/2[out3]; \
-                       [4:v]hwupload,scale_qsv=iw/4:ih/2[out4]; \
-                       [5:v]hwupload,scale_qsv=iw/4:ih/2[out5]; \
-                       [6:v]hwupload,scale_qsv=iw/4:ih/2[out6]; \
-                       [7:v]hwupload,scale_qsv=iw/4:ih/2[out7]; \
+      -filter_complex "[0:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled0]; \
+                       [1:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled1]; \
+                       [2:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled2]; \
+                       [3:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled3]; \
+                       [4:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled4]; \
+                       [5:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled5]; \
+                       [6:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled6]; \
+                       [7:v]hwupload_cuda,scale_cuda=iw/4:ih/2[scaled7]; \
+                       [scaled0]hwdownload,format=y210le[out0]; \
+                       [scaled1]hwdownload,format=y210le[out0]; \
+                       [scaled2]hwdownload,format=y210le[out0]; \
+                       [scaled3]hwdownload,format=y210le[out0]; \
+                       [scaled4]hwdownload,format=y210le[out0]; \
+                       [scaled5]hwdownload,format=y210le[out0]; \
+                       [scaled6]hwdownload,format=y210le[out0]; \
+                       [scaled7]hwdownload,format=y210le[out0]; \
                        [out0][out1][out2][out3] \
                        [out4][out5][out6][out7] \
-                       xstack_qsv=inputs=8:\
+                       xstack=inputs=8:\
                        layout=0_0|w0_0|0_h0|w0_h0|w0+w1_0|w0+w1+w2_0|w0+w1_h0|w0+w1+w2_h0, \
                        format=y210le,format=yuv422p10le" \
       -p_port "${VFIO_PORT_PROC}" -p_sip 192.168.2.2 -p_tx_ip 192.168.2.3 -udp_port 20000 -payload_type 112 -fps 25 -pix_fmt yuv422p10le -f mtl_st20p -
