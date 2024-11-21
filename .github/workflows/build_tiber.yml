@@ -1,4 +1,4 @@
-name: Docker Build
+name: dockerfiles-build
 
 on:
   workflow_call:
@@ -12,7 +12,7 @@ permissions:
 
 env:
   BUILD_TYPE: "Release"
-  DOCKER_IMAGE_NAME: "docker.io/ovc/tiber-broadcast-suite"
+  DOCKER_IMAGE_NAME: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite/tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
   TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db"
@@ -70,6 +70,7 @@ jobs:
         load: true
         target: final-stage
         tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        # cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:buildcache
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0

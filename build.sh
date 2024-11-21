@@ -833,7 +833,7 @@ function install_in_docker_enviroment {
     IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
     IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
     IMAGE_TAG="${IMAGE_TAG:-latest}"
-    cat "${VERSIONS_ENVIRONMENT_FILE}" > "${SCRIPT_DIR}/.temp.env"
+    cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
     # "${VERSIONS_ENVIRONMENT_FILE}"
     docker buildx build "${ENV_PROXY_ARGS[@]}" \
