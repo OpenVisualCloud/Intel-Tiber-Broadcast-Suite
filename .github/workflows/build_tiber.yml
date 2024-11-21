@@ -39,12 +39,13 @@ jobs:
       shell: bash
       run: |
         export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
+        export NEW_SWAP_FILE="/mnt/swap"
         sudo swapoff $SWAP_FILE
         sudo rm $SWAP_FILE
-        sudo fallocate -l 20480M $SWAP_FILE
-        sudo chmod 600 $SWAP_FILE
-        sudo mkswap $SWAP_FILE
-        sudo swapon $SWAP_FILE
+        sudo fallocate -l 20480M $NEW_SWAP_FILE
+        sudo chmod 600 $NEW_SWAP_FILE
+        sudo mkswap $NEW_SWAP_FILE
+        sudo swapon $NEW_SWAP_FILE
 
     - name: "Memory and swap report after"
       run: |
@@ -60,11 +61,6 @@ jobs:
                             --tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
                             --target final-stage \
                             -f Dockerfile .
-
-    - name: "remove unnecessary files"
-      run: | 
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
