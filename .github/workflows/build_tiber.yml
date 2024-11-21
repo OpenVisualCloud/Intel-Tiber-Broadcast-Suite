@@ -63,8 +63,7 @@ jobs:
       run: | 
         docker buildx build $(cat versions.env | xargs -I {} echo --build-arg {}) \
                             --tag ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
-                            --cache-to=type=local,dest=/tmp/.buildx-cache\
-                            --output type=image,push=false \
+                            --output type=docker,push=false \
                             --target final-stage \
                             -f Dockerfile .
 
