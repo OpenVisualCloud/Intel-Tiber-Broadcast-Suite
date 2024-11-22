@@ -12,16 +12,14 @@ ARG IMAGE_NAME=library/ubuntu:24.04@sha256:8a37d68f4f73ebf3d4efafbcf66379bf37289
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS build-stage
 
-ARG nproc=100
 USER root
 
 # common env
+ARG nproc
 ENV \
-  nproc=$nproc \
   TZ="Europe/Warsaw" \
   DEBIAN_FRONTEND="noninteractive" \
-  PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/tmp/jpegxs/Build/linux/install/lib/pkgconfig \
-  MAKEFLAGS=-j${nproc}
+  PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/tmp/jpegxs/Build/linux/install/lib/pkgconfig
 
 # versions variables are contained in the versions.env
 ARG VERSIONS_ENVIRONMENT_FILE="versions.env"
@@ -29,6 +27,7 @@ ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEE
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 COPY "${VERSIONS_ENVIRONMENT_FILE}" /etc/versions.env
+RUN echo -e "nproc=${nproc:-$(nproc)}\nMAKEFLAGS=-j${nproc:-$(nproc)}" >> "/etc/versions.env"
 ENV BASH_ENV=/etc/versions.env
 
 # Check dependencies
@@ -212,9 +211,7 @@ RUN \
 
 RUN \
   echo "**** BUILD JPEG-XS ****" && \
-  ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
-
-ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
+  ./build.sh release --prefix="/usr/local" install
 
 WORKDIR /tmp/jpegxs/imtl-plugin
 RUN \
@@ -277,12 +274,6 @@ RUN \
   # Clang 18 have bug that break compilation, force compiler to GCC
   sed -i 's/clan//g' build.sh && \
   ./build.sh -DCMAKE_INSTALL_PREFIX="/tmp/vsr/install" -DENABLE_RAISR_OPENCL=ON
-
-# RUN \
-#   echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
-#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0001-ffmpeg-raisr-filter.patch && \
-#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
-#   cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
 
 WORKDIR /tmp/mcm
 RUN \
@@ -383,9 +374,6 @@ RUN \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri && \
   cp -a \
-    /tmp/jpegxs/Build/linux/install/lib/* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
     /tmp/jpegxs/imtl-plugin/kahawai.json \
     /buildout/usr/local/etc/jpegxs.json && \
   cp -a \
@@ -411,12 +399,12 @@ ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS final-stage
 
-LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com,dawid.wesierski@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
 LABEL org.opencontainers.image.title="Intel® Tiber™ Broadcast Suite"
 LABEL org.opencontainers.image.description="Intel® Tiber™ Broadcast Suite. Open Visual Cloud from Intel® Corporation, collaboration on FFmpeg with plugins on Ubuntu. Release image"
 LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
-LABEL org.opencontainers.image.version="0.9.0"
+LABEL org.opencontainers.image.version="24.11.0"
 LABEL org.opencontainers.image.vendor="Intel® Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
@@ -495,12 +483,12 @@ ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS manager-stage
 
-LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com,dawid.wesierski@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
 LABEL org.opencontainers.image.title="Intel® MTL Manager"
 LABEL org.opencontainers.image.description="Intel® MTL Manager. Open Visual Cloud Media Transport Library Manager required for live software defined broadcast stack optimizations. Ubuntu release image"
 LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="24.11.0"
 LABEL org.opencontainers.image.vendor="Intel® Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
