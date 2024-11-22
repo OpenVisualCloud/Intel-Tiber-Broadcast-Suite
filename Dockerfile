@@ -12,45 +12,30 @@ ARG IMAGE_NAME=library/ubuntu:24.04@sha256:8a37d68f4f73ebf3d4efafbcf66379bf37289
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS build-stage
 
-ARG nproc=100
 USER root
 
 # common env
 ENV \
-  nproc=$nproc \
   TZ="Europe/Warsaw" \
   DEBIAN_FRONTEND="noninteractive" \
-  PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:/tmp/jpegxs/Build/linux/install/lib/pkgconfig \
-  MAKEFLAGS=-j${nproc}
+  PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
 
 # versions variables are contained in the versions.env
+ARG nproc
+ARG VERSIONS_ENVIRONMENT_FILE="versions.env"
 ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEEL_COMMIT_ID FFMPEG_COMMIT_ID XDP_VER BPF_VER MTL_VER MCM_VER JPEG_XS_VER DPDK_VER FFNVCODED_VER LINK_CUDA_REPO FFMPEG_PLUGIN_VER"
-
-ARG \
-  LIBVMAF \
-  ONEVPL \
-  SVTAV1 \
-  VULKANSDK \
-  VSR \
-  CARTWHEEL_COMMIT_ID \
-  FFMPEG_COMMIT_ID \
-  XDP_VER \
-  BPF_VER \
-  MTL_VER \
-  MCM_VER \
-  JPEG_XS_VER \
-  DPDK_VER \
-  FFNVCODED_VER \
-  LINK_CUDA_REPO \
-  FFMPEG_PLUGIN_VER
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 
-RUN for var in $REQUIRED_ENVIRONMENT_VARIABLES; do \
-      if [ -z "\${!var}" ]; then \
-        echo \$var = \${!var}; \
-        echo "Error: WRONG BUILD ARGUMENTS SEE docs/build.md "; \
-        exit 1; \
+COPY "/patches" "/tmp/patches"
+COPY "${VERSIONS_ENVIRONMENT_FILE}" "/tmp/versions.env"
+RUN echo -e "nproc=${nproc:-$(nproc)}" >> "/tmp/versions.env"
+ENV BASH_ENV=/tmp/versions.env
+
+# Check dependencies
+RUN for pt in $REQUIRED_ENVIRONMENT_VARIABLES; do \
+      if [ -z "${!pt}" ]; then \
+        echo "Error: Wrong arguments. See docs/build.md. [${pt} = \"${!pt}\"]"; exit 1;\
       fi; \
     done
 
@@ -58,72 +43,69 @@ RUN for var in $REQUIRED_ENVIRONMENT_VARIABLES; do \
 RUN \
   echo "**** ADD CUDA APT REPO ****" && \
   apt-get update --fix-missing && \
-  apt-get install -y wget && \
-  wget ${LINK_CUDA_REPO} && \
-  dpkg -i cuda-keyring_1.1-1_all.deb && \
+  apt-get install --no-install-recommends -y ca-certificates curl && \
+  curl -Lf ${LINK_CUDA_REPO} -o /tmp/cuda-keyring_1.1-1_all.deb && \
+  dpkg -i /tmp/cuda-keyring_1.1-1_all.deb && \
   echo "**** INSTALL BUILD PACKAGES ****" && \
   apt-get update --fix-missing && \
   apt-get full-upgrade -y && \
   apt-get install --no-install-recommends -y \
-    libigdgmm-dev \
-    libva-dev \
-    intel-media-va-driver \
-    libvpl-dev \
-    ca-certificates \
+    autoconf \
+    automake \
     build-essential \
+    clang \
+    cmake \
+    cuda-toolkit-12-6 \
+    diffutils \
+    g++ \
+    gcc \
+    gcc-multilib \
+    git \
+    intel-media-va-driver \
     libarchive-tools \
-    libnuma-dev \
-    libjson-c-dev \
-    libpcap-dev \
+    libbsd-dev \
+    libc6-dev \
+    libcap2-bin \
+    libdrm-dev \
+    libelf-dev \
+    libfdt-dev \
     libgtest-dev \
+    libigdgmm-dev \
+    libjson-c-dev \
+    libnuma-dev \
+    libnvidia-compute-550-server \
+    libpcap-dev \
+    librdmacm-dev \
     libsdl2-dev \
     libsdl2-ttf-dev \
     libssl-dev \
     libtool \
+    libva-dev \
+    libvpl-dev \
+    libwayland-dev \
     libx11-dev \
     libx11-xcb-dev \
-    libwayland-dev \
     libxcb-dri3-dev \
     libxcb-present-dev \
     libxext-dev \
     libxfixes-dev \
     libxml2-dev \
-    libdrm-dev \
-    librdmacm-dev \
-    zlib1g-dev \
-    libelf-dev \
-    git \
-    cmake \
-    meson \
-    m4 \
-    clang \
     llvm \
-    curl \
-    g++ \
+    m4 \
+    meson \
     nasm \
-    autoconf \
-    automake \
+    ocl-icd-opencl-dev \
     pkg-config \
-    diffutils \
-    gcc \
-    gcc-multilib \
+    python3-pyelftools \
+    sudo \
+    systemtap-sdt-dev \
+    ubuntu-drivers-common \
     xxd \
     zip \
-    python3-pyelftools \
-    systemtap-sdt-dev \
-    sudo \
-    libbsd-dev \
-    ocl-icd-opencl-dev \
-    libcap2-bin \
-    ubuntu-drivers-common \
-    libc6-dev \
-    cuda-toolkit-12-6 \
-    libnvidia-compute-550-server \
-    libfdt-dev && \
+    zlib1g-dev && \
   apt-get clean && \
-  rm -rf /var/lib/apt/lists/*
+  rm -rf /var/lib/apt/lists/* /tmp/cuda-keyring_1.1-1_all.deb
 
-COPY /patches /tmp/patches
 WORKDIR /tmp/onevpl/build
 RUN \
   echo "**** DOWNLOAD and PATCH ONEVPL ****" && \
@@ -137,8 +119,8 @@ RUN \
   cmake \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. && \
-  make && \
-  make install && \
+  make -j${nproc} && \
+  make install -j${nproc} && \
   strip -d /usr/lib/x86_64-linux-gnu/libmfx-gen.so
 
 WORKDIR /tmp/vmaf/libvmaf
@@ -162,8 +144,8 @@ RUN \
 RUN \
   echo "**** BUILD SVT-AV1 ****" && \
   cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && \
-  make && \
-  make install
+  make -j${nproc} && \
+  make install -j${nproc}
 
 WORKDIR /tmp/vulkan-headers
 RUN \
@@ -197,19 +179,18 @@ RUN curl -Lf https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz 
     curl -Lf https://github.com/libbpf/libbpf/archive/${BPF_VER}.tar.gz | \
       tar -zx --strip-components=1 -C /tmp/xdp-tools/lib/libbpf && \
     ./configure && \
-    make && \
-    make install && \
-    DESTDIR=/buildout make install && \
-    make -C /tmp/xdp-tools/lib/libbpf/src install && \
-    DESTDIR=/buildout make -C /tmp/xdp-tools/lib/libbpf/src install
+    make -j${nproc} && \
+    make install -j${nproc} && \
+    make -C /tmp/xdp-tools/lib/libbpf/src -j${nproc} && \
+    make -C /tmp/xdp-tools/lib/libbpf/src install -j${nproc}
 
 WORKDIR /tmp/dpdk
 RUN \
   echo "**** BUILD DPDK ****"  && \
   git apply /tmp/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch && \
   meson build && \
-  ninja -C build && \
-  ninja -C build install
+  ninja -j${nproc} -C build && \
+  ninja -j${nproc} -C build install
 
 WORKDIR /tmp/Media-Transport-Library
 RUN \
@@ -227,9 +208,7 @@ RUN \
 
 RUN \
   echo "**** BUILD JPEG-XS ****" && \
-  ./build.sh install --prefix=/tmp/jpegxs/Build/linux/install
-
-ENV LD_LIBRARY_PATH="/tmp/jpegxs/Build/linux/install/lib"
+  ./build.sh release --prefix="/usr/local" install
 
 WORKDIR /tmp/jpegxs/imtl-plugin
 RUN \
@@ -253,51 +232,31 @@ RUN \
 
 RUN \
   echo "**** APPLY MTL PATCHES ****" && \
-  cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.c -rf /tmp/ffmpeg/libavdevice/ && \
-  cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.h -rf /tmp/ffmpeg/libavdevice/ && \
-  git -C /tmp/ffmpeg/ apply /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/${FFMPEG_PLUGIN_VER}/*.patch
-
-RUN \
+  cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_* -rf /tmp/ffmpeg/libavdevice/ && \
+  patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/${FFMPEG_PLUGIN_VER}/"*.patch) && \
   echo "**** APPLY JPEG-XS PATCHES ****" && \
-  git -C /tmp/ffmpeg apply --whitespace=fix /tmp/patches/jpegxs/*.patch
-
-RUN \
+  patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/patches/jpegxs/"*.patch) && \
   echo "**** APPLY FFMPEG patches ****" && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/hwupload_async.diff && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/qsv_aligned_malloc.diff && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/qsvvpp_async.diff && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/filtergraph_async.diff && \
-  git -C /tmp/ffmpeg apply /tmp/patches/ffmpeg/ffmpeg_scheduler.diff
+  patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/patches/ffmpeg/"*.diff)
 
-WORKDIR /tmp
 RUN \
   echo "**** DOWNLOAD AND INSTALL IPP ****" && \
-  no_proxy="" wget --progress=dot:giga \
-    https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
-  chmod +x l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
-  ./l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
-  echo "source /opt/intel/oneapi/ipp/latest/env/vars.sh" | tee -a ~/.bash_profile
+  curl -Lf https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh -o /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
+  chmod a+x /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
+  /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
+  rm -f /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh
 
 WORKDIR /tmp/vsr
 RUN \
-  echo "**** DOWNLOAD VIDEO SUPER RESOLUTION ****" && \
+  echo "**** DOWNLOAD AND BUILD VIDEO SUPER RESOLUTION ****" && \
   curl -Lf \
     https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz | \
-  tar -zx --strip-components=1 -C /tmp/vsr
-
-RUN \
-  echo "**** BUILD VIDEO SUPER RESOLUTION ****" && \
-  . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
-  git -C /tmp/vsr/ apply /tmp/patches/vsr/0003-missing-header-fix.patch && \
-  # Clang 18 have bug that break compilation, force compiler to GCC
+  tar -zx --strip-components=1 -C "/tmp/vsr" && \
+  patch -d "/tmp/vsr" -p1 -i <(cat "/tmp/patches/vsr/"*.patch) && \
+  echo "Fix for clang 18 bug that breaks compilation. Force compiler to GCC." && \
   sed -i 's/clan//g' build.sh && \
-  ./build.sh -DCMAKE_INSTALL_PREFIX="/tmp/vsr/install" -DENABLE_RAISR_OPENCL=ON
-
-# RUN \
-#   echo "**** APPLY VIDEO SUPER RESOLUTION PATCHES ****" && \
-#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0001-ffmpeg-raisr-filter.patch && \
-#   git -C /tmp/ffmpeg apply /tmp/patches/vsr/0002-libavfilter-raisr_opencl-Add-raisr_opencl-filter.patch && \
-#   cp /tmp/vsr/ffmpeg/vf_raisr*.c /tmp/ffmpeg/libavfilter
+  . "/opt/intel/oneapi/ipp/latest/env/vars.sh" && \
+  ./build.sh -DCMAKE_INSTALL_PREFIX="/usr/local" -DENABLE_RAISR_OPENCL=ON
 
 WORKDIR /tmp/mcm
 RUN \
@@ -308,23 +267,25 @@ RUN \
 
 RUN \
   echo "**** BUILD MEDIA COMMUNICATIONS MESH ****" && \
-  cmake -S /tmp/mcm/sdk -B /tmp/mcm/sdk/out && \
-  cmake --build /tmp/mcm/sdk/out && \
-  cmake --install /tmp/mcm/sdk/out
+  cmake -S "/tmp/mcm/sdk" -B "/tmp/mcm/sdk/out" \
+    -DCMAKE_BUILD_TYPE="Release" \
+    -DCMAKE_INSTALL_PREFIX="/usr/local" && \
+  cmake --build "/tmp/mcm/sdk/out" && \
+  cmake --install "/tmp/mcm/sdk/out"
 
 WORKDIR /tmp/nv-codec-headers
 RUN \
   echo "**** DOWNLOAD AND INSTALL FFNVCODED HEADERS ****" && \
   curl -Lf https://github.com/FFmpeg/nv-codec-headers/archive/${FFNVCODED_VER}.tar.gz  | \
     tar -zx --strip-components=1 -C /tmp/nv-codec-headers && \
-  make && \
-  make install PREFIX=/usr
+  make -j${nproc} && \
+  make install -j${nproc} PREFIX=/usr
 
 WORKDIR /tmp/ffmpeg/
 RUN \
   echo "**** APPLY MEDIA COMMUNICATIONS MESH PATCHES ****" && \
-  git -C /tmp/ffmpeg apply -v --whitespace=fix --ignore-space-change /tmp/mcm/ffmpeg-plugin/${FFMPEG_PLUGIN_VER}/*.patch && \
-  cp -f /tmp/mcm/ffmpeg-plugin/mcm_* /tmp/ffmpeg/libavdevice/
+  patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/mcm/ffmpeg-plugin/${FFMPEG_PLUGIN_VER}/"*.patch) && \
+  cp -f "/tmp/mcm/ffmpeg-plugin/mcm_"* "/tmp/ffmpeg/libavdevice/"
 
 RUN \
   echo "**** BUILD FFMPEG ****" && \
@@ -355,11 +316,11 @@ RUN \
     --enable-nvenc \
     --enable-nvdec \
     --enable-cuda-llvm \
-    --extra-cflags="-march=native -fopenmp -I/tmp/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
-    --extra-ldflags="-fopenmp -L/tmp/vsr/install/lib -L/usr/local/cuda/lib64 -L/usr/lib64 -L/usr/local/lib" \
+    --extra-cflags="-march=native -fopenmp -I/usr/local/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
+    --extra-ldflags="-fopenmp -L/usr/local/cuda/lib64 -L/usr/lib64 -L/usr/local/lib" \
     --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm -lbpf -lxdp' \
     --enable-cross-compile && \
-  make
+  make -j${nproc}
 
 RUN \
   echo "**** ARRANGE FILES ****" && \
@@ -373,13 +334,13 @@ RUN \
     /buildout/usr/local/lib/x86_64-linux-gnu/dpdk/pmds-24.0/ \
     /buildout/etc/OpenCL/vendors \
     /buildout/usr/local/etc/ && \
-  cp \
+  mv \
     /tmp/ffmpeg/ffmpeg \
     /buildout/usr/bin && \
-  cp \
+  mv \
     /tmp/ffmpeg/ffprobe \
     /buildout/usr/bin && \
-  cp \
+  mv \
     /tmp/ffmpeg/ffplay \
     /buildout/usr/bin && \
   cp -a \
@@ -398,14 +359,8 @@ RUN \
     /usr/lib/x86_64-linux-gnu/dri/*.so \
     /buildout/usr/local/lib/x86_64-linux-gnu/dri && \
   cp -a \
-    /tmp/jpegxs/Build/linux/install/lib/* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
     /tmp/jpegxs/imtl-plugin/kahawai.json \
     /buildout/usr/local/etc/jpegxs.json && \
-  cp -a \
-    /tmp/vsr/install/lib/* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
     /tmp/vsr/filters* \
     /buildout/ && \
@@ -414,9 +369,6 @@ RUN \
     /buildout/usr/lib/x86_64-linux-gnu/ && \
   cp -a \
     /tmp/Media-Transport-Library/build/lib/libmtl.so* \
-    /buildout/usr/lib/x86_64-linux-gnu/ && \
-  cp -a \
-    /tmp/mcm/sdk/out/lib/libmcm_dp.so* \
     /buildout/usr/lib/x86_64-linux-gnu/
 
 # ===============================================//
@@ -426,12 +378,12 @@ ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS final-stage
 
-LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com,dawid.wesierski@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
 LABEL org.opencontainers.image.title="Intel® Tiber™ Broadcast Suite"
 LABEL org.opencontainers.image.description="Intel® Tiber™ Broadcast Suite. Open Visual Cloud from Intel® Corporation, collaboration on FFmpeg with plugins on Ubuntu. Release image"
 LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
-LABEL org.opencontainers.image.version="0.9.0"
+LABEL org.opencontainers.image.version="24.11.0"
 LABEL org.opencontainers.image.vendor="Intel® Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
@@ -510,12 +462,12 @@ ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS manager-stage
 
-LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com,dawid.wesierski@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
 LABEL org.opencontainers.image.title="Intel® MTL Manager"
 LABEL org.opencontainers.image.description="Intel® MTL Manager. Open Visual Cloud Media Transport Library Manager required for live software defined broadcast stack optimizations. Ubuntu release image"
 LABEL org.opencontainers.image.documentation="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/tree/main/docs"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="24.11.0"
 LABEL org.opencontainers.image.vendor="Intel® Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 

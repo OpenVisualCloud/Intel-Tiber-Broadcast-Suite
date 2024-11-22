@@ -18,7 +18,7 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install dependencies
 RUN \
   apt-get update && \
-  apt-get install -y \
+  apt-get install --no-install-recommends -y \
     wget
 
 COPY /patches /root/patches
@@ -55,5 +55,13 @@ RUN \
   echo "**** DOWNLOAD IPP ****" && \
   export no_proxy="" && wget --progress=dot:giga https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh
 
-WORKDIR /root/
+RUN \
+  groupadd -g 2110 vfio && \
+  groupadd -g 1001 mtl && \
+  groupadd -g 1002 mcm && \
+  useradd -m -s /bin/bash -G vfio,mtl,mcm -u 1003 tiber && \
+  usermod -aG sudo tiber
+
+USER "tiber"
+HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "bash" || exit 1
 ENTRYPOINT ["/bin/bash"]
