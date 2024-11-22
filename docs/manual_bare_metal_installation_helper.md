@@ -483,11 +483,11 @@ First, add the CUDA APT repository to your system.
     git apply --whitespace=fix ../patches/jpegxs/*.patch
 
     # Apply additional FFmpeg patches:
-    git apply ../patches/ffmpeg/hwupload_async.diff
-    git apply ../patches/ffmpeg/qsv_aligned_malloc.diff
-    git apply ../patches/ffmpeg/qsvvpp_async.diff
-    git apply ../patches/ffmpeg/filtergraph_async.diff
-    git apply ../patches/ffmpeg/ffmpeg_scheduler.diff
+    git apply ../patches/ffmpeg/001-hwupload_async.diff
+    git apply ../patches/ffmpeg/002-qsv_aligned_malloc.diff
+    git apply ../patches/ffmpeg/003-qsvvpp_async.diff
+    git apply ../patches/ffmpeg/004-filtergraph_async.diff
+    git apply ../patches/ffmpeg/005-ffmpeg_scheduler.diff
 
     # Apply MCM patches:
     git apply -v --whitespace=fix --ignore-space-change ../mcm/ffmpeg-plugin/7.0/*.patch
