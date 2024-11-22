@@ -616,11 +616,11 @@ function ffmpeg_download_patch_build {
           cp "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.h -rf "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg/libavdevice/ &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/Media-Transport-Library/ecosystem/ffmpeg_plugin/7.0/*.patch &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply --whitespace=fix "${SCRIPT_DIR}/patches"/jpegxs/*.patch &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/hwupload_async.diff &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/qsv_aligned_malloc.diff &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/qsvvpp_async.diff &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/filtergraph_async.diff &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/ffmpeg_scheduler.diff &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0001-hwupload_async.diff &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0002-qsv_aligned_malloc.diff &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0003-qsvvpp_async.diff &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0004-filtergraph_async.diff &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0005-ffmpeg_scheduler.diff &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply -v --whitespace=fix --ignore-space-change "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/mcm/ffmpeg-plugin/7.0/*.patch &&
           cp -f "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/mcm/ffmpeg-plugin/mcm_* "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg/libavdevice/ &&
           cd -) >>$log_file 2>&1; then
@@ -833,9 +833,11 @@ function install_in_docker_enviroment {
     IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
     IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
     IMAGE_TAG="${IMAGE_TAG:-latest}"
+    cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
+    # "${VERSIONS_ENVIRONMENT_FILE}"
     docker buildx build "${ENV_PROXY_ARGS[@]}" \
-        $(cat "${VERSIONS_ENVIRONMENT_FILE}" | xargs -I {} echo --build-arg {}) \
+        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/Dockerfile" \
@@ -843,7 +845,7 @@ function install_in_docker_enviroment {
         "${SCRIPT_DIR}"
 
     docker buildx build "${ENV_PROXY_ARGS[@]}" \
-        $(cat "${VERSIONS_ENVIRONMENT_FILE}" | xargs -I {} echo --build-arg {}) \
+        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/Dockerfile" \

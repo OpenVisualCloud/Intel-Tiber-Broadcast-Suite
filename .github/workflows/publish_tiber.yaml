@@ -1,0 +1,73 @@
+name: dockerfiles-publish
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+    - 'main'
+    - 'release-*'
+    tags:
+    - 'v*'
+
+env:
+  BUILD_TYPE: "Release"
+  DOCKER_IMAGE_NAME: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite/tiber-broadcast-suite"
+  DOCKER_IMAGE_TAG: "${{ github.sha }}"
+  DEBIAN_FRONTEND: "noninteractive"
+  TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db"
+  TRIVY_JAVA_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-java-db"
+
+
+jobs:
+  docker:
+    name: "Publish image for Intel® Tiber™ Broadcast Suite"
+    runs-on: ubuntu-22.04
+    if: github.repository == 'openvisualcloud/intel-tiber-broadcast-suite'
+    timeout-minutes: 120
+    permissions:
+      packages: write
+    steps:
+    - name: "Preparation: Harden Runner"
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: "Set swap to 46Gi"
+      shell: bash
+      run: |
+        export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
+        export NEW_SWAP_FILE="/mnt/swap"
+        sudo swapoff $SWAP_FILE
+        sudo rm $SWAP_FILE
+        sudo fallocate -l 46080M $NEW_SWAP_FILE
+        sudo chmod 600 $NEW_SWAP_FILE
+        sudo mkswap $NEW_SWAP_FILE
+        sudo swapon $NEW_SWAP_FILE
+
+    - name: "Preparation: Repository Checkout"
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+    - name: "Configuration: Docker with Buildx Toolkit set up"
+      uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+      with:
+        buildkitd-flags: --debug
+
+    - name: "Login to GitHub Container Registry"
+      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: "Build and publish image"
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        file: Dockerfile
+        context: .
+        push: false
+        cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:buildcache
+        cache-to: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:buildcache,mode=max
+        target: final-stage
+        tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
