@@ -18,7 +18,7 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install dependencies
 RUN \
   apt-get update && \
-  apt-get install --no-install-recommends -y \
+  apt-get install --no-install-recommends ca-certificates -y \
     wget
 
 COPY /patches /root/patches
