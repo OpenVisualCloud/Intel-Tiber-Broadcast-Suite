@@ -1,0 +1,4 @@
+from . import Config as CONFIG
+
+CONFIG.ENABLE_HTTPS = False
+HEARTBEAT_INTERVAL = 5
