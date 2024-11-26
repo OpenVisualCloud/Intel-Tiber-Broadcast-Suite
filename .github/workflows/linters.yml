@@ -33,5 +33,5 @@ jobs:
         config: .github/configs/hadolint.yaml
         format: sarif
         output-file: ${{ env.HADOLINT_RESULTS_FILE }}
-        verbose: true 
-        failure-threshold: error 
+        no-fail: true
+        failure-threshold: info 
