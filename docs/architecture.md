@@ -23,10 +23,10 @@ The software package includes several performance features on top of regular [In
 
 Component               |   Version     |   Source
 ---                     |   ---         |   ---
-FFmpeg                  |   6.1.1       |   [FFmpeg ](https://github.com/FFmpeg/FFmpeg)
-Intel® FFmpeg patches   |   6.1         |   [Intel® FFmpeg patches](https://github.com/intel/cartwheel-ffmpeg)
-Media Transport Library |   commit SHA: `b210f1a85f571507f317d156b105dbe5690a234d`   |   [Media Transport Library](https://github.com/OpenVisualCloud/Media-Transport-Library)
-Media Communications Mesh|   24.06.01   |   [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)
+FFmpeg                  |   7.0.2       |   [FFmpeg ](https://github.com/FFmpeg/FFmpeg)
+Intel® FFmpeg patches   |   7.0         |   [Intel® FFmpeg patches](https://github.com/intel/cartwheel-ffmpeg)
+Media Transport Library |   24.09       |   [Media Transport Library](https://github.com/OpenVisualCloud/Media-Transport-Library)
+Media Communications Mesh|   24.09      |   [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)
 Data Plane Development Kit (DPDK)   |    23.11   |   [DPDK](https://github.com/DPDK/dpdk)
 SVT JPEG XS             |  0.9      |   [SVT JPEG XS](https://github.com/OpenVisualCloud/SVT-JPEG-XS)
 SVT AV1                 |  1.7.0        |   [SVT AV1](https://gitlab.com/AOMediaCodec/SVT-AV1)
@@ -37,6 +37,6 @@ oneVPL                  |   23.3.4      |   [oneVPL](https://github.com/intel/vp
 LIBVPL                  |   2023.3.1    |   [LIBVPL](https://github.com/intel/libvpl)
 Intel Media Driver (IHD)|   23.3.5      |   [IHD](https://github.com/intel/media-driver)
 GMMLIB                  |   22.3.12     |   [GMMLIB](https://github.com/intel/gmmlib)
-Vulkan-Headers          |   1.3.268.0   |   [Vulkan](https://github.com/KhronosGroup/Vulkan-Headers)
+Vulkan-Headers          |   1.3.280.0   |   [Vulkan](https://github.com/KhronosGroup/Vulkan-Headers)
 LIBVA                   |   2.20.0      |   [LIBVA](https://github.com/intel/libva)
-Nvidia CUDA plugin      |   commit SHA: `1889e62e2d35ff7aa9baca2bceb14f053785e6f1`  |   [Nvidia CUDA plugin](https://github.com/FFmpeg/nv-codec-headers)
+Nvidia CUDA plugin      |   [version](https://github.com/FFmpeg/nv-codec-headers/tree/1889e62e2d35ff7aa9baca2bceb14f053785e6f1)  |   [Nvidia CUDA plugin](https://github.com/FFmpeg/nv-codec-headers)
