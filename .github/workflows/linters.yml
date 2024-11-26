@@ -1,0 +1,37 @@
+name: Linters 
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+
+
+env:  
+  HADOLINT_RESULTS_FILE: hadolint.sarif
+
+jobs:
+  hadolint:
+    name: dockerfile lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: "setup: checkout repo"    
+      uses: actions/checkout@v3
+
+    - name: "scan: ./Dockerfile hadolint scan tty output"
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+        config: .github/configs/hadolint.yaml
+        format: tty
+        failure-threshold: error
+
+    - name: "scan: ./Dockerfile hadolint scan sarif output"
+      if: always()
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+        config: .github/configs/hadolint.yaml
+        format: sarif
+        output-file: ${{ env.HADOLINT_RESULTS_FILE }}
+        verbose: true 
+        failure-threshold: error 
