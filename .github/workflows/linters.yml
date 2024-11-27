@@ -1,0 +1,42 @@
+name: Linters 
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+
+
+env:  
+  HADOLINT_RESULTS_FILE: hadolint.sarif
+
+jobs:
+  hadolint:
+    name: dockerfile lint
+    runs-on: ubuntu-latest
+    steps:
+    - name: "setup: checkout repo"    
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+    - name: "scan: ./Dockerfile hadolint scan sarif output"
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+        config: .github/configs/hadolint.yaml
+        format: sarif
+        output-file: "${{ env.HADOLINT_RESULTS_FILE }}"
+        no-fail: true
+        failure-threshold: info 
+
+    - name: "post: Upload results to security tab"
+      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      with:
+        sarif_file: "${{ env.HADOLINT_RESULTS_FILE }}"
+
+    - name: "scan: ./Dockerfile hadolint scan tty output"
+      if: always()
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+        config: .github/configs/hadolint.yaml
+        format: tty
+        failure-threshold: warning
