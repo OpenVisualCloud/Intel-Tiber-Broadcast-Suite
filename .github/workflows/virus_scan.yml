@@ -1,0 +1,26 @@
+name: virus scan
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+
+
+env:  
+  HADOLINT_RESULTS_FILE: hadolint.sarif
+
+jobs:
+  scan:
+    name: scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: "setup: checkout repo"    
+      uses: actions/checkout@v3
+
+    - name: 'Scanner: Send to VirusTotal for analysis'
+        id: vt
+        uses: cssnr/virustotal-action@331c320c79202fdaa7a30f16163390f8d09c3f45 # v1.2.0
+        with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            vt_api_key: ${{ secrets.VT_API_KEY }}
+            file_globs: Dockerfile
