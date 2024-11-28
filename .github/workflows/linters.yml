@@ -53,6 +53,4 @@ jobs:
       uses: ludeeus/action-shellcheck@master
       with:
         format: tty
-        ignore_paths:
-        - .github/
-        - .sources/
+        ignore_paths: .github/ .sources/
