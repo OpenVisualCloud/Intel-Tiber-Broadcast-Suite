@@ -51,8 +51,8 @@ jobs:
 
     - name: "run shellcheck scan"
       uses: ludeeus/action-shellcheck@master
-     with:
-      format: tty
-      ignore_paths:
+      with:
+        format: tty
+        ignore_paths:
         - .github/
         - .sources/
