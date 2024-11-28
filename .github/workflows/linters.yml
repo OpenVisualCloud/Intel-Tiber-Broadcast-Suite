@@ -40,8 +40,10 @@ jobs:
         config: .github/configs/hadolint.yaml
         format: tty
         failure-threshold: warning
+
+
   shellcheck:
-    name: dockerfile lint
+    name: shellcheck
     runs-on: ubuntu-latest
     steps:
     - name: "setup: checkout repo"    
@@ -52,5 +54,5 @@ jobs:
      with:
       format: tty
       ignore_paths:
-      - .github/
-      - .sources/
+        - .github/
+        - .sources/
