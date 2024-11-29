@@ -407,7 +407,7 @@ function build_install_and_config_intel_drivers()
     set -x
     make -j "${NPROC}" -C "${IAVF_DIR}/src" install
     make -j "${NPROC}" -C "${ICE_DIR}/src" install
-    pushd "${IRDMA_DIR}"
+    pushd "${IRDMA_DIR}" || return
     ./build.sh
     popd || return
     config_intel_rdma_driver
