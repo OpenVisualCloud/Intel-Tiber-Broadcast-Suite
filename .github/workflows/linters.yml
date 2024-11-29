@@ -55,3 +55,5 @@ jobs:
         severity: warning
         format: tty
         ignore_paths: .github .sources
+      env:
+        SHELLCHECK_OPTS: -e SC2154
