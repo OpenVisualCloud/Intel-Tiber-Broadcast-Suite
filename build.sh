@@ -936,7 +936,7 @@ if ! cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null; then
     echo -e ${RED}[ERROR] failed change the current directory to the script directory ${NC}
     return 2
 fi
-
+# shellcheck source=versions.env
 if ! . "${VERSIONS_ENVIRONMENT_FILE}" 2> /dev/null; then
     echo
     echo -e ${RED}[ERROR] failed to source "${VERSIONS_ENVIRONMENT_FILE}"  ${NC}

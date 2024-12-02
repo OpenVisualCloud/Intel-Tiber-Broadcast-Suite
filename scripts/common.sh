@@ -396,9 +396,9 @@ function get_and_patch_intel_drivers()
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
-    pushd "${ICE_DIR}"
+    pushd "${ICE_DIR}" || return
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch)
-    popd
+    popd || return
     set +x
 }
 
@@ -407,9 +407,9 @@ function build_install_and_config_intel_drivers()
     set -x
     make -j "${NPROC}" -C "${IAVF_DIR}/src" install
     make -j "${NPROC}" -C "${ICE_DIR}/src" install
-    pushd "${IRDMA_DIR}"
+    pushd "${IRDMA_DIR}" || return
     ./build.sh
-    popd
+    popd || return
     config_intel_rdma_driver
     modprobe irdma
     set +x

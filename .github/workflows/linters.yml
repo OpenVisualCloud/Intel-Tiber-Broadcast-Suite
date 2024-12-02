@@ -40,3 +40,20 @@ jobs:
         config: .github/configs/hadolint.yaml
         format: tty
         failure-threshold: warning
+
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+    - name: "setup: checkout repo"    
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+    - name: "run shellcheck scan"
+      uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # v2.0.0
+      with:
+        severity: warning
+        format: tty
+        ignore_paths: .github .sources
+      env:
+        SHELLCHECK_OPTS: -e SC2154
