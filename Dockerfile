@@ -247,6 +247,7 @@ RUN \
   rm -f /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh
 
 WORKDIR /tmp/vsr
+# hadolint ignore=SC1091
 RUN \
   echo "**** DOWNLOAD AND BUILD VIDEO SUPER RESOLUTION ****" && \
   curl -Lf \
@@ -287,6 +288,7 @@ RUN \
   patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/mcm/ffmpeg-plugin/${FFMPEG_PLUGIN_VER}/"*.patch) && \
   cp -f "/tmp/mcm/ffmpeg-plugin/mcm_"* "/tmp/ffmpeg/libavdevice/"
 
+# hadolint ignore=SC1091
 RUN \
   echo "**** BUILD FFMPEG ****" && \
   . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
