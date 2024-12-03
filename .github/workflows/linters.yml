@@ -25,14 +25,17 @@ jobs:
     - name: "setup: checkout repo"    
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
+    - name: Create sarif output folder
+      run: mkdir -p "${{ github.workspace }}/sarif"
+
     - name: "scan: ./Dockerfile hadolint scan sarif output"
       uses: hadolint/hadolint-action@v3.1.0
       with:
         dockerfile: Dockerfile
         config: .github/configs/hadolint.yaml
         format: sarif
-        output-file: "sarif/main-${{ env.HADOLINT_RESULTS_FILE }}"
-        no-fail: true
+        output-file: "${{ github.workspace }}/sarif/main-${{ env.HADOLINT_RESULTS_FILE }}"
+        no-fail: false
         failure-threshold: info 
 
     - name: "scan: .sources/Dockerfile.sources hadolint scan sarif output"
@@ -41,14 +44,14 @@ jobs:
         dockerfile: .sources/Dockerfile.sources
         config: .github/configs/hadolint.yaml
         format: sarif
-        output-file: "sarif/sources-${{ env.HADOLINT_RESULTS_FILE }}"
+        output-file: "${{ github.workspace }}/sarif/sources-${{ env.HADOLINT_RESULTS_FILE }}"
         no-fail: true
         failure-threshold: info 
 
     - name: "post: Upload results to security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
-        sarif_file: "sarif"
+        sarif_file: "${{ github.workspace }}/sarif"
 
     - name: "scan: ./Dockerfile hadolint scan tty output"
       if: always()
