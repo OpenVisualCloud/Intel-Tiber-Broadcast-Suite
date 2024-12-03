@@ -13,7 +13,9 @@ env:
 
 permissions:
   contents: read
-
+defaults:
+  run:
+    shell: bash
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
@@ -23,10 +25,8 @@ jobs:
     name: 'dockerfile lint'
     permissions:
       actions: read
+      contents: read
       security-events: write
-    defaults:
-      run:
-        shell: bash
     runs-on: ubuntu-22.04
     steps:
     - name: 'setup: harden runner'
@@ -43,7 +43,7 @@ jobs:
     - name: 'scan: ./Dockerfile hadolint scan tty output'
       uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: "${{ github.workspace }}/Dockerfile"
+        dockerfile: "Dockerfile"
         config: .github/configs/hadolint.yaml
         format: tty
         no-fail: false
@@ -52,26 +52,24 @@ jobs:
     - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
       uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: "${{ github.workspace }}/Dockerfile"
+        dockerfile: "Dockerfile"
         config: .github/configs/hadolint.yaml
         format: sarif
-        output-file: "${{ github.workspace }}/main-${{ env.HADOLINT_RESULTS_FILE }}"
+        output-file: "main-${{ env.HADOLINT_RESULTS_FILE }}"
         no-fail: true
         failure-threshold: info
 
     - name: 'scan: Upload results to security tab'
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
-        sarif_file: "${{ github.workspace }}/main-${{ env.HADOLINT_RESULTS_FILE }}"
+        sarif_file: "main-${{ env.HADOLINT_RESULTS_FILE }}"
 
   hadolint-sources-dockerfile:
     name: 'sources dockerfile lint'
     permissions:
       actions: read
+      contents: read
       security-events: write
-    defaults:
-      run:
-        shell: bash
     runs-on: ubuntu-22.04
     steps:
     - name: 'setup: harden runner'
@@ -85,7 +83,7 @@ jobs:
     - name: "scan: ./Dockerfile hadolint scan tty output"
       uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: "${{ github.workspace }}/.sources/Dockerfile.sources"
+        dockerfile: ".sources/Dockerfile.sources"
         config: .github/configs/hadolint.yaml
         format: tty
         no-fail: false
@@ -94,17 +92,17 @@ jobs:
     - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
       uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: "${{ github.workspace }}/.sources/Dockerfile.sources"
+        dockerfile: ".sources/Dockerfile.sources"
         config: .github/configs/hadolint.yaml
         format: sarif
-        output-file: "${{ github.workspace }}/sources-${{ env.HADOLINT_RESULTS_FILE }}"
+        output-file: "sources-${{ env.HADOLINT_RESULTS_FILE }}"
         no-fail: true
         failure-threshold: info
 
     - name: 'scan: Upload results to security tab'
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
-        sarif_file: "${{ github.workspace }}/sources-${{ env.HADOLINT_RESULTS_FILE }}"
+        sarif_file: "sources-${{ env.HADOLINT_RESULTS_FILE }}"
 
   shellcheck:
     name: 'shellcheck'

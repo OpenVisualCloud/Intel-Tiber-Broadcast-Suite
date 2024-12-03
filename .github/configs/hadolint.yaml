@@ -1,6 +1,6 @@
 ignored:
   - DL3002 # DL3002 Last user should not be root.
-  - DL3006 # DL3006 Always tag the version of an image explicitly 
+  - DL3006 # DL3006 Always tag the version of an image explicitly
   - DL3008 # DL3008⁠ Pin versions in apt-get install.
   - DL3013 # DL3013 Pin versions in pip.
   - DL3016 # DL3016 Pin versions in npm.
