@@ -9,7 +9,7 @@ on:
     branches: [ 'main' ]
 
 env:
-  HADOLINT_RESULTS_FILE: hadolint.sarif
+  HADOLINT_RESULTS_FILE: 'hadolint.sarif'
 
 permissions:
   contents: read
@@ -19,60 +19,106 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  hadolint:
-    name: dockerfile lint
+  hadolint-main-dockerfile:
+    name: 'dockerfile lint'
     permissions:
+      actions: read
       security-events: write
+    defaults:
+      run:
+        shell: bash
     runs-on: ubuntu-22.04
     steps:
-    - name: "setup: checkout repo"
+    - name: 'setup: harden runner'
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: 'setup: checkout repo'
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-    - name: Create sarif output folder
+    - name: 'setup: sarif output folder'
       run: mkdir -p "${{ github.workspace }}/sarif"
 
-    - name: "scan: ./Dockerfile hadolint scan sarif output"
-      uses: hadolint/hadolint-action@v3.1.0
+    - name: 'scan: ./Dockerfile hadolint scan tty output'
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: Dockerfile
+        dockerfile: "${{ github.workspace }}/Dockerfile"
         config: .github/configs/hadolint.yaml
-        format: sarif
-        output-file: "${{ github.workspace }}/sarif/main-${{ env.HADOLINT_RESULTS_FILE }}"
+        format: tty
         no-fail: false
         failure-threshold: info
 
-    - name: "scan: .sources/Dockerfile.sources hadolint scan sarif output"
-      uses: hadolint/hadolint-action@v3.1.0
+    - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: .sources/Dockerfile.sources
+        dockerfile: "${{ github.workspace }}/Dockerfile"
         config: .github/configs/hadolint.yaml
         format: sarif
-        output-file: "${{ github.workspace }}/sarif/sources-${{ env.HADOLINT_RESULTS_FILE }}"
+        output-file: "${{ github.workspace }}/main-${{ env.HADOLINT_RESULTS_FILE }}"
         no-fail: true
         failure-threshold: info
 
-    - name: "post: Upload results to security tab"
+    - name: 'scan: Upload results to security tab'
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
-        sarif_file: "${{ github.workspace }}/sarif"
+        sarif_file: "${{ github.workspace }}/main-${{ env.HADOLINT_RESULTS_FILE }}"
 
-    - name: "scan: ./Dockerfile hadolint scan tty output"
-      if: always()
-      uses: hadolint/hadolint-action@v3.1.0
-      with:
-        dockerfile: Dockerfile
-        config: .github/configs/hadolint.yaml
-        format: tty
-        failure-threshold: warning
-
-  shellcheck:
-    name: shellcheck
+  hadolint-sources-dockerfile:
+    name: 'sources dockerfile lint'
+    permissions:
+      actions: read
+      security-events: write
+    defaults:
+      run:
+        shell: bash
     runs-on: ubuntu-22.04
     steps:
-    - name: "setup: checkout repo"
+    - name: 'setup: harden runner'
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: 'setup: checkout repo'
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-    - name: "run shellcheck scan"
+    - name: "scan: ./Dockerfile hadolint scan tty output"
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: "${{ github.workspace }}/.sources/Dockerfile.sources"
+        config: .github/configs/hadolint.yaml
+        format: tty
+        no-fail: false
+        failure-threshold: info
+
+    - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
+      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+      with:
+        dockerfile: "${{ github.workspace }}/.sources/Dockerfile.sources"
+        config: .github/configs/hadolint.yaml
+        format: sarif
+        output-file: "${{ github.workspace }}/sources-${{ env.HADOLINT_RESULTS_FILE }}"
+        no-fail: true
+        failure-threshold: info
+
+    - name: 'scan: Upload results to security tab'
+      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      with:
+        sarif_file: "${{ github.workspace }}/sources-${{ env.HADOLINT_RESULTS_FILE }}"
+
+  shellcheck:
+    name: 'shellcheck'
+    runs-on: ubuntu-22.04
+    steps:
+    - name: 'setup: harden runner'
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: 'setup: checkout repo'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+    - name: 'run shellcheck scan'
       uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # v2.0.0
       with:
         severity: warning
