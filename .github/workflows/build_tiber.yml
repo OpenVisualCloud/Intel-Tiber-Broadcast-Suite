@@ -18,6 +18,10 @@ env:
   TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db"
   TRIVY_JAVA_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-java-db"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   docker:
     name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
