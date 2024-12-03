@@ -1,35 +1,26 @@
-From a4a3aca7f883408b153de4b545f2e88b867d5957 Mon Sep 17 00:00:00 2001
-From: "Wesierski, Dawid" <dawid.wesierski@intel.com>
-Date: Wed, 29 May 2024 11:44:37 +0200
+From 97931318cc23dfea90629a2c4e9fd17828df4111 Mon Sep 17 00:00:00 2001
+From: Tomasz Szumski <tomasz.szumski@intel.com>
+Date: Wed, 9 Oct 2024 08:37:30 +0200
 Subject: [PATCH] cartwheel imtl y210le support
 
 ---
- ecosystem/ffmpeg_plugin/mtl_st20p_rx.c | 22 +++++++++++++++++++++-
- ecosystem/ffmpeg_plugin/mtl_st20p_tx.c | 15 ++++++++++++++-
- 2 files changed, 35 insertions(+), 2 deletions(-)
+ ecosystem/ffmpeg_plugin/mtl_st20p_rx.c | 20 ++++++++++++++++++++
+ ecosystem/ffmpeg_plugin/mtl_st20p_tx.c | 13 +++++++++++++
+ 2 files changed, 33 insertions(+)
 
 diff --git a/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c b/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c
-index 7a990e7..e22761d 100644
+index af7c247..6323b77 100644
 --- a/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c
 +++ b/ecosystem/ffmpeg_plugin/mtl_st20p_rx.c
-@@ -18,6 +18,7 @@
-  */
- 
- #include "mtl_common.h"
+@@ -21,6 +21,7 @@
+ #ifdef MTL_GPU_DIRECT_ENABLED
+ #include <mtl_gpu_direct/gpu.h>
+ #endif /* MTL_GPU_DIRECT_ENABLED */
 +#include <mtl/st_convert_api.h>
  
  typedef struct MtlSt20pDemuxerContext {
    const AVClass* class; /**< Class for private options. */
-@@ -95,7 +96,7 @@ static int mtl_st20p_read_header(AVFormatContext* ctx) {
-     err(ctx, "%s, frame rate %0.2f is not supported\n", __func__, av_q2d(s->framerate));
-     return AVERROR(EINVAL);
-   }
--  /* transport_fmt is hardcode now */
-+  /* transport_fmt is hardcode now test */
-   pix_fmt = s->pixel_format;
-   pix_fmt_desc = av_pix_fmt_desc_get(pix_fmt);
-   switch (pix_fmt) {
-@@ -103,6 +104,10 @@ static int mtl_st20p_read_header(AVFormatContext* ctx) {
+@@ -120,6 +121,10 @@ static int mtl_st20p_read_header(AVFormatContext* ctx) {
        ops_rx.transport_fmt = ST20_FMT_YUV_422_10BIT;
        ops_rx.output_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
        break;
@@ -40,7 +31,7 @@ index 7a990e7..e22761d 100644
      case AV_PIX_FMT_RGB24:
        ops_rx.transport_fmt = ST20_FMT_RGB_8BIT;
        ops_rx.output_fmt = ST_FRAME_FMT_RGB8;
-@@ -197,6 +202,21 @@ static int mtl_st20p_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
+@@ -256,6 +261,21 @@ static int mtl_st20p_read_packet(AVFormatContext* ctx, AVPacket* pkt) {
      st20p_rx_put_frame(s->rx_handle, frame);
      return ret;
    }
@@ -63,7 +54,7 @@ index 7a990e7..e22761d 100644
    mtl_memcpy(pkt->data, frame->addr[0], ctx->packet_size);
    st20p_rx_put_frame(s->rx_handle, frame);
 diff --git a/ecosystem/ffmpeg_plugin/mtl_st20p_tx.c b/ecosystem/ffmpeg_plugin/mtl_st20p_tx.c
-index 826bbeb..5b388c3 100644
+index 48c7b4a..0bbcf6e 100644
 --- a/ecosystem/ffmpeg_plugin/mtl_st20p_tx.c
 +++ b/ecosystem/ffmpeg_plugin/mtl_st20p_tx.c
 @@ -18,6 +18,7 @@
@@ -74,14 +65,7 @@ index 826bbeb..5b388c3 100644
  
  typedef struct mtlSt20pMuxerContext {
    const AVClass* class; /**< Class for private options. */
-@@ -88,12 +89,16 @@ static int mtl_st20p_write_header(AVFormatContext* ctx) {
- 
-   s->pixel_format = ctx->streams[0]->codecpar->format;
- 
--  /* transport_fmt is hardcode now */
-+  /* transport_fmt is hardcode now test */
-   switch (s->pixel_format) {
-     case AV_PIX_FMT_YUV422P10LE:
+@@ -94,6 +95,10 @@ static int mtl_st20p_write_header(AVFormatContext* ctx) {
        ops_tx.input_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
        ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
        break;
@@ -92,7 +76,7 @@ index 826bbeb..5b388c3 100644
      case AV_PIX_FMT_RGB24:
        ops_tx.input_fmt = ST_FRAME_FMT_RGB8;
        ops_tx.transport_fmt = ST20_FMT_RGB_8BIT;
-@@ -145,6 +150,14 @@ static int mtl_st20p_write_packet(AVFormatContext* ctx, AVPacket* pkt) {
+@@ -152,6 +157,14 @@ static int mtl_st20p_write_packet(AVFormatContext* ctx, AVPacket* pkt) {
      return AVERROR(EIO);
    }
    dbg(ctx, "%s(%d), st20p_tx_get_frame: %p\n", __func__, s->idx, frame);
@@ -108,5 +92,5 @@ index 826bbeb..5b388c3 100644
    mtl_memcpy(frame->addr[0], pkt->data, s->frame_size);
  
 -- 
-2.34.1
+2.46.2.windows.1
 

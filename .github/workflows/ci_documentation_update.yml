@@ -1,11 +1,19 @@
-
 name: Publish Github Pages Template
-permissions: read-all
 
 on:
   workflow_call:
   workflow_dispatch:
-    branches: [main]
+    inputs:
+      branch:
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   publishGitHubPages:
@@ -27,6 +35,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        with:
+          branch: ${{ inputs.branch }}
 
       - name: Prepare operating system for documentation build
         run: |
