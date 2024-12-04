@@ -324,6 +324,23 @@ RUN \
     --enable-cross-compile && \
   make -j${nproc}
 
+#install gRPC and protobuf dependicies
+COPY /gRPC /tmp/gRPC
+
+WORKDIR /tmp/gRPC
+RUN \
+    git clone --branch "v1.58.0" --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc grpc
+WORKDIR /tmp/gRPC/grpc/cmake/build
+RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
+    make "-j$(nproc)" && \
+    make install
+
+WORKDIR /tmp/gRPC
+RUN \
+chmod +x compile.sh && ./compile.sh
+
+WORKDIR /tmp/ffmpeg/
+
 RUN \
   echo "**** ARRANGE FILES ****" && \
   ldconfig && \
@@ -338,6 +355,9 @@ RUN \
     /buildout/usr/local/etc/ && \
   mv \
     /tmp/ffmpeg/ffmpeg \
+    /buildout/usr/bin && \
+  mv \
+    /tmp/gRPC/build/FFmpeg_wrapper_service \
     /buildout/usr/bin && \
   mv \
     /tmp/ffmpeg/ffprobe \
@@ -455,7 +475,7 @@ USER "tiber"
 
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT ["/usr/bin/ffmpeg"]
+ENTRYPOINT ["/usr/bin/FFmpeg_wrapper_service"]
 
 # ===============================================//
 #          MtlManager stage
