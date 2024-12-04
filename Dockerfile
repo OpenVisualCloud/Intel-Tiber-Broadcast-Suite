@@ -119,7 +119,9 @@ RUN \
     libc6-dev \
     cuda-toolkit-12-6 \
     libnvidia-compute-550-server \
-    libfdt-dev && \
+    libfdt-dev \
+	protobuf-compiler-grpc \
+	bazel-bootstrap && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 
@@ -361,6 +363,29 @@ RUN \
     --enable-cross-compile && \
   make
 
+#install gRPC and protobuf dependicies
+COPY /gRPC /tmp/gRPC
+
+WORKDIR /tmp/gRPC
+RUN \
+git clone https://github.com/grpc/grpc ggRPC
+
+RUN \
+cd ./ggRPC && git submodule update --init && \
+
+# build gRPC
+bazel build :all && \
+
+mkdir -p cmake/build && \
+cd cmake/build && \
+cmake ../.. && \
+make && \
+make install && \
+cd /tmp/gRPC && \
+chmod +x compile.sh && ./compile.sh
+
+WORKDIR /tmp/ffmpeg/
+
 RUN \
   echo "**** ARRANGE FILES ****" && \
   ldconfig && \
@@ -375,6 +400,9 @@ RUN \
     /buildout/usr/local/etc/ && \
   cp \
     /tmp/ffmpeg/ffmpeg \
+    /buildout/usr/bin && \
+    cp \
+    /tmp/gRPC/build/FFmpeg_wrapper_service \
     /buildout/usr/bin && \
   cp \
     /tmp/ffmpeg/ffprobe \
@@ -425,6 +453,8 @@ RUN \
 ARG IMAGE_NAME
 ARG IMAGE_CACHE_REGISTRY
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS final-stage
+
+COPY --from=build-stage /tmp/gRPC /tmp/gRPC
 
 LABEL org.opencontainers.image.authors="andrzej.wilczynski@intel.com,milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.url="https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite"
@@ -501,7 +531,7 @@ USER "tiber"
 
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT ["/usr/bin/ffmpeg"]
+ENTRYPOINT ["/usr/bin/FFmpeg_wrapper_service"]
 
 # ===============================================//
 #          MtlManager stage
