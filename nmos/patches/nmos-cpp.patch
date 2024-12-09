@@ -1101,7 +1101,27 @@ index f12cca1..a65659c 100644
      const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_ws_port));
 -    const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, how_many);
 +    const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, receivers_count_total);
- 
++
++    /*
++     * GRPC_CHANNEL_IP and GRPC_CHANNEL_PORT are placeholders
++     * for IP and PORT to configure gRPC communication channel
++     * and used to initialize gRPC client object "CmdPassClient"
++     */
++    CmdPassClient client_cmd_executor(GRPC_CHANNEL_IP, GRPC_CHANNEL_PORT);
++    
++    /*
++     * prepare the info needed to be send from NMOS client to gRPC client
++     * communication should be : (1)(NMOS client -> gRPC client) -> (2)(gRPC service -> FFmpeg)
++     * (1) is components on NMOS slient pod and (2) is application launcher pod
++     */
++    std::vector<std::pair<int, std::string>> client_info({ws_receiver_ports, ws_receiver_ids});
++
++    /*
++     * when calling "FFmpegCmdExec" the info send to gRPC client
++     * then serialized and forwarded to gRPC service.
++     */
++    client_cmd_executor.FFmpegCmdExec(client_info);
++
      // although which properties may need to be defaulted depends on the resource type,
      // the default value will almost always be different for each resource
 @@ -1534,12 +801,15 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
