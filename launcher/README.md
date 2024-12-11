@@ -37,7 +37,7 @@ It will be updated in SDBQ-1261
 ### To Deploy on the cluster
 
 **Build image:**  
-`docker build -t controller:bcs_pod_launcher .`
+`docker build -t bcs_pod_launcher:controller .`
 
 **BCS pod launcher installer in k8s cluster:**  
 
