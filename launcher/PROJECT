@@ -1,0 +1,25 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+
+domain: bcs.intel
+layout:
+- go.kubebuilder.io/v4
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: bcs-launcher
+repo: bcs.pod.launcher.intel
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: bcs.intel
+  group: bcs
+  kind: BcsConfig
+  path: bcs.pod.launcher.intel/api/v1
+  version: v1
+version: "3"
