@@ -1,0 +1,449 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+    control-plane: controller-manager
+  name: bcs
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+  name: bcsconfigs.bcs.bcs.intel
+spec:
+  group: bcs.bcs.intel
+  names:
+    kind: BcsConfig
+    listKind: BcsConfigList
+    plural: bcsconfigs
+    singular: bcsconfig
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: BcsConfig is the Schema for the bcsconfigs API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: BcsConfigSpec defines the desired state of BcsConfig
+            properties:
+              appParams:
+                properties:
+                  codec:
+                    type: string
+                  height:
+                    type: integer
+                  pixelFormat:
+                    type: string
+                  uniqueName:
+                    type: string
+                  width:
+                    type: integer
+                required:
+                - codec
+                - height
+                - pixelFormat
+                - uniqueName
+                - width
+                type: object
+              connections:
+                properties:
+                  controlConnection:
+                    properties:
+                      ipAddress:
+                        type: string
+                      port:
+                        type: integer
+                    required:
+                    - ipAddress
+                    - port
+                    type: object
+                  dataConnection:
+                    properties:
+                      connType:
+                        type: string
+                      mediaProxyIpAddress:
+                        type: string
+                      port:
+                        type: integer
+                    required:
+                    - connType
+                    - mediaProxyIpAddress
+                    - port
+                    type: object
+                required:
+                - controlConnection
+                - dataConnection
+                type: object
+            required:
+            - appParams
+            - connections
+            type: object
+          status:
+            description: BcsConfigStatus defines the observed state of BcsConfig
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-controller-manager
+  namespace: bcs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-leader-election-role
+  namespace: bcs
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-bcsconfig-editor-role
+rules:
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-bcsconfig-viewer-role
+rules:
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: bcs-launcher-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - persistentvolumeclaims
+  - persistentvolumes
+  - services
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  - deployments
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - bcs.bcs.intel
+  resources:
+  - bcsconfigs/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-proxy-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-leader-election-rolebinding
+  namespace: bcs
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: bcs-launcher-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: bcs-launcher-controller-manager
+  namespace: bcs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: bcs-launcher-manager-role
+subjects:
+- kind: ServiceAccount
+  name: bcs-launcher-controller-manager
+  namespace: bcs
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+  name: bcs-launcher-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: bcs-launcher-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: bcs-launcher-controller-manager
+  namespace: bcs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+    control-plane: controller-manager
+  name: bcs-launcher-controller-manager-metrics-service
+  namespace: bcs
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    control-plane: controller-manager
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: bcs-launcher
+    control-plane: controller-manager
+  name: bcs-launcher-controller-manager
+  namespace: bcs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+    spec:
+      containers:
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.16.0
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        image: bcs_pod_launcher:controller
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: bcs-launcher-controller-manager
+      terminationGracePeriodSeconds: 10

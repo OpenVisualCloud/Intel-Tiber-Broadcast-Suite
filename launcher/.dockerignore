@@ -1,0 +1,9 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+
+# More info: https://docs.docker.com/engine/reference/builder/#dockerignore-file
+# Ignore build and test binaries.
+bin/
