@@ -136,8 +136,6 @@ rules:
   - watch
   - create
   - update
-  - patch
-  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -223,9 +221,7 @@ rules:
   verbs:
   - create
   - get
-  - list
   - update
-  - watch
 - apiGroups:
   - apps
   resources:
@@ -236,7 +232,6 @@ rules:
   - get
   - list
   - update
-  - watch
 - apiGroups:
   - bcs.bcs.intel
   resources:
@@ -406,6 +401,8 @@ spec:
             cpu: 5m
             memory: 64Mi
         securityContext:
+          seccompProfile:
+            type: RuntimeDefault
           allowPrivilegeEscalation: false
           capabilities:
             drop:
@@ -439,6 +436,11 @@ spec:
             cpu: 10m
             memory: 64Mi
         securityContext:
+          runAsUser: 10000
+          runAsGroup: 10000
+          seccompProfile:
+            type: RuntimeDefault
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:
