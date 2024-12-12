@@ -9,6 +9,7 @@ package containercontroller
 
 import (
 	"context"
+	"reflect"
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/utils"
@@ -33,53 +34,83 @@ func NewDockerContainerController() (*DockerContainerController, error) {
 	return &DockerContainerController{cli: cli}, nil
 }
 
-// Hardcoded poc (it will be generalized in next PR)
-// use case covers running coaiers on single host
-func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, log logr.Logger) error {
-	mcmAgentContainer := general.Containers{
-		ContainerName:   "mcm-agent",
-		Ip:              "0.0.0.0",
-		ExposedPort:     "80/tcp",
-		BindingHostPort: "8089",
-		Image:           "nginx:latest",
+func (d *DockerContainerController) isEmptyStruct(s interface{}) bool {
+	return reflect.DeepEqual(s, reflect.Zero(reflect.TypeOf(s)).Interface())
+}
+
+// use case covers running containers on single host
+func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, launcherConfigName string, log logr.Logger) error {
+	config, err := utils.ParseLauncherConfiguration(launcherConfigName)
+	if err != nil {
+		log.Error(err, "Failed to parse launcher configuration file")
+		return err
 	}
-	mediaProxyContainer := general.Containers{
-		ContainerName:   "media-proxy",
-		Ip:              "0.0.0.0",
-		ExposedPort:     "80/tcp",
-		BindingHostPort: "8085",
-		Image:           "nginx:latest",
+	if d.isEmptyStruct(config) {
+		log.Error(err, "Failed to parse launcher configuration file. Configuration is empty")
+		return err
 	}
-	bcsNmosContainer := general.Containers{
-		ContainerName:   "bcsNmos",
-		Ip:              "0.0.0.0",
-		ExposedPort:     "80/tcp",
-		BindingHostPort: "8082",
-		Image:           "nginx:latest",
+	if !d.isEmptyStruct(config.RunOnce.MediaProxyAgent) {
+		mcmAgentContainer := general.Containers{
+			ContainerName:   "mcm-agent", //the name is predefined because only one instance is required on the machine
+			Ip:              config.RunOnce.MediaProxyAgent.IP,
+			ExposedPort:     config.RunOnce.MediaProxyAgent.ExposedPort, //"80/tcp",
+			BindingHostPort: config.RunOnce.MediaProxyAgent.BindingHostPort,
+			Image:           config.RunOnce.MediaProxyAgent.ImageAndTag,
+		}
+		err := utils.CreateAndRunContainer(ctx, d.cli, log, mcmAgentContainer)
+		if err != nil {
+			log.Error(err, "Failed to create contianer MCM MediaProxy Agent!")
+			return err
+		}
+	} else {
+		log.Info("You did not provide information about MCM MediaProxy Agent. Omitting creation of MCM MediaProxy Agent container")
 	}
+
+	if !d.isEmptyStruct(config.RunOnce.MediaProxyMcm) {
+		mediaProxyContainer := general.Containers{
+			ContainerName:   "media-proxy", //the name is predefined because only one instance is required on the machine
+			Ip:              config.RunOnce.MediaProxyMcm.IP,
+			ExposedPort:     config.RunOnce.MediaProxyMcm.ExposedPort, //"80/tcp",
+			BindingHostPort: config.RunOnce.MediaProxyMcm.BindingHostPort,
+			Image:           config.RunOnce.MediaProxyMcm.ImageAndTag,
+			VolumeMount:     config.RunOnce.MediaProxyMcm.Volumes,
+			Privileged:      config.RunOnce.MediaProxyMcm.Privileged,
+		}
+		err := utils.CreateAndRunContainer(ctx, d.cli, log, mediaProxyContainer)
+		if err != nil {
+			log.Error(err, "Failed to create contianer MCM MediaProxy!")
+			return err
+		}
+	} else {
+		log.Info("You did not provide information about MCM MediaProxy. Omitting creation of MCM MediaProxy container")
+	}
+
+	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
+		bcsNmosContainer := general.Containers{
+			ContainerName:   config.WorkloadToBeRun.NmosClient.Name,
+			Ip:              config.WorkloadToBeRun.NmosClient.IP,
+			ExposedPort:     config.WorkloadToBeRun.NmosClient.ExposedPort,
+			BindingHostPort: "8082",
+			Image:           "nginx:latest",
+		}
+		err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsNmosContainer)
+		if err != nil {
+			log.Error(err, "Failed to create contianer!")
+			return err
+		}
+	} else {
+		log.Info("You did not provide information about BCS NMOS client container. Omitting creation of BCS NMOS client container")
+
+	}
+
 	bcsPipelinesContainer := general.Containers{
-		ContainerName:   "bcsPipeline",
+		ContainerName:   "bcs-ffmpeg-pipeline",
 		Ip:              "0.0.0.0",
 		ExposedPort:     "80/tcp",
 		BindingHostPort: "8083",
 		Image:           "nginx:latest",
 	}
 
-	err := utils.CreateAndRunContainer(ctx, d.cli, log, mcmAgentContainer)
-	if err != nil {
-		log.Error(err, "Failed to create contianer!")
-		return err
-	}
-	err = utils.CreateAndRunContainer(ctx, d.cli, log, mediaProxyContainer)
-	if err != nil {
-		log.Error(err, "Failed to create contianer!")
-		return err
-	}
-	err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsNmosContainer)
-	if err != nil {
-		log.Error(err, "Failed to create contianer!")
-		return err
-	}
 	err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsPipelinesContainer)
 	if err != nil {
 		log.Error(err, "Failed to create contianer!")

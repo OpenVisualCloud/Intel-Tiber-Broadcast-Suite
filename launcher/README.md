@@ -8,8 +8,6 @@ The tool can operate in two modes:
 
 - Kubernetes Mode: For multi-node cluster deployment.
 - Docker Mode: For single-node using Docker containers.
-  
-Configuration is provided via a config file located at `./cmd/launcher-config.yaml`. This file is used to switch between Kubernetes mode and Docker mode, and to provide input data for MCM/MediaProxy. In Kubernetes mode, the BCS ffmpeg pipelines and NMOS client node are managed via a Custom Resource called `BcsConfig`.
 
 **Flow (Common to Both Modes)**
 
@@ -32,23 +30,51 @@ In case of kuberenetes, MediaProxy/MCM things should only be run once and BCS po
 
 ### To Run containers on single node  
 
-It will be updated in SDBQ-1261
+```bash
+# currently only in dev phase
+cd <repo>/launcher/cmd/
+# Adjust to your needs: ./configuration_files/bcslauncher-static-config.yaml
+go run main.go
+
+```
 
 ### To Deploy on the cluster
 
 **Build image:**  
-`docker build -t bcs_pod_launcher:controller .`
+Modify `./launcher/configuration_files/bcslauncher-static-config.yaml`. `k8s: false` defines docker (containers on single host) mode.  
+`docker build -t controller:bcs_pod_launcher .`
 
 **BCS pod launcher installer in k8s cluster:**  
 
-Users can just run kubectl apply -f <URL for YAML BUNDLE> to install the project, i.e.:
+Users can just run kubectl apply -f <file> to install the project:
 
-`kubectl apply -f dist/install.yaml`
+```bash
+cd <repo>/launcher/
+kubectl apply -f ./configuration_files/bcslauncher-k8s-config.yaml
+kubectl apply -f ./configuration_files/bcsconfig-crd.yaml
+kubectl apply -f ./configuration_files/bcs-launcher.yaml
+# Adjust to your needs: ./configuration_files/bcsconfig-example.yaml
+kubectl apply -f ./configuration_files/bcsconfig-example.yaml
+
+```
+
+**BCS pod launcher roles of files in k8s cluster:**  
+
+- `configuration_files/bcslauncher-k8s-config.yaml` -> configmap for setting up the mode of launcher. `k8s: true` defines kuberenets mode. Currently, you should not modify this in that file.
+- `configuration_files/bcs-launcher.yaml` -> install set of kuberenetes resources that are needed to run bcs pod luancher, no additional configuration required
+- `configuration_files/bcsconfig-crd.yaml` -> Custom Resource Definition for `BcsConfig`  
+- `configuration_files/bcsconfig-example.yaml` -> example `BcsConfig` file that it is an input to provide information about **bcs ffmpeg piepeline and NMOS client**, you can adjust file to your needs,
+- `configuration_files/bcslauncher-static-config.yaml` -> static config for docker mode. `k8s: false` defines docker mode. Currently, you should not modify this in that file.
 
 **BCS pod launcher deletion of implementationn of BCS pod launcher in k8s cluster:**  
 
-`kubectl delete -f dist/install.yaml`
-
+```bash
+cd <repo>/launcher/
+kubectl delete -f ./configuration_files/bcslauncher-k8s-config.yaml
+kubectl delete -f ./configuration_files/bcsconfig-crd.yaml
+kubectl delete -f ./configuration_files/bcs-launcher.yaml
+kubectl delete -f ./configuration_files/bcsconfig-example.yaml
+```
 
 ## License
 

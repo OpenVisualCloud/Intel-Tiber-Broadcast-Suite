@@ -8,6 +8,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -45,34 +46,47 @@ func isImagePulled(ctx context.Context, cli *client.Client, imageName string) (e
 
 func pullImageIfNotExists(ctx context.Context, cli *client.Client, imageName string, log logr.Logger) error {
 
+	// Check if the Docker client is nil
+	if cli == nil {
+		log.Error(fmt.Errorf("docker client is nil"), "Docker client is not initialized")
+		return fmt.Errorf("docker client is nil")
+	}
+
+	// Check if the context is nil
+	if ctx == nil {
+		log.Error(fmt.Errorf("context is nil"), "Context is not initialized")
+		return fmt.Errorf("context is nil")
+	}
+
+	// Check if the image is already pulled
 	err, pulled := isImagePulled(ctx, cli, imageName)
 	if err != nil {
-		log.Error(err, "Error with checking if image is pulled")
+		log.Error(err, "Error checking if image is pulled")
 		return err
 	}
+
+	// Pull the image if it is not already pulled
 	if !pulled {
 		reader, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
-
-		defer reader.Close()
 		if err != nil {
 			log.Error(err, "Error pulling image")
 			return err
 		}
+		defer reader.Close()
 
 		_, err = io.Copy(os.Stdout, reader)
 		if err != nil {
 			log.Error(err, "Error reading output")
 			return err
-
 		}
-		log.Info("Image ", imageName, " pulled successfully")
+		log.Info("Image pulled successfully", "image", imageName)
 	}
 
 	return nil
 }
 
 func doesContainerExist(ctx context.Context, cli *client.Client, containerName string) (error, bool) {
-    containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
+	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
 	if err != nil {
 		return err, false
 	}
@@ -114,7 +128,7 @@ func isContainerRunning(ctx context.Context, cli *client.Client, containerName s
 }
 
 func removeContainer(ctx context.Context, cli *client.Client, containerID string) error {
-    return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
+	return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 }
 
 func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo general.Containers) error {
@@ -123,7 +137,7 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 		log.Error(err, "Failed to read about status of container")
 		return err
 	}
-	
+
 	if isRunning {
 		log.Info("Container ", containerInfo.ContainerName, " is runnning. Omittig this container creation.")
 		return nil
@@ -134,16 +148,15 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 		log.Error(err, "Failed to read about status of container")
 		return err
 	}
-	
-	// TODO check
+
 	if exists {
-		log.Info("Removing container to re-create and re-run because container with a such name exists but with status exited:", "container",containerInfo.ContainerName)
-		err = removeContainer(ctx, cli,containerInfo.ContainerName)
+		log.Info("Removing container to re-create and re-run because container with a such name exists but with status exited:", "container", containerInfo.ContainerName)
+		err = removeContainer(ctx, cli, containerInfo.ContainerName)
 		if err != nil {
 			log.Error(err, "Failed to remove container")
 			return err
 		}
-		
+
 	}
 
 	err = pullImageIfNotExists(ctx, cli, containerInfo.Image, log)
@@ -185,9 +198,19 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 	}
 
 	// Start the container
-	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	err = cli.ContainerStart(ctx, resp.ID, container.StartOptions{})
+	if err != nil {
 		log.Error(err, "Error starting container")
 		return err
+	}
+
+	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			panic(err)
+		}
+	case <-statusCh:
 	}
 
 	log.Info("Container is created and started successfully", "name", containerInfo.ContainerName, "container id: ", resp.ID)

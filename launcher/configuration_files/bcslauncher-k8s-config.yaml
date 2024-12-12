@@ -1,0 +1,14 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-bcs-config
+  namespace: bcs
+data:
+  config.yaml: |
+    k8s: true

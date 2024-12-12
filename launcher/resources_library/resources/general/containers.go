@@ -8,9 +8,10 @@ package general
 
 type Workload int
 type NetworkMode string
+
 const (
 	NetworkModeHost NetworkMode = "host"
-  )
+)
 
 const (
 	MediaProxyAgent Workload = iota
@@ -32,4 +33,6 @@ type Containers struct {
 	BindingHostPort string
 	NetworkMode     NetworkMode
 	Overridden      string
+	Privileged      bool
+	VolumeMount     []string
 }

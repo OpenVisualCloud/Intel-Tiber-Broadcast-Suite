@@ -50,14 +50,41 @@ type BcsConfigReconciler struct {
 	logr.Logger
 }
 
-//+kubebuilder:rbac:groups=bcs.bcs.intel,resources=bcsconfigs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=bcs.bcs.intel,resources=bcsconfigs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=bcs.bcs.intel,resources=bcsconfigs/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apps,resources=daemonsets;deployments,verbs=get;list;watch;create;update
-//+kubebuilder:rbac:groups="",resources=services;configmaps;persistentvolumes;persistentvolumeclaims,verbs=get;list;watch;create;update
+// Information about rbac
+// groups=bcs.bcs.intel,resources=bcsconfigs,verbs=get;list;watch;create;update;patch;delete
+// groups=bcs.bcs.intel,resources=bcsconfigs/status,verbs=get;update;patch
+// groups=bcs.bcs.intel,resources=bcsconfigs/finalizers,verbs=update
+// groups=apps,resources=daemonsets;deployments,verbs=get;list;watch;create;update
+// groups="",resources=services;configmaps;persistentvolumes;persistentvolumeclaims,verbs=get;list;watch;create;update
 
 func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
+
+	// MCM seamless start up
+	createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
+		err := r.Get(ctx, namespacedName, resource)
+		if err != nil {
+			err = r.Create(ctx, resource)
+			if err != nil {
+				log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+				return err
+			}
+			log.Info("MCM resource is created", "resource", resource.GetObjectKind(), "name", namespacedName)
+		}
+		return nil
+	}
+
+	mcmNamespace := utils.CreateNamespace("mcm")
+	mcmAgentDeployment := utils.CreateDeployment("mcm-agent")
+	mcmMediaProxyPv := utils.CreatePersistentVolume("media-proxy")
+	mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim("media-proxy")
+	mcmMediaProxyDs := utils.CreateDaemonSet("media-proxy")
+
+	createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
+	createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: mcmAgentDeployment.Namespace})
+	createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name})
+	createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: mcmMediaProxyPvc.Namespace})
+	createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: mcmMediaProxyDs.Namespace})
 
 	// Lookup the BcsConfig instance for this reconcile request
 	bcsConf := &bcsv1.BcsConfig{}

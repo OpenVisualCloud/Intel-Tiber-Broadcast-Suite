@@ -1,12 +1,9 @@
 /*
 Copyright 2024.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,24 +36,36 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	bcsv1 "bcs.pod.launcher.intel/api/v1"
+	containercontroller "bcs.pod.launcher.intel/internal/container_controller"
 	"bcs.pod.launcher.intel/internal/controller"
 	"bcs.pod.launcher.intel/resources_library/utils"
-	//+kubebuilder:scaffold:imports
 )
 
 var (
 	scheme            = runtime.NewScheme()
-	setupLog          = ctrl.Log.WithName("setup")
+	setupLog          = ctrl.Log.WithName("[Setup]")
+	setupContainerLog = ctrl.Log.WithName("[Containerized setup]")
+	leaderElectionID  = "2d95eb0a.bcs.intel"
 )
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(bcsv1.AddToScheme(scheme))
-	//+kubebuilder:scaffold:scheme
 }
 
 func main() {
 	ctx := ctrl.SetupSignalHandler()
+	launcherStartupConfig := "../configuration_files/bcslauncher-static-config.yaml"
+	_, err := os.Stat(launcherStartupConfig)
+	if os.IsNotExist(err) {
+		setupLog.Error(err, "File not exists: ../configuration_files/bcslauncher-static-config.yaml")
+		os.Exit(1)
+	}
+	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)
+	if err != nil {
+		setupLog.Error(err, "Failed to parse launcher mode")
+		os.Exit(1)
+	}
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -79,12 +88,20 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-		 // if the enable-http2 flag is false (the default), http/2 should be disabled
-		 // due to its vulnerabilities. More specifically, disabling http/2 will
-		 // prevent from being vulnerable to the HTTP/2 Stream Cancellation and
-		 // Rapid Reset CVEs. For more information see:
-		 // - https://github.com/advisories/GHSA-qppj-fm5r-hxr3
-		 // - https://github.com/advisories/GHSA-4374-p667-p6c8
+	if !isKubernetesMode {
+		controller, err := containercontroller.NewDockerContainerController()
+		if err != nil {
+			setupContainerLog.Error(err, "Error creating DockerContainerController")
+			os.Exit(1)
+		}
+		// Handle container configuration
+		if err := controller.CreateAndRunContainers(ctx, launcherStartupConfig, setupContainerLog); err != nil {
+			setupLog.Error(err, "unable to create and run containers!")
+			os.Exit(1)
+		}
+	} else {
+		// if the enable-http2 flag is false (the default), http/2 should be disabled
+		// due to its vulnerabilities
 		disableHTTP2 := func(c *tls.Config) {
 			setupLog.Info("disabling http/2")
 			c.NextProtos = []string{"http/1.1"}
@@ -109,7 +126,7 @@ func main() {
 			WebhookServer:          webhookServer,
 			HealthProbeBindAddress: probeAddr,
 			LeaderElection:         enableLeaderElection,
-			LeaderElectionID:       "2d95eb0a.bcs.intel",
+			LeaderElectionID:       leaderElectionID,
 		})
 		if err != nil {
 			setupLog.Error(err, "unable to start manager")
@@ -123,7 +140,6 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "BcsConfig")
 			os.Exit(1)
 		}
-		//+kubebuilder:scaffold:builder
 
 		if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 			setupLog.Error(err, "unable to set up health check")
@@ -134,45 +150,10 @@ func main() {
 			os.Exit(1)
 		}
 
-        //MCM  k8s part
-		setupLog.Info("Starting MCM pods launcher in Kubernetes")
-
-		k8s_client := mgr.GetClient()
-
-		mcmNamespace := utils.CreateNamespace("mcm")
-		mcmAgentDeployment := utils.CreateDeployment("mcm-agent")
-		mcmMediaProxyPv := utils.CreatePersistentVolume("media-proxy")
-		mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim("media-proxy")
-		mcmMediaProxyDs := utils.CreateDaemonSet("media-proxy")
-
-		err = k8s_client.Create(ctx, mcmNamespace)
-		if err != nil {
-			setupLog.Error(err, "Failed to create mcm namespace")
-		}
-
-		err = k8s_client.Create(ctx, mcmAgentDeployment)
-		if err != nil {
-			setupLog.Error(err, "Failed to create mcmAgent Deployment")
-		}
-
-		err = k8s_client.Create(ctx, mcmMediaProxyPv)
-		if err != nil {
-			setupLog.Error(err, "Failed to create mcm media-proxy persistent volume")
-		}
-
-		err = k8s_client.Create(ctx, mcmMediaProxyPvc)
-		if err != nil {
-			setupLog.Error(err, "Failed to create  mcm media-proxy persistent volume claim")
-		}
-
-		err = k8s_client.Create(ctx, mcmMediaProxyDs)
-		if err != nil {
-			setupLog.Error(err, "Failed to create mcm media-proxy daemonset")
-		}
-
 		setupLog.Info("Starting manager that handles pipelines")
 		if err := mgr.Start(ctx); err != nil {
 			setupLog.Error(err, "problem running manager")
 			os.Exit(1)
+		}
 	}
 }
