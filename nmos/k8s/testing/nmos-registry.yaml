@@ -1,0 +1,79 @@
+#SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+#
+#SPDX-License-Identifier: BSD-3-Clause
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-config
+data:
+  registry.json: |
+    {
+      "pri": 99,
+      "logging_level": -20,
+      "http_trace": false,
+      "label": "nmos-registry",
+      "http_port": 80,
+      "query_ws_port": 81,
+      "registration_expiry_interval": 12
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nmos-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nmos-registry
+  template:
+    metadata:
+      labels:
+        app: nmos-registry
+    spec:
+      containers:
+      - name: nmos-registry
+        image: nmos-cpp:1.2A-f549712
+        ports:
+        - containerPort: 80
+        - containerPort: 81
+        - containerPort: 1883
+        env:
+        - name: RUN_NODE
+          value: "FALSE"
+        volumeMounts:
+        - name: registry-config
+          mountPath: /home/registry.json
+          subPath: registry.json
+      volumes:
+      - name: registry-config
+        configMap:
+          name: registry-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nmos-registry
+spec:
+  type: NodePort
+  selector:
+    app: nmos-registry
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    name: nmos-registry-port-http
+    nodePort: 30080
+  - protocol: TCP
+    port: 81
+    targetPort: 81
+    name: nmos-registry-port-ws
+    nodePort: 30081
+  - protocol: TCP
+    port: 1883
+    targetPort: 1883
+    name: nmos-registry-port-mqtt
+    nodePort: 31883

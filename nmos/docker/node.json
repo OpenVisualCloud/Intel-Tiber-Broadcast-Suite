@@ -1,0 +1,17 @@
+{
+    "logging_level": 0,
+    "http_port": 84,
+    "label": "intel-broadcast-suite",
+    "senders": ["v","d"],
+    "senders_count": [2, 1],
+    "receivers": ["v"],
+    "receivers_count": [4],
+    "device_tags": {
+        "pipeline": ["multiviewer"]
+    },
+    "frame_rate": { "numerator": 60, "denominator": 1 },
+    "frame_width": 1920,
+    "frame_height": 1080,
+    "video_type": "video/jxsv",
+    "domain": "local"
+}
