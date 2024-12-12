@@ -48,12 +48,8 @@ rules:
   - configmaps
   verbs:
   - get
-  - list
-  - watch
   - create
   - update
-  - patch
-  - delete
 - apiGroups:
   - coordination.k8s.io
   resources:
@@ -141,7 +137,6 @@ rules:
   - get
   - list
   - update
-  - watch
 - apiGroups:
   - apps
   resources:
@@ -152,7 +147,6 @@ rules:
   - get
   - list
   - update
-  - watch
 - apiGroups:
   - bcs.bcs.intel
   resources:
@@ -356,6 +350,7 @@ spec:
             memory: 64Mi
         securityContext:
           allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
           capabilities:
             drop:
             - ALL
