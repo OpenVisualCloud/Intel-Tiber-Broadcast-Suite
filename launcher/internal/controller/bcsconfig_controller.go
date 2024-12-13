@@ -103,13 +103,13 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err = r.reconcileResources(ctx, log)
 	if err != nil {
 		log.Error(err, "Failed to reconcile resources for this custom resource")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
 	err = r.waitForPodsRunning(ctx, "default", "bcs-nmos-ffmpeg-pipeline", 1*time.Minute, log)
 	if err != nil {
 		log.Error(err, "Error waiting for pod to be running.")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

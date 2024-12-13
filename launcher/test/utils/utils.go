@@ -59,6 +59,7 @@ func Run(cmd *exec.Cmd) ([]byte, error) {
 
 	if err := os.Chdir(cmd.Dir); err != nil {
 		fmt.Fprintf(GinkgoWriter, "chdir dir: %s\n", err)
+		return []byte{}, err
 	}
 
 	cmd.Env = append(os.Environ(), "GO111MODULE=on")

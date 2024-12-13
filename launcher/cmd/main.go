@@ -58,7 +58,7 @@ func main() {
 	launcherStartupConfig := "../configuration_files/bcslauncher-static-config.yaml"
 	_, err := os.Stat(launcherStartupConfig)
 	if os.IsNotExist(err) {
-		setupLog.Error(err, "File not exists: ../configuration_files/bcslauncher-static-config.yaml")
+		setupLog.Error(err, "File does not exist: ../configuration_files/bcslauncher-static-config.yaml")
 		os.Exit(1)
 	}
 	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)

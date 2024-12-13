@@ -8,7 +8,7 @@ package utils
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"os"
 	"strings"
@@ -48,14 +48,16 @@ func pullImageIfNotExists(ctx context.Context, cli *client.Client, imageName str
 
 	// Check if the Docker client is nil
 	if cli == nil {
-		log.Error(fmt.Errorf("docker client is nil"), "Docker client is not initialized")
-		return fmt.Errorf("docker client is nil")
+		err := errors.New("docker client is nil")
+		log.Error(err, "Docker client is not initialized")
+		return err
 	}
 
 	// Check if the context is nil
 	if ctx == nil {
-		log.Error(fmt.Errorf("context is nil"), "Context is not initialized")
-		return fmt.Errorf("context is nil")
+		err := errors.New("context is nil")
+		log.Error(err, "Context is not initialized")
+		return err
 	}
 
 	// Check if the image is already pulled
@@ -134,18 +136,18 @@ func removeContainer(ctx context.Context, cli *client.Client, containerID string
 func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo general.Containers) error {
 	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
-		log.Error(err, "Failed to read about status of container")
+		log.Error(err, "Failed to read container status (if it is in running state)")
 		return err
 	}
 
 	if isRunning {
-		log.Info("Container ", containerInfo.ContainerName, " is runnning. Omittig this container creation.")
+		log.Info("Container ", containerInfo.ContainerName, " is running. Omitting this container creation.")
 		return nil
 	}
 
 	err, exists := doesContainerExist(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
-		log.Error(err, "Failed to read about status of container")
+		log.Error(err, "Failed to readcontainer status (if it exists)")
 		return err
 	}
 
@@ -206,9 +208,11 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
-	case err := <-errCh:
+		case <-ctx.Done():
+		case err := <-errCh:
 		if err != nil {
-			panic(err)
+			log.Error(err, "Error with waiting for container start-up")
+			return err
 		}
 	case <-statusCh:
 	}

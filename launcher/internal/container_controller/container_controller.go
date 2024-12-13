@@ -63,7 +63,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 			return err
 		}
 	} else {
-		log.Info("You did not provide information about MCM MediaProxy Agent. Omitting creation of MCM MediaProxy Agent container")
+		log.Info("No information about MCM MediaProxy Agent provided. Omitting creation of MCM MediaProxy Agent container")
 	}
 
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyMcm) {
@@ -82,7 +82,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 			return err
 		}
 	} else {
-		log.Info("You did not provide information about MCM MediaProxy. Omitting creation of MCM MediaProxy container")
+		log.Info("No information about MCM MediaProxy provided. Omitting creation of MCM MediaProxy container")
 	}
 
 	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
@@ -99,7 +99,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 			return err
 		}
 	} else {
-		log.Info("You did not provide information about BCS NMOS client container. Omitting creation of BCS NMOS client container")
+		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
 
 	}
 
