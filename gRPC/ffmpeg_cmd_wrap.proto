@@ -1,0 +1,25 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+syntax = "proto3";
+
+message CmdMsg {
+  string cmd_key = 1;
+  string cmd_val = 2;
+}
+
+message ReqCmds {
+  repeated CmdMsg obj = 1;
+}
+
+message FFmpegServiceRes {
+  int32 status = 1;
+  string message = 2;
+}
+
+service CmdPass {
+  rpc FFmpegCmdExec(ReqCmds) returns (FFmpegServiceRes) {}
+}
