@@ -1,0 +1,6 @@
+[submodule "nmos/build-nmos-cpp"]
+	path = nmos/build-nmos-cpp
+	url = https://github.com/rhastie/build-nmos-cpp.git
+[submodule "nmos/nmos-cpp"]
+	path = nmos/nmos-cpp
+	url = https://github.com/sony/nmos-cpp.git
