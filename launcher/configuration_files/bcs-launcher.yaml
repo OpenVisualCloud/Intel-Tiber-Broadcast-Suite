@@ -316,6 +316,9 @@ spec:
             cpu: 5m
             memory: 64Mi
         securityContext:
+          seccompProfile:
+            type: RuntimeDefault
+          readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           capabilities:
             drop:
@@ -349,6 +352,8 @@ spec:
             cpu: 10m
             memory: 64Mi
         securityContext:
+          seccompProfile:
+            type: RuntimeDefault
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           capabilities:
