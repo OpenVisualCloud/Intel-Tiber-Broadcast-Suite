@@ -56,7 +56,7 @@ jobs:
       with:
         file: Dockerfile
         context: .
-        push: false
+        push: true
         load: true
         target: build-stage
         tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
