@@ -1,0 +1,62 @@
+name: Coverity scan 
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        default: main
+env:
+  BUILD_TYPE: "Release"
+  DOCKER_IMAGE_NAME: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite/tiber-broadcast-suite-build"
+  DOCKER_IMAGE_TAG: "${{ github.sha }}"
+  DEBIAN_FRONTEND: "noninteractive"
+jobs:
+  prepare-docker-image:
+    name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+    - name: "Preparation: Harden Runner"
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: "Memory and swap report before"
+      run: |
+        sudo free -h
+        sudo lsblk
+
+    - name: "Set swap to 30Gi"
+      shell: bash
+      run: |
+        export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
+        sudo swapoff $SWAP_FILE
+        sudo rm $SWAP_FILE
+        sudo fallocate -l 30720M $SWAP_FILE
+        sudo chmod 600 $SWAP_FILE
+        sudo mkswap $SWAP_FILE
+        sudo swapon $SWAP_FILE
+
+    - name: "Memory and swap report after"
+      run: |
+        sudo free -h
+        sudo df -h
+
+    - name: "Preparation: Repository Checkout"
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+    - name: "Configuration: Docker with Buildx Toolkit set up"
+      uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+
+    - name: "Validation: Build/Push Dockerfile"
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        file: Dockerfile
+        context: .
+        push: false
+        load: true
+        target: build-stage
+        tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
