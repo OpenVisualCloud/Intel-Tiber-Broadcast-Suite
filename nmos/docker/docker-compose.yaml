@@ -1,0 +1,126 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+
+# SPDX-License-Identifier: BSD-3-Clause
+
+#  Copyright 2024 Intel
+
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+
+#      http://www.apache.org/licenses/LICENSE-2.0
+
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+# NOTICE: This file is inspired by the implementation in https://github.com/rhastie/easy-nmos/tree/master
+#         Licensed under Apache License, Version 2.0
+
+version: '3.8'
+
+services:
+  nmos-registry-test-instance:
+    image: nmos-cpp:1.2A-f549712
+    container_name: nmos-registry-test-instance
+    hostname: nmos-registry-test-instance
+    domainname: local
+    ports:
+      - "80:80"
+    volumes:
+      - "./registry.json:/home/registry.json"
+    environment:
+      - RUN_NODE=FALSE
+    networks:
+      custom_network:
+        ipv4_address: '192.168.1.101'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+
+  nmos-client-1:
+    image: nmos-cpp-node:1.2A-f549712
+    container_name: nmos-client-1
+    hostname: nmos-client-1
+    domainname: local
+    ports:
+      - "84:84"
+    volumes:
+      - "./node.json:/home/node.json"
+    environment:
+      - RUN_NODE=TRUE
+    networks:
+      custom_network:
+        ipv4_address: '192.168.1.104'
+    depends_on:
+      - nmos-registry-test-instance
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:84"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+
+  nmos-testing:
+    image: amwa/nmos-testing:latest
+    container_name: nmos-testing
+    hostname: nmos-testing
+    domainname: local
+    entrypoint: >
+      /bin/bash -c "/etc/init.d/dbus start &&
+      /etc/init.d/avahi-daemon start &&
+      python3 nmos-test.py"
+    ports:
+      - "5000:5000"
+    volumes:
+      - "./UserConfig.py:/config/UserConfig.py"
+    networks:
+      custom_network:
+        ipv4_address: '192.168.1.103'
+    depends_on:
+      - nmos-client-1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+
+networks:
+  custom_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24

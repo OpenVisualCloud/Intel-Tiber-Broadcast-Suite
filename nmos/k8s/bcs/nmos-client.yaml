@@ -1,0 +1,92 @@
+#SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+#
+#SPDX-License-Identifier: BSD-3-Clause
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nmos-node-config
+data:
+  node.json: |
+    {
+      "logging_level": 0,
+      "http_port": 1084,
+      "label": "intel-broadcast-suite",
+      "senders": ["v","d"],
+      "senders_count": [2, 1],
+      "receivers": ["v"],
+      "receivers_count": [4],
+      "device_tags": {
+          "pipeline": ["multiviewer"]
+      },
+      "frame_rate": { "numerator": 60, "denominator": 1 },
+      "frame_width": 1920,
+      "frame_height": 1080,
+      "video_type": "video/jxsv",
+      "domain": "local"
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nmos-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nmos-client
+  template:
+    metadata:
+      labels:
+        app: nmos-client
+    spec:
+      containers:
+      - name: nmos-client
+        image: nmos-cpp-node:1.2A-f549712
+        ports:
+        - containerPort: 1084
+        env:
+        - name: RUN_NODE
+          value: "TRUE"
+        volumeMounts:
+        - name: nmos-node-config
+          mountPath: /home/node.json
+          subPath: node.json
+        resources:
+          requests:
+            cpu: 1
+            memory: 100Mi
+          limits:
+            cpu: 1
+            memory: 100Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: nmos-node-config
+        configMap:
+          name: nmos-node-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nmos-client
+spec:
+  type: NodePort
+  selector:
+    app: nmos-client
+  ports:
+  - protocol: TCP
+    port: 1084
+    targetPort: 1084
+    name: nmos-client-node-port-http
+    nodePort: 30084
