@@ -144,21 +144,22 @@ func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, log logr.L
 func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, name string, namespace string, log logr.Logger) error {
 	bcsConfigMap := &corev1.ConfigMap{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, bcsConfigMap)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			bcsConfigMap = utils.CreateConfigMap(name)
-			if err := r.Create(ctx, bcsConfigMap); err != nil {
-				log.Error(err, "Failed to create ConfigMap")
-				return err
-			}
+	if errors.IsNotFound(err) {
+		bcsConfigMap = utils.CreateConfigMap(name)
+		if err := r.Create(ctx, bcsConfigMap); err != nil {
+			log.Error(err, "Failed to create ConfigMap")
+			return err
 		}
-		log.Info("ConfigMap created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+		log.Info("ConfigMap is created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+	} else if err != nil  {
+		log.Error(err, "Failed to create/update ConfigMap. Check your either cluster or bcs launcher configuration")
+		return err
 	} else {
 		if err := r.Update(ctx, bcsConfigMap); err != nil {
 			log.Error(err, "Failed to update ConfigMap")
 			return err
 		}
-		log.Info("ConfigMap updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+		log.Info("ConfigMap is updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
 	}
 	return nil
 }
@@ -166,15 +167,16 @@ func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, name strin
 func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context, name string, namespace string, log logr.Logger) error {
 	bcsDeployment := &appsv1.Deployment{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, bcsDeployment)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			bcsDeployment = utils.CreateDeployment(name)
-			if err := r.Create(ctx, bcsDeployment); err != nil {
-				log.Error(err, "Failed to create Deployment")
-				return err
-			}
+	if errors.IsNotFound(err) {
+		bcsDeployment = utils.CreateDeployment(name)
+		if err := r.Create(ctx, bcsDeployment); err != nil {
+			log.Error(err, "Failed to create Deployment")
+			return err
 		}
 		log.Info("Deployment is created successfully", "name", bcsDeployment.Name, "namespace", bcsDeployment.Namespace)
+	} else if err != nil  {
+		log.Error(err, "Failed to create/update Deployment. Check your either cluster or bcs launcher configuration")
+		return err
 	} else {
 		if err := r.Update(ctx, bcsDeployment); err != nil {
 			log.Error(err, "Failed to update Deployment")
@@ -188,15 +190,16 @@ func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context, name stri
 func (r *BcsConfigReconciler) reconcileService(ctx context.Context, name string, namespace string, log logr.Logger) error {
 	bcsSevice := &corev1.Service{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, bcsSevice)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			bcsSevice = utils.CreateService(name)
-			if err := r.Create(ctx, bcsSevice); err != nil {
-				log.Error(err, "Failed to create Service")
-				return err
-			}
+	if errors.IsNotFound(err) {
+		bcsSevice = utils.CreateService(name)
+		if err := r.Create(ctx, bcsSevice); err != nil {
+			log.Error(err, "Failed to create Service")
+			return err
 		}
 		log.Info("Service is created successfully", "name", bcsSevice.Name, "namespace", bcsSevice.Namespace)
+	} else if err != nil  {
+		log.Error(err, "Failed to create/update Service. Check your either cluster or bcs launcher configuration")
+		return err
 	} else {
 		if err := r.Update(ctx, bcsSevice); err != nil {
 			log.Error(err, "Failed to update Service")
@@ -204,6 +207,7 @@ func (r *BcsConfigReconciler) reconcileService(ctx context.Context, name string,
 		}
 		log.Info("Service is updated successfully", "name", bcsSevice.Name, "namespace", bcsSevice.Namespace)
 	}
+
 	return nil
 }
 
