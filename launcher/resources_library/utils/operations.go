@@ -208,8 +208,11 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 
 	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
-		case <-ctx.Done():
-		case err := <-errCh:
+	case <-ctx.Done():
+		err := errors.New("context is cancelled")
+		log.Error(err, "Context cancelled during container waiting process")
+		return err
+	case err := <-errCh:
 		if err != nil {
 			log.Error(err, "Error with waiting for container start-up")
 			return err
