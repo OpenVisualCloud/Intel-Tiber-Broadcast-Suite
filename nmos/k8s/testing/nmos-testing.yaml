@@ -42,6 +42,22 @@ spec:
         - name: testing-config
           mountPath: /config/UserConfig.py
           subPath: UserConfig.py
+        resources:
+          requests:
+            cpu: 1
+            memory: 100Mi
+          limits:
+            cpu: 1
+            memory: 100Mi
+        securityContext:
+          readOnlyRootFilesystem: false
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
       volumes:
       - name: testing-config
         configMap:

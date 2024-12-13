@@ -13,8 +13,8 @@ data:
       "logging_level": -20,
       "http_trace": false,
       "label": "nmos-registry",
-      "http_port": 80,
-      "query_ws_port": 81,
+      "http_port": 1080,
+      "query_ws_port": 1081,
       "registration_expiry_interval": 12
     }
 
@@ -37,8 +37,8 @@ spec:
       - name: nmos-registry
         image: nmos-cpp:1.2A-f549712
         ports:
-        - containerPort: 80
-        - containerPort: 81
+        - containerPort: 1080
+        - containerPort: 1081
         - containerPort: 1883
         env:
         - name: RUN_NODE
@@ -47,6 +47,22 @@ spec:
         - name: registry-config
           mountPath: /home/registry.json
           subPath: registry.json
+        resources:
+          requests:
+            cpu: 1
+            memory: 100Mi
+          limits:
+            cpu: 1
+            memory: 100Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
       volumes:
       - name: registry-config
         configMap:
@@ -63,13 +79,13 @@ spec:
     app: nmos-registry
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
+    port: 1080
+    targetPort: 1080
     name: nmos-registry-port-http
     nodePort: 30080
   - protocol: TCP
-    port: 81
-    targetPort: 81
+    port: 1081
+    targetPort: 1081
     name: nmos-registry-port-ws
     nodePort: 30081
   - protocol: TCP

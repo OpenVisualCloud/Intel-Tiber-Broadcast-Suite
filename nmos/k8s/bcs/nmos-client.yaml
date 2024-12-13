@@ -11,7 +11,7 @@ data:
   node.json: |
     {
       "logging_level": 0,
-      "http_port": 84,
+      "http_port": 1084,
       "label": "intel-broadcast-suite",
       "senders": ["v","d"],
       "senders_count": [2, 1],
@@ -46,8 +46,7 @@ spec:
       - name: nmos-client
         image: nmos-cpp-node:1.2A-f549712
         ports:
-        - containerPort: 84
-        - containerPort: 85
+        - containerPort: 1084
         env:
         - name: RUN_NODE
           value: "TRUE"
@@ -55,6 +54,22 @@ spec:
         - name: nmos-node-config
           mountPath: /home/node.json
           subPath: node.json
+        resources:
+          requests:
+            cpu: 1
+            memory: 100Mi
+          limits:
+            cpu: 1
+            memory: 100Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
       volumes:
       - name: nmos-node-config
         configMap:
@@ -71,12 +86,7 @@ spec:
     app: nmos-client
   ports:
   - protocol: TCP
-    port: 84
-    targetPort: 84
+    port: 1084
+    targetPort: 1084
     name: nmos-client-node-port-http
     nodePort: 30084
-  - protocol: TCP
-    port: 85
-    targetPort: 85
-    name: nmos-client-node-port-ws
-    nodePort: 30085
