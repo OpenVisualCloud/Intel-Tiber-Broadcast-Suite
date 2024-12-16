@@ -1,0 +1,44 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+
+k8s: true # use in both modes: k8s | docker
+configuration: # Configuration should be used only for docker mode
+  runOnce:
+    mediaProxyAgent:
+      imageAndTag:  nginx:latest
+      command: ""
+      exposedPort: ""
+      bindingHostPort: ""
+      ip: ""
+      volumes:
+        - /var/run/mcm:/run/mcm
+        - /dev/hugepages:/dev/hugepages
+    mediaProxyMcm:
+      imageAndTag:  busybox:latest
+      command: ""
+      exposedPort: ""
+      bindingHostPort: ""
+      ip: ""
+      volumes:
+        - /var/run/mcm:/run/mcm
+        - /dev/hugepages:/dev/hugepages
+      privileged: true
+  workloadToBeRun:
+    ffmpegPipeline:
+      name: bcs-ffmpeg-pipeline
+      imageAndTag: alpine:latest
+      command: ""
+      exposedPort: 100 
+      bindingHostPort: 8881
+      ip: ""
+    nmosClient:
+      name: bcs-ffmpeg-pipeline-nmos-client
+      imageAndTag: nmos-cpp-node:1.2A-f549712 
+      command: ""
+      exposedPort: 101
+      bindingHostPort: 8089
+      ip: ""
+      network: "host"

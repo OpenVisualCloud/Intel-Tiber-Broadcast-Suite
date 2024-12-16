@@ -1,0 +1,29 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+
+apiVersion: bcs.bcs.intel/v1
+kind: BcsConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: bcs-launcher
+    app.kubernetes.io/managed-by: kustomize
+  name: bcsconfig-sample
+spec:
+  appParams:
+    uniqueName: multiviewer
+    codec: rawvideo
+    pixelFormat: yuv420p
+    height: 1080
+    width: 1920
+  connections:
+    dataConnection: 
+      connType: "st2110"
+      mediaProxyIpAddress: "192.168.10.1"
+      port: 30000
+    controlConnection: 
+      ipAddress: "192.168.10.1"
+      port: 30001
+   
