@@ -1,36 +1,44 @@
-from pprint import pprint
-from dockerfile_parse import DockerfileParser
-import json
+import re
 
-CMD_OFFSET=10
-builds= []
-invalid_dirs=[
-    "/tmp/svt-av1/Build",
-    "/tmp/vulkan-headers",
-    "/tmp/dpdk",
-]
 
-dp = DockerfileParser(path="Dockerfile")
+def read_diff_file(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
 
-WORKDIR_CMD_LIST = list(filter(lambda s: s['instruction'] == "WORKDIR", dp.structure))
-RUN_CMD_LIST= list(filter(lambda s: s['instruction'] == "RUN", dp.structure))
-for workdir in WORKDIR_CMD_LIST:
-  for cmd in RUN_CMD_LIST:
-    # find nearest next RUN command
-    if cmd['startline'] > workdir["endline"] and cmd['startline'] < (workdir["endline"] + CMD_OFFSET):
-      if  "BUILD" in cmd["content"] and workdir["value"] not in invalid_dirs:
-        builds.append({
-          "dir": workdir["value"],
-          "cmd": cmd["value"]
-        })
+def parse_git_diff(diff_text):
+    # Regular expression to match the diff header lines
+    file_regex = re.compile(r'^diff --git a/(.+) b/(.+)$')
+    hunk_regex = re.compile(r'^@@ -\d+,\d+ \+(\d+),(\d+) @@')
 
-with open("coverity_build.sh", "w") as script_file:
+    changes = []
+    current_file = None
 
-    script_file.write("#!/bin/bash\n\n")
+    for line in diff_text.splitlines():
+        file_match = file_regex.match(line)
+        if file_match:
+            current_file = file_match.group(2)
+            changes.append({"file_changed": current_file, "lines_changed": []})
+            continue
 
-    for build in builds:
-      if "dpdk" not in build['dir']:
-        script_file.write(f"cd {build['dir']}\n")
-        script_file.write(f"{build['cmd']}\n\n")
+        hunk_match = hunk_regex.match(line)
+        if hunk_match and current_file:
+            start_line = int(hunk_match.group(1))
+            line_count = int(hunk_match.group(2))
+            if line_count == 0:
+                continue
+            end_line = start_line + line_count - 1
+            changes[-1]["lines_changed"].append((start_line, end_line))
 
-print("Bash script generated successfully.")
+    return changes
+
+def main():
+    diff_file_path = '0001-hwupload_async.diff'  # Replace with the actual path to your diff file
+    diff_text = read_diff_file(diff_file_path)
+    changes = parse_git_diff(diff_text)
+    
+    for change in changes:
+        print(f"File: {change['file_changed']}")
+        print(f"Changed lines: {change['lines_changed']}")
+
+if __name__ == "__main__":
+    main()
