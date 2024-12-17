@@ -82,6 +82,7 @@ jobs:
     #needs: docker
     name: "Analysis"
     runs-on: ubuntu-22.04
+    timeout-minutes: 120
     container:
       image: ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:f96fe3d2b0c16b3788868ce1c564dd5861fa86a0
     timeout-minutes: 120
@@ -92,7 +93,7 @@ jobs:
       uses: actions/checkout@v4
     - name: "prepare build script for coverity"
       run: | 
-        pip3 install dockerfile_parse
-        python3 .github/tools/coverity/generate_build_script.py
+        pip install dockerfile_parse
+        python .github/tools/coverity/generate_build_script.py
         cat coverity_build.sh
 
