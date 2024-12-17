@@ -94,7 +94,7 @@ jobs:
         apt install -y python3 python3-pip
         pip3 install --no-cache-dir --break-system-packages dockerfile_parse
 
-    - name: "setup: checkout repo"
+    - name: "checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
     - name: "generate build script"
@@ -102,5 +102,17 @@ jobs:
         python3 .github/tools/coverity/generate_build_script.py
         cat coverity_build.sh
 
+    # - name: 'Run coverity'
+    #   uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
+    #   with:
+    #     project: 'Media-Communications-Mesh'
+    #     email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+    #     token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+    #     build_language: 'cxx'
+    #     build_platform: 'linux64'
+    #     command: |
+    #         ${{ github.workspace }}/build.sh && \
+    #         ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh && \
+    #         ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh
 
 
