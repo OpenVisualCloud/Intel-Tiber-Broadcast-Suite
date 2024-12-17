@@ -91,8 +91,8 @@ jobs:
     - name: "setup machine"
       run: | 
         cd ~
-        apt-get update
-        apt-get -y install python3 python3-pip
+        apt update
+        apt install -y python3 python3-pip
         pip3 install dockerfile_parse
 
     # - name: Checkout tools repo
