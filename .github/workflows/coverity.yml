@@ -77,3 +77,18 @@ jobs:
         platforms: "linux/amd64"
         cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
         cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
+# ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:f96fe3d2b0c16b3788868ce1c564dd5861fa86a0
+  scans:
+    needs: docker
+    name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
+    runs-on: ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:f96fe3d2b0c16b3788868ce1c564dd5861fa86a0
+    timeout-minutes: 120
+    permissions:
+      packages: write
+    steps:
+    - name: prepare build script
+      run: | 
+        pip3 install dockerfile_parse
+        python3 .github/tools/coverity/generate_build_script.py
+        cat coverity_build.sh
+
