@@ -101,6 +101,7 @@ jobs:
       run: | 
         python3 .github/tools/coverity/generate_build_script.py
         mv coverity_build.sh /tmp/coverity_build.sh
+        chmod +x /tmp/coverity_build.sh
 
     - name: 'Run coverity'
       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
