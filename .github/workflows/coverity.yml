@@ -85,7 +85,6 @@ jobs:
     timeout-minutes: 120
     container:
       image: ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:f96fe3d2b0c16b3788868ce1c564dd5861fa86a0
-    timeout-minutes: 120
     permissions:
       packages: write
     steps:
