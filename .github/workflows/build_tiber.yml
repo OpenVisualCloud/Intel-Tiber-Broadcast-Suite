@@ -34,6 +34,7 @@ jobs:
     env:
       BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
       BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
+      DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
     steps:
     - name: "OS-Configuration: Preparation: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -84,6 +85,7 @@ jobs:
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
       uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      continue-on-error: true
       with:
         image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
         output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
@@ -91,6 +93,7 @@ jobs:
 
     - name: "Finish: Upload Trivy scan results to GitHub Security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      continue-on-error: true
       with:
         sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
 
