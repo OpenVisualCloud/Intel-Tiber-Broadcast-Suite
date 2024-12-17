@@ -89,11 +89,10 @@ jobs:
       contents: write
     steps:
     - name: "setup machine"
-      run: | 
-        cd ~
+      run: |
         apt update
         apt install -y python3 python3-pip
-        pip3 install dockerfile_parse
+        pip3 install --no-cache-dir dockerfile_parse
 
     # - name: Checkout tools repo
     #   uses: actions/checkout@v4
