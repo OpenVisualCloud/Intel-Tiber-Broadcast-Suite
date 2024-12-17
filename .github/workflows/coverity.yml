@@ -110,6 +110,6 @@ jobs:
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
         build_language: 'cxx'
         build_platform: 'linux64'
-        command: coverity_build.sh
+        command: ${{ github.workspace }}/coverity_build.sh
 
 
