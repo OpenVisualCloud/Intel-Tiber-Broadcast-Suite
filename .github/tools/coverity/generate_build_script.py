@@ -33,5 +33,5 @@ with open(OUTPUT_FILE, "w") as script_file:
       if "dpdk" not in build['dir']:
         script_file.write(f"cd {build['dir']}\n")
         script_file.write(f"{build['cmd']}\n\n")
-os.chmod(OUTPUT_FILE,'0o755')
+os.chmod(OUTPUT_FILE,0o755)
 print("Bash script generated successfully.")
