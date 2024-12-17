@@ -1,13 +1,14 @@
-from pprint import pprint
 from dockerfile_parse import DockerfileParser
 import json
-
+import os
+OUTPUT_FILE="coverity_build.sh"
 CMD_OFFSET=10
 builds= []
 invalid_dirs=[
     "/tmp/svt-av1/Build",
     "/tmp/vulkan-headers",
     "/tmp/dpdk",
+    "/tmp"
 ]
 
 dp = DockerfileParser(path="Dockerfile")
@@ -24,7 +25,7 @@ for workdir in WORKDIR_CMD_LIST:
           "cmd": cmd["value"]
         })
 
-with open("coverity_build.sh", "w") as script_file:
+with open(OUTPUT_FILE, "w") as script_file:
 
     script_file.write("#!/bin/bash\n\n")
 
@@ -32,5 +33,5 @@ with open("coverity_build.sh", "w") as script_file:
       if "dpdk" not in build['dir']:
         script_file.write(f"cd {build['dir']}\n")
         script_file.write(f"{build['cmd']}\n\n")
-
+os.chmod(OUTPUT_FILE,'0o755')
 print("Bash script generated successfully.")
