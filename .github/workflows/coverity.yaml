@@ -72,7 +72,7 @@ jobs:
         file: Dockerfile
         push: true
         load: true
-        target: final-stage
+        target: build-stage
         tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
         platforms: "linux/amd64"
         cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
