@@ -823,7 +823,6 @@ function docker_software_prerequisites {
 }
 
 function install_in_docker_enviroment {
-    docker_software_prerequisites
     ENV_PROXY_ARGS=()
     while IFS='' read -r line; do
         ENV_PROXY_ARGS+=("--build-arg")
@@ -858,47 +857,50 @@ function install_in_docker_enviroment {
 ### docker installation end
 
 function display_help {
-    echo "Usage: $0 [-l] [-h] [-d DEBIAN_DIRECTORY] [-p DEPENDENCIES_DIRECTORY] [-c CLEANUP] [-i SKIP_IPP]"
-    echo
-    echo "Options:"
-    echo "  -l    Install locally (bare metal installation) instead of using Docker"
-    echo "  -h    Display this help message"
-    echo "  -d    Specify the directory from where Debian packages are used for local installation"
-    echo "        (default is the $LOCAL_INSTALL_DEBIAN_DIRECTORY directory)"
-    echo "  -p    Specify the directory where locally downloaded and compiled dependencies are placed"
-    echo "        (default is the $LOCAL_INSTALL_DEPENDENCIES_DIRECTORY directory)"
-    echo "  -c    Skip the cleanup process of local dependencies"
-    echo "  -i    Skip the IPP (Intel Performance Primitives) build"
-    echo
-    echo "Description:"
-    echo "  This script will build / install the Intel® Tiber™ Broadcast Suite by default in Docker."
-    echo "  It will also build the MtlManager Docker container, which is needed for the Intel® Tiber™ Broadcast Suite."
-    echo "  If you prefer, you can also install it locally from Debian packages using the -l option."
-    echo "  Local installation will install all of the components on your machine (bare metal installation)."
-    echo "  It will first search the $LOCAL_INSTALL_DEPENDENCIES_DIRECTORY"
-    echo "  (or other location you can specify with the -d option)."
-    echo "  Then it will try to install all of the Debian packages for Tiber."
-    echo "  If there are none, it will try to download the Debian packages from the Tiber repo."
-    echo "  If that also fails, the script will download the source code and install it from source."
-    echo
-    echo "Note: The -d, -p, -c, and -i options only work when you install Tiber locally using the -l option."
-    echo
-    echo "Return Codes:"
-    echo "  1/2 - General error"
-    echo "  3  - (bare metal installation only) Failed to install dependencies"
-    echo "  4  - (bare metal installation only) Failed to download, patch, build, and clean up libva-dev"
-    echo "  5  - (bare metal installation only) Failed to download, build, and clean up VMAF"
-    echo "  6  - (bare metal installation only) Failed to download, build, and clean up SVT-AV1"
-    echo "  7  - (bare metal installation only) Failed to download, build, and clean up Vulkan headers"
-    echo "  8  - (bare metal installation only) Failed to download, build, and clean up XDP tools"
-    echo "  9  - (bare metal installation only) Failed to download, build Media Transport Library (MTL)"
-    echo "  10 - (bare metal installation only) Failed to download, patch, and build Data Plane Development Kit (DPDK)"
-    echo "  11 - (bare metal installation only) Failed to download, build JPEG XS"
-    echo "  12 - (bare metal installation only) Failed to download, build Media Comunication Mesh (MCM)"
-    echo "  13 - (bare metal installation only) Failed to download, build Intel Performance Primitives (IPP)"
-    echo "  14 - (bare metal installation only) Failed to download, build Video Super Resolution (VSR)"
-    echo "  15 - (bare metal installation only) Failed to download, build FFNVCodec"
-    echo "  16 - (bare metal installation only) Failed to download, patch and build FFmpeg"
+cat <<- HELPTEXT
+Usage: $0 [-l] [-h] [-d DEBIAN_DIRECTORY] [-p DEPENDENCIES_DIRECTORY] [-c CLEANUP] [-i SKIP_IPP]
+
+Options:
+  -l    Install locally (bare metal installation) instead of using Docker
+  -h    Display this help message
+  -d    Specify the directory from where Debian packages are used for local installation
+        (default is the $LOCAL_INSTALL_DEBIAN_DIRECTORY directory)
+  -p    Specify the directory where locally downloaded and compiled dependencies are placed
+        (default is the $LOCAL_INSTALL_DEPENDENCIES_DIRECTORY directory)
+  -c    Skip the cleanup process of local dependencies
+  -i    Skip the IPP (Intel Performance Primitives) build
+
+Description:
+  This script will build / install the Intel® Tiber™ Broadcast Suite by default in Docker.
+  It will also build the MtlManager Docker container, which is needed for the Intel® Tiber™ Broadcast Suite.
+  If you prefer, you can also install it locally from Debian packages using the -l option.
+  Local installation will install all of the components on your machine (bare metal installation).
+  It will first search the $LOCAL_INSTALL_DEPENDENCIES_DIRECTORY
+  (or other location you can specify with the -d option).
+  Then it will try to install all of the Debian packages for Tiber.
+  If there are none, it will try to download the Debian packages from the Tiber repo.
+  If that also fails, the script will download the source code and install it from source.
+
+Note: The -d, -p, -c, and -i options only work when you install Tiber locally using the -l option.
+
+Return Codes:
+  1/2 - General error
+  3  - (bare metal installation only) Failed to install dependencies
+  4  - (bare metal installation only) Failed to download, patch, build, and clean up libva-dev
+  5  - (bare metal installation only) Failed to download, build, and clean up VMAF
+  6  - (bare metal installation only) Failed to download, build, and clean up SVT-AV1
+  7  - (bare metal installation only) Failed to download, build, and clean up Vulkan headers
+  8  - (bare metal installation only) Failed to download, build, and clean up XDP tools
+  9  - (bare metal installation only) Failed to download, build Media Transport Library (MTL)
+  10 - (bare metal installation only) Failed to download, patch, and build Data Plane Development Kit (DPDK)
+  11 - (bare metal installation only) Failed to download, build JPEG XS
+  12 - (bare metal installation only) Failed to download, build Media Comunication Mesh (MCM)
+  13 - (bare metal installation only) Failed to download, build Intel Performance Primitives (IPP)
+  14 - (bare metal installation only) Failed to download, build Video Super Resolution (VSR)
+  15 - (bare metal installation only) Failed to download, build FFNVCodec
+  16 - (bare metal installation only) Failed to download, patch and build FFmpeg
+HELPTEXT
+
 }
 
 #TODO check prerequisites
@@ -943,22 +945,25 @@ if ! . "${VERSIONS_ENVIRONMENT_FILE}" 2> /dev/null; then
     return 2
 fi
 
+ret=0
 if [ "$LOCAL_INSTALL" = true ]; then
-    ret=0
     install_locally || ret=$?
-    if [ "$ret" -ne 0 ]; then
-        echo
-        echo -e ${YELLOW}Please check the "$LOCAL_INSTALL_LOG_DIRECTORY/$LOCAL_INSTALL_LOG_FILE" ${NC}
-        echo "For detailed installation steps you can refer to docs/manual_bare_metal_installation_helper.md."
-        exit $ret
-    else
-        echo
-        echo -e ${GREEN}Intel® Tiber™ Broadcast Suite installed sucessfuly ${NC}
-        echo -e ${YELLOW}Please restart your computer ${NC}
-        echo
-        exit 0
-    fi
 else
-    install_in_docker_enviroment
+    {
+        install_in_docker_enviroment && \
+        docker_host_prerequisites
+    } || ret=$?
 fi
 
+if [ "$ret" -ne 0 ]; then
+    echo
+    echo -e ${YELLOW}Please check the "$LOCAL_INSTALL_LOG_DIRECTORY/$LOCAL_INSTALL_LOG_FILE" ${NC}
+    echo "For detailed installation steps you can refer to docs/manual_bare_metal_installation_helper.md."
+    exit $ret
+else
+    echo
+    echo -e ${GREEN}Intel® Tiber™ Broadcast Suite installed sucessfuly ${NC}
+    echo -e ${YELLOW}Please restart your computer ${NC}
+    echo
+    exit 0
+fi

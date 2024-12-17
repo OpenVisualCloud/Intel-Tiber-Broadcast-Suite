@@ -1,4 +1,4 @@
-name: Linters 
+name: Linters
 
 on:
   workflow_call:
@@ -8,7 +8,7 @@ on:
   push:
     branches: [ 'main' ]
 
-env:  
+env:
   HADOLINT_RESULTS_FILE: hadolint.sarif
 
 permissions:
@@ -23,9 +23,9 @@ jobs:
     name: dockerfile lint
     permissions:
       security-events: write
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-    - name: "setup: checkout repo"    
+    - name: "setup: checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
     - name: Create sarif output folder
@@ -39,7 +39,7 @@ jobs:
         format: sarif
         output-file: "${{ github.workspace }}/sarif/main-${{ env.HADOLINT_RESULTS_FILE }}"
         no-fail: false
-        failure-threshold: info 
+        failure-threshold: info
 
     - name: "scan: .sources/Dockerfile.sources hadolint scan sarif output"
       uses: hadolint/hadolint-action@v3.1.0
@@ -49,7 +49,7 @@ jobs:
         format: sarif
         output-file: "${{ github.workspace }}/sarif/sources-${{ env.HADOLINT_RESULTS_FILE }}"
         no-fail: true
-        failure-threshold: info 
+        failure-threshold: info
 
     - name: "post: Upload results to security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
@@ -67,9 +67,9 @@ jobs:
 
   shellcheck:
     name: shellcheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-    - name: "setup: checkout repo"    
+    - name: "setup: checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
     - name: "run shellcheck scan"
