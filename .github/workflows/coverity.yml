@@ -101,7 +101,6 @@ jobs:
       run: | 
         python3 .github/tools/coverity/generate_build_script.py
         cat coverity_build.sh
-      with:
 
 
 
