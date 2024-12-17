@@ -14,7 +14,7 @@ env:
 
 jobs:
   docker:
-    name: "Dockerfile build for coverity"
+    name: "Dockerfile build for coverity scans"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     permissions:
@@ -71,7 +71,7 @@ jobs:
       with:
         file: Dockerfile
         push: true
-        load: true
+        load: false
         target: build-stage
         tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
         platforms: "linux/amd64"
@@ -80,7 +80,7 @@ jobs:
 
   scans:
     needs: docker
-    name: "Analysis"
+    name: "Code Analysis"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     container:
