@@ -7,14 +7,14 @@ on:
 
 env:
   BUILD_TYPE: "Release"
-  DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite"
-  DOCKER_IMAGE_NAME: "tiber-broadcast-suite-build-stage"
+  DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage"
+  DOCKER_IMAGE_NAME: "tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
 
 jobs:
   docker:
-    name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
+    name: "Dockerfile build for coverity"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     permissions:
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     container:
-      image: ghcr.io/openvisualcloud/intel-tiber-broadcast-suite/tiber-broadcast-suite/tiber-broadcast-suite-build-stage:"${{ github.sha }}"
+      image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
     permissions:
       packages: read
     steps:
