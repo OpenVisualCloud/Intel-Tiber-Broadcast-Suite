@@ -32,5 +32,8 @@ with open(OUTPUT_FILE, "w") as script_file:
     for build in builds:
       if "dpdk" not in build['dir']:
         script_file.write(f"cd {build['dir']}\n")
+        # remove build dirs to force rebuild
+        build_subdirs="{build,Build,BUILD}"
+        script_file.write(f"rm -rf {build['dir']}/{build_subdirs}\n")
         script_file.write(f"{build['cmd']}\n\n")
 print("Bash script generated successfully.")
