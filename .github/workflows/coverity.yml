@@ -100,7 +100,6 @@ jobs:
         path: BCS
     - name: "generate build script"
       run: | 
-        cd ${{ github.workspace }}/BCS/
         python3 .github/tools/coverity/scrap_build_commands.py
         echo "generated script: "
         cat coverity_build.sh
