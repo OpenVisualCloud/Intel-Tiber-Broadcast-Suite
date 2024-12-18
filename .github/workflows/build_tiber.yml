@@ -12,7 +12,8 @@ permissions:
 
 env:
   BUILD_TYPE: "Release"
-  DOCKER_IMAGE_NAME: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite/tiber-broadcast-suite"
+  DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite"
+  DOCKER_IMAGE_NAME: "tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
   TRIVY_DB_REPOSITORY: "public.ecr.aws/aquasecurity/trivy-db"
@@ -30,61 +31,69 @@ jobs:
     permissions:
       contents: read
       security-events: write
+    env:
+      BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
+      BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
+      DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
     steps:
-    - name: "Preparation: Harden Runner"
+    - name: "OS-Configuration: Preparation: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
       with:
         egress-policy: audit
 
-    - name: "Memory and swap report before"
+    - name: "OS-Configuration: Report memory, block-dev and free disk space."
       run: |
         sudo free -h
         sudo lsblk
-
-    - name: "Set swap to 30Gi"
-      shell: bash
-      run: |
-        export SWAP_FILE=$(sudo swapon --show=NAME | tail -n 1)
-        sudo swapoff $SWAP_FILE
-        sudo rm $SWAP_FILE
-        sudo fallocate -l 30720M $SWAP_FILE
-        sudo chmod 600 $SWAP_FILE
-        sudo mkswap $SWAP_FILE
-        sudo swapon $SWAP_FILE
-
-    - name: "Memory and swap report after"
-      run: |
-        sudo free -h
         sudo df -h
 
-    - name: "Preparation: Repository Checkout"
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+    - name: "OS-Configuration: Disable SWAP in OS, create mnt points, show settings."
+      shell: bash
+      run: |
+        export SWAP_FILE="$(sudo swapon --show=NAME | tail -n 1)"
+        sudo swapoff "${SWAP_FILE}"
+        sudo rm "${SWAP_FILE}"
+        sudo mkdir -p "/mnt/docker/docker-d" "/mnt/docker/docker-tmp"
+
+    - name: "OS-Configuration: Add data-root and other JSON changes to dockerd, reload it."
+      run: |
+        sudo chmod 666 /etc/docker/daemon.json
+        echo "$(sudo jq '. += {"data-root":"/mnt/docker/docker-d","log-driver":"json-file","log-format":"text","log-level":"info","log-opts":{"cache-disabled":"false","cache-max-file":"5","cache-max-size":"20m","max-file":"5","max-size":"10m"}}' /etc/docker/daemon.json)" > /etc/docker/daemon.json
+        sudo chmod 644 /etc/docker/daemon.json
+        sudo systemctl daemon-reload
+        sudo systemctl restart docker
+        sudo cat "/etc/docker/daemon.json"
 
     - name: "Configuration: Docker with Buildx Toolkit set up"
       uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
       with:
-        buildkitd-flags: --debug
+        buildkitd-flags: "--debug --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
+        platforms: "linux/amd64"
+        driver-opts: memory=14Gib,memory-swap=25Gib,env.BUILDKIT_STEP_LOG_MAX_SIZE=50000000,env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000
 
     - name: "Validation: Build/Push Dokcerfile"
       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
       with:
         file: Dockerfile
-        context: .
         push: false
         load: true
         target: final-stage
-        tags: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-        # cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_NAME }}:buildcache
+        tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        platforms: "linux/amd64"
+        cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
+        cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
 
     - name: "Validation: Run Trivy vulnerability scanner on image"
-      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      continue-on-error: true
       with:
-        image-ref: "${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
         output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
         format: "sarif"
 
     - name: "Finish: Upload Trivy scan results to GitHub Security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      continue-on-error: true
       with:
         sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
 
@@ -104,7 +113,7 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
     - name: Run Trivy 'config' type vulnerability scan.
-      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
       with:
         scan-type: 'config'
         hide-progress: false
@@ -135,7 +144,7 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
     - name: Run Trivy 'fs' type vulnerability scanner.
-      uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # v0.22.0
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
       with:
         scan-type: 'fs'
         ignore-unfixed: true

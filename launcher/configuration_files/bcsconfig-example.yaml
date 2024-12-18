@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
 # 
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 
 apiVersion: bcs.bcs.intel/v1
 kind: BcsConfig
@@ -26,4 +26,3 @@ spec:
     controlConnection: 
       ipAddress: "192.168.10.1"
       port: 30001
-   

@@ -106,6 +106,20 @@ RUN \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/cuda-keyring_1.1-1_all.deb
 
+WORKDIR /tmp
+RUN \
+  echo "**** DOWNLOAD AND INSTALL IPP ****" && \
+  curl -Lf https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh -o /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
+  chmod a+x /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
+  /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
+  echo "**** DOWNLOAD AND INSTALL gRPC v1.58 ****" && \
+  git clone --branch "v1.58.0" --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc-source && \
+  mkdir -p "/tmp/grpc-source/cmake/build" && \
+  cmake -S "/tmp/grpc-source" -B "/tmp/grpc-source/cmake/build" -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON && \
+  make -C "/tmp/grpc-source/cmake/build" "-j${nproc}" && \
+  make -C "/tmp/grpc-source/cmake/build" install && \
+  rm -rf /tmp/grpc-source /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh
+
 WORKDIR /tmp/onevpl/build
 RUN \
   echo "**** DOWNLOAD and PATCH ONEVPL ****" && \
@@ -239,12 +253,6 @@ RUN \
   echo "**** APPLY FFMPEG patches ****" && \
   patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/patches/ffmpeg/"*.diff)
 
-RUN \
-  echo "**** DOWNLOAD AND INSTALL IPP ****" && \
-  curl -Lf https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh -o /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
-  chmod a+x /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh && \
-  /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh -a -s --eula accept && \
-  rm -f /tmp/l_ipp_oneapi_p_2021.10.1.16_offline.sh
 
 WORKDIR /tmp/vsr
 # hadolint ignore=SC1091
@@ -324,6 +332,11 @@ RUN \
     --enable-cross-compile && \
   make -j${nproc}
 
+COPY /gRPC /tmp/gRPC
+RUN /tmp/gRPC/compile.sh
+
+WORKDIR /tmp/ffmpeg/
+
 RUN \
   echo "**** ARRANGE FILES ****" && \
   ldconfig && \
@@ -338,6 +351,9 @@ RUN \
     /buildout/usr/local/etc/ && \
   mv \
     /tmp/ffmpeg/ffmpeg \
+    /buildout/usr/bin && \
+  mv \
+    /tmp/gRPC/build/FFmpeg_wrapper_service \
     /buildout/usr/bin && \
   mv \
     /tmp/ffmpeg/ffprobe \
@@ -455,7 +471,7 @@ USER "tiber"
 
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT ["/usr/bin/ffmpeg"]
+ENTRYPOINT ["/usr/bin/FFmpeg_wrapper_service"]
 
 # ===============================================//
 #          MtlManager stage

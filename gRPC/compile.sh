@@ -4,5 +4,7 @@
 #
 #SPDX-License-Identifier: BSD-3-Clause
 
-cmake -S . -B build && cd build && make && cd ..
+COMPILE_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 
+cmake -S "${COMPILE_DIR}" -B "${COMPILE_DIR}/build" && \
+make -C "${COMPILE_DIR}/build"
