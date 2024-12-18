@@ -19,7 +19,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
     control-plane: controller-manager
   name: bcs
@@ -28,7 +27,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-controller-manager
   namespace: bcs
@@ -37,7 +35,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-leader-election-role
   namespace: bcs
@@ -74,7 +71,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-bcsconfig-editor-role
 rules:
@@ -101,7 +97,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-bcsconfig-viewer-role
 rules:
@@ -178,7 +173,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-metrics-reader
 rules:
@@ -191,7 +185,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-proxy-role
 rules:
@@ -212,7 +205,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-leader-election-rolebinding
   namespace: bcs
@@ -229,7 +221,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-manager-rolebinding
 roleRef:
@@ -245,7 +236,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
   name: bcs-launcher-proxy-rolebinding
 roleRef:
@@ -261,7 +251,6 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
     control-plane: controller-manager
   name: bcs-launcher-controller-manager-metrics-service
@@ -279,7 +268,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/name: bcs-launcher
     control-plane: controller-manager
   name: bcs-launcher-controller-manager
