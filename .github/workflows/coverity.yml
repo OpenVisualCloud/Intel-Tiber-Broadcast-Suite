@@ -115,7 +115,7 @@ jobs:
     #     build_language: 'cxx'
     #     build_platform: 'linux64'
     #     command: /tmp/coverity_build.sh
-      name: 'Run coverity'
+    - name: 'Run coverity'
       run: /tmp/coverity_build.sh
 
 
