@@ -37,10 +37,13 @@ with open(OUTPUT_FILE, "w") as script_file:
         # Regular expression to match content between && and && that starts with git
         filter_pattern = r'&&\s*(git|curl).*?&&'
 
-        # Replace the matched content with '&&'
+        # Remove build non relevant code from command
         filtered_cmd = modified_string = re.sub(filter_pattern, '&&', build['cmd'])
-
-        build_subdirs="{build,Build,BUILD}"
+        if "make" in build['cmd']:
+            make_pattern = r'\bmake\b'
+            # Replace 'make' with 'make -B'
+            filtered_cmd = re.sub(make_pattern, 'make -B', filtered_cmd)       
+        build_subdirs="{build,Build,BUILD,sdk/out}"
         script_file.write(f"rm -rf {build['dir']}/{build_subdirs}\n")
         script_file.write(f"{filtered_cmd}\n\n")
 print("Bash script generated successfully.")
