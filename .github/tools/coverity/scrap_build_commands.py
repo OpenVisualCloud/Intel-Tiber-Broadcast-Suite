@@ -2,7 +2,7 @@ from dockerfile_parse import DockerfileParser
 import json
 import os
 import re
-OUTPUT_FILE="coverity_build.sh"
+BUILD_FILE=".github/tools/coverity/build.sh"
 CMD_OFFSET=10
 builds= []
 invalid_dirs=[
@@ -26,9 +26,7 @@ for workdir in WORKDIR_CMD_LIST:
           "cmd": cmd["value"]
         })
 
-with open(OUTPUT_FILE, "w") as script_file:
-
-    script_file.write("#!/bin/bash\n\n")
+with open(BUILD_FILE, "a") as script_file:
 
     for build in builds:
       if "dpdk" not in build['dir']:

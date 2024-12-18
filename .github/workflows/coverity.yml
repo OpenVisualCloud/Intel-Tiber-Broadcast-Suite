@@ -83,26 +83,24 @@ jobs:
     name: "Code Analysis"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    # container:
-    #   image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
+    container:
+      image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
     permissions:
       packages: read
     steps:
-    # - name: "setup machine"
-    #   run: |
-    #     apt update
-    #     apt install -y python3 python3-pip
-    #     pip3 install --no-cache-dir --break-system-packages dockerfile_parse
+    - name: "setup machine"
+      run: |
+        apt update
+        apt install -y python3 python3-pip
+        pip3 install --no-cache-dir --break-system-packages dockerfile_parse
 
     - name: "checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: "generate build script"
       run: | 
-        echo "BCS_BASE_DIR=$(pwd)" >> $GITHUB_ENV
         python3 .github/tools/coverity/scrap_build_commands.py
         echo "generated script: "
-        cat coverity_build.sh
-        chmod +x coverity_build.sh
+        cat .github/tools/coverity/build.sh
 
 
     # - name: 'Run coverity'
@@ -115,10 +113,7 @@ jobs:
     #     build_platform: 'linux64'
     #     command: /tmp/coverity_build.sh
     - name: 'Run coverity'
-      run: |
-        cd ${{ env.BCS_BASE_DIR }} && .github/tools/coverity/grpc_build.sh && \
-        cd ${{ env.BCS_BASE_DIR }} && .github/tools/coverity/pod_launcher_build.sh && \
-        cd ${{ env.BCS_BASE_DIR }} && coverity_build.sh 
+      run: .github/tools/coverity/build.sh
 
 
 
