@@ -102,8 +102,8 @@ jobs:
     - name: "generate build script"
       run: | 
         mkdir /tmp/BCS 
-        shopt -s dotglob
         mv BCS/* "${{ env.BCS_BASE_DIR }}/"
+        mv mv BCS/.github* "${{ env.BCS_BASE_DIR }}/"
         cd ${{ env.BCS_BASE_DIR }}
         ls
         python3 .github/tools/coverity/scrap_build_commands.py
