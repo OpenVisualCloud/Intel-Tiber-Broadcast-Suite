@@ -11,7 +11,6 @@ env:
   DOCKER_IMAGE_NAME: "tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
-  BCS_BASE_DIR: /tmp/BCS
 
 jobs:
   docker:
@@ -89,11 +88,11 @@ jobs:
     permissions:
       packages: read
     steps:
-    - name: "setup machine"
-      run: |
-        apt update
-        apt install -y python3 python3-pip
-        pip3 install --no-cache-dir --break-system-packages dockerfile_parse
+    # - name: "setup machine"
+    #   run: |
+    #     apt update
+    #     apt install -y python3 python3-pip
+    #     pip3 install --no-cache-dir --break-system-packages dockerfile_parse
 
     - name: "checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
