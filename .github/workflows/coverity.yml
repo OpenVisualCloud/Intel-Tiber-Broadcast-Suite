@@ -102,7 +102,7 @@ jobs:
     - name: "generate build script"
       run: | 
         mkdir /tmp/BCS 
-        mv BCS/* ${{ env.BCS_BASE_DIR }}/
+        mv BCS/* ${{ env.BCS_BASE_DIR }}/ && mv BCS/.* ${{ env.BCS_BASE_DIR }}/
         cd ${{ env.BCS_BASE_DIR }}
         ls
         python3 .github/tools/coverity/scrap_build_commands.py
