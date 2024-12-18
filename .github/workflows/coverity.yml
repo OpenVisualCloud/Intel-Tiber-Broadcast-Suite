@@ -84,8 +84,8 @@ jobs:
     name: "Code Analysis"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-    container:
-      image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
+    # container:
+    #   image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
     permissions:
       packages: read
     steps:
@@ -97,8 +97,6 @@ jobs:
 
     - name: "checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      with:
-        path: BCS
     - name: "generate build script"
       run: | 
         echo "BCS_BASE_DIR=$(pwd)" >> $GITHUB_ENV
@@ -119,9 +117,9 @@ jobs:
     #     command: /tmp/coverity_build.sh
     - name: 'Run coverity'
       run: |
-         ${{ env.BCS_BASE_DIR }}/.github/tools/coverity/grpc_build.sh && cd ${{ env.BCS_BASE_DIR }} && \
-         ${{ env.BCS_BASE_DIR }}/.github/tools/coverity/pod_launcher_build.sh && cd ${{ env.BCS_BASE_DIR }} && \
-         ${{ env.BCS_BASE_DIR }}/coverity_build.sh 
+        cd ${{ env.BCS_BASE_DIR }} && .github/tools/coverity/grpc_build.sh && \
+        cd ${{ env.BCS_BASE_DIR }} && .github/tools/coverity/pod_launcher_build.sh && \
+        cd ${{ env.BCS_BASE_DIR }} && coverity_build.sh 
 
 
 
