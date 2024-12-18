@@ -96,14 +96,15 @@ jobs:
 
     - name: "checkout repo"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
+      with:
+        path: BCS
     - name: "generate build script"
       run: | 
-        python3 .github/tools/coverity/generate_build_script.py
+        cd ${{ github.workspace }}/BCS/
+        python3 .github/tools/coverity/scrap_build_commands.py
         echo "generated script: "
         cat coverity_build.sh
-        mv coverity_build.sh /tmp/coverity_build.sh
-        chmod +x /tmp/coverity_build.sh
+        chmod +x coverity_build.sh
 
 
     # - name: 'Run coverity'
@@ -112,10 +113,14 @@ jobs:
     #     project: 'Intel-Tiber-Broadcast-Suite'
     #     email: ${{ secrets.COVERITY_SCAN_EMAIL }}
     #     token: ${{ secrets.COVERITY_SCAN_TOKEN }}
-    #     build_language: 'cxx'
+    #     build_language: 'other'
     #     build_platform: 'linux64'
     #     command: /tmp/coverity_build.sh
     - name: 'Run coverity'
-      run: /tmp/coverity_build.sh
+      run: |
+         ${{ github.workspace }}/BCS/.github/tools/coverity/grpc_build.sh ${{ github.workspace }}/BCS && \
+         ${{ github.workspace }}/BCS/.github/tools/coverity/pod_launcher_build.sh ${{ github.workspace }}/BCS && \
+         ${{ github.workspace }}/BCS/coverity_build.sh 
+
 
 
