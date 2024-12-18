@@ -11,6 +11,7 @@ env:
   DOCKER_IMAGE_NAME: "tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
   DEBIAN_FRONTEND: "noninteractive"
+  BCS_BASE_DIR: /tmp/BCS
 
 jobs:
   docker:
@@ -100,7 +101,7 @@ jobs:
         path: BCS
     - name: "generate build script"
       run: | 
-        cd BCS
+        mv BCS/* ${{ env.BCS_BASE_DIR }} && cd ${{ env.BCS_BASE_DIR }}
         python3 .github/tools/coverity/scrap_build_commands.py
         echo "generated script: "
         cat coverity_build.sh
@@ -118,9 +119,9 @@ jobs:
     #     command: /tmp/coverity_build.sh
     - name: 'Run coverity'
       run: |
-         ${{ github.workspace }}/BCS/.github/tools/coverity/grpc_build.sh ${{ github.workspace }}/BCS && \
-         ${{ github.workspace }}/BCS/.github/tools/coverity/pod_launcher_build.sh ${{ github.workspace }}/BCS && \
-         ${{ github.workspace }}/BCS/coverity_build.sh 
+         ${{ env.BCS_BASE_DIR }}/.github/tools/coverity/grpc_build.sh && cd ${{ env.BCS_BASE_DIR }} && \
+         ${{ env.BCS_BASE_DIR }}/.github/tools/coverity/pod_launcher_build.sh && cd ${{ env.BCS_BASE_DIR }} && \
+         ${{ env.BCS_BASE_DIR }}/coverity_build.sh 
 
 
 
