@@ -5,13 +5,13 @@ In order to properly build commands for Intel® Tiber™ Broadcast Suite's image
 > **Note:** This instruction bases the examples on a configuration of one of the machines, the responses may differ.
 
 
-## NIC-related settings
+## 1. NIC-related settings
 
 This chapter explains how to gather the platform information regarding network card/s and Virtual Functions, and use them in commands.
 
-### Container's IP address
-Use the network defined for docker containers to determine a pool of addresses (this may also be taken from output of [`first_run.sh`](../../first_run.sh)).
-```shell
+### 1.1. Container's IP address
+Use the network defined for docker containers to determine a pool of addresses (this may also be taken from output of [`first_run.sh`](../first_run.sh)).
+```bash
 docker network ls
 ```
 
@@ -23,14 +23,14 @@ b334bae7126d   host           host      local
 b49202de451f   my_net_801f0   bridge    local
 c06348a2888f   none           null      local
 ```
-`my_net_801f0` network is created by [`first_run.sh`](../../first_run.sh).
+`my_net_801f0` network is created by [`first_run.sh`](../first_run.sh).
 
 Then determine the Subnet based on the docker's network ID or name:
-```shell
+```bash
 docker network inspect my_net_801f0 | grep Subnet
 ```
 or
-```shell
+```bash
 docker network inspect b49202de451f | grep Subnet
 ```
 Response example:
@@ -46,9 +46,9 @@ Example: `--ip=192.168.2.2` and matching `-p_sip 192.168.2.2`.
 
 > **Note:** `[docker_parameters]` is used for every flag that stands between `docker run` and an image name (e.g. `tiber_broadcast_suite`). `[broadcast_suite_parameters]` determines every switch that is put after the image name.
 
-### Find a proper E810 Series NIC
+### 1.2. Find a proper E810 Series NIC
 Run `lshw` command for network interfaces and find all E810 Series cards.
-```shell
+```bash
 sudo lshw -C network
 ```
 
@@ -97,10 +97,10 @@ Note the following information for all of the matching cards:
 - configuration
 
 
-### Virtual Function's port address
+### 1.3. Virtual Function's port address
 Knowing the PCI address of the proper NIC (example: `eth1`), use the command below to determine addresses of Virtual Functions.
 
-```shell
+```bash
 for vf in /sys/bus/pci/devices/<PHYSICAL_DEVICE_PCI_ADDRESS>/virtfn*
 do
   basename $(readlink -f "$vf")
@@ -110,7 +110,7 @@ done
 > **Note:** Physical address of device is indicated as `Slot` in `lspci`'s response, or `bus info` in `lshw`'s response.
 
 Example:
-```shell
+```bash
 for vf in /sys/bus/pci/devices/0000:c0:00.1/virtfn*
 do
   basename $(readlink -f "$vf")
@@ -136,24 +136,24 @@ Based on above response, Virtual Functions derived from `eth1`, that can be used
 
 e.g. `-p_port 0000:c0:11.0`.
 
-### TCP/UDP port
+### 1.4. TCP/UDP port
 > **Note:** In order to avoid port collisions, try to assign a separate and divergent set of ports for each container running on a server.
 
 Use any unused set of ports out of the Well-known ports pool - `1024..65535`, e.g. `--expose=20000-20010`.
 
 Out of those specified ports, choose a single `-udp_port`, e.g. `-udp_port 20000`.
 
-### Final destination IP address
+### 1.5. Final destination IP address
 The `-p_rx_ip` parameter is used for the destination IP, e.g. `-p_rx_ip 192.168.2.1`.
 
 
 
-## GPU-related settings
+## 2. GPU-related settings
 This chapter explains how to gather the platform information regarding graphics card/s and use them in commands.
 
-### Gathering information about render device
+### 2.1. Gathering information about render device
 Following commands can be used to determine the rendering device's location:
-```shell
+```bash
 devices_path="/dev/dri/"
 readarray -t rendering_devices <<< $(ls -l "$devices_path" | awk '//{if($1 ~ "^c" && $4 == "render"){print $NF}}')
 rendering_device=${devices_path}${rendering_devices[0]}

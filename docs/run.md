@@ -13,21 +13,21 @@
 
 > **Note:** The scaling factors provided in this document consider the number of pixels in the image, instead of dimensions, e.g. scaling 1/4 means the number of overall pixel is down by 4, but the edges are divided by 2 (like in 3840x2160 -> 1920x1080).
 
-## Run sample pipelines
+## 1. Run sample pipelines
 
 The Intel® Tiber™ Broadcast Suite is a package designed for creation of high-performance and high-quality solutions used in live video production.
 
-Video pipelines described below are built using Intel-optimized version of FFmpeg and combine: media transport protocols compliant with SMPTE ST 2110, JPEG XS encoder and decoder, GPU media processing and rendering.
+Video pipelines described below (sections [2.](#2-multiviewer) - [7.](#7-jpeg-xs-over-media-communications-mesh)) are built using Intel-optimized version of FFmpeg and combine: media transport protocols compliant with SMPTE ST 2110, JPEG XS encoder and decoder, GPU media processing and rendering.
 
 `session A`, `session B` etc. mark separate shell (terminal) sessions. As the Suite is a containerized solution, those sessions can be opened on a single server or multiple servers - on systems connected with each other, after the ports are exposed and IP addresses aligned in pipeline commands.
 
-### Sample pipelines setup
+### 1.1. Sample pipelines setup
 
-To execute Tiber pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing  three raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
+To execute Intel® Tiber™ Broadcast Suite pipelines, ensure you have a src folder in your Current Working Directory (CWD) containing  three raw videos. These videos should be in the yuv422p10le 25fps format, which refers to **422 YUV sampling at 10-bit little endian 25 frames per second**.
 Additionally, make sure you have the necessary environment variables set. You can use the VARIABLES.rc file in your Current Working Directory for that purpose.
 
-#### 1. Providing input files
-##### 1.0. You can provide your own input files
+### 1.2. Providing input files
+#### 1.2.1. You can provide your own input files
 
 ```
 # Create the src directory if it doesn't exist
@@ -39,7 +39,7 @@ cp name_of_your_video2.yuv src/1080p_yuv422_10b_2.yuv
 cp name_of_your_video3.yuv src/2160p_yuv422_10b.yuv
 ```
 
-##### 1.1. Alternatively, You Can Also Use FFmpeg to Generate Videos with This Format
+#### 1.2.2. Alternatively, You Can Also Use FFmpeg to Generate Videos with This Format
 ```
 # Create the src directory if it doesn't exist
 mkdir -p src
@@ -60,8 +60,8 @@ ffmpeg -an -y -f lavfi \
 -f rawvideo src/2160p_yuv422_10b.yuv
 ```
 
-#### 2. Setting Up VFIO-PCI Addresses
-To configure your VFIO-PCI (dpdk binded devices) for use, you'll need to add their PCI addresses to the VARIABLES.rc file located in your Current Working Directory (CWD). Follow these steps to ensure proper setup:
+### 1.3. Setting Up VFIO-PCI Addresses
+To configure your VFIO-PCI (DPDK binded devices) for use, you'll need to add their PCI addresses to the VARIABLES.rc file located in your Current Working Directory (CWD). Follow these steps to ensure proper setup:
 ```
 # Check your vfio-pci device PCI address
 dpdk-devbind.py -s
@@ -80,20 +80,20 @@ echo "VFIO_PORT_PROC=0000:b1:00.2" >> VARIABLES.rc
 ```
 Make sure to replace 0000:b1:00.0, 0000:b1:00.1, and 0000:b1:00.2 with the actual PCI addresses you obtained from the dpdk-devbind.py command.
 
-By following these steps, you'll have correctly configured the necessary variables in your VARIABLES.rc file for your dpdk binded devices.
+By following these steps, you'll have correctly configured the necessary variables in your VARIABLES.rc file for your DPDK binded devices.
 
-#### 3. Optional for bare-metal
+### 1.4. Optional for bare-metal
 
 ---
 
->📝 **Notice:** To run the pipelines using the bare-metal installation of the Tiber suite, include the `-l` argument with the pipeline scripts:
+>📝 **Notice:** To run the pipelines using the bare-metal installation of the Intel® Tiber™ Broadcast Suite, include the `-l` argument with the pipeline scripts:
 >```bash
 >./pipelines/<pipelines_script_example>.sh -l
 >```
 > in local mode you also need to have kahawai.json in your Current Working Directory [kahawai.json](../kahawai.json)
 ---
 
-### Multiviewer
+## 2. Multiviewer
 
 Input streams from eight ST 2110-20 cameras are scaled down and composed into a tiled 4x2 multi-view of all inputs on a single frame.
 
@@ -115,7 +115,7 @@ session C > multiviewer_rx.sh
 ```
 
 
-### Recorder
+## 3. Recorder
 
 Input streams from ST 2110-20 camera is split to two streams with different 1/4 and 1/16 pixelwise scaling. Scaled outputs are stored on local drive.
 
@@ -129,7 +129,7 @@ session B > recorder_rx.sh
 ```
 
 
-### Replay
+## 4. Replay
 
 Input streams from two ST 2110-20 camera and are blended together. Blended output is send out via ST 2110 stream.
 
@@ -144,7 +144,7 @@ session C > replay_rx.sh
 ```
 
 
-### Upscale
+## 5. Upscale
 
 Input streams from ST 2110-20 camera is scaled up using Video Super Resolution from FullHD to the 4K resolution. Output is send out via ST 2110-20 stream.
 
@@ -159,7 +159,7 @@ session C > upscale_rx.sh
 ```
 
 
-### JPEG XS
+## 6. JPEG XS
 
 Two input streams from local drive are encoded using JPEG XS codec and send out using ST 2110-22 streams.
 Input streams from two ST 2110-22 camera are decoded using JPEG XS codec stored on local drive.
@@ -174,15 +174,15 @@ session B > jpeg_xs_rx.sh
 ```
 
 
-### JPEG XS over Media Communications Mesh
+## 7. JPEG XS over Media Communications Mesh
 
 Two input streams from local drive are encoded using JPEG XS codec and send out via Media Communications Mesh using ST2110-22 streams.
 Input streams from two ST2110-22 cameras are decoded using JPEG XS codec stored on local drive.
 
-> ⚠️ **Warning:** You need to have the [MCM Proxy](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build) installed to run this pipeline.
+> ⚠️ **Warning:** You need to have the [Media Communications Mesh Media Proxy](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build) installed to run this pipeline.
 
-![JPEG XS MCM process](images/jpeg_xs-process.png)
-![JPEG XS MCM](images/mcm_jpeg_xs.png)
+![JPEG XS Media Communications Mesh process](images/jpeg_xs-process.png)
+![JPEG XS Media Communications Mesh](images/mcm_jpeg_xs.png)
 
 Example command to run the pipeline:
 ```text
@@ -194,7 +194,7 @@ session D > mcm_jpeg_xs_tx.sh
 
 
 <!-- Temporarily hidden
-### Video production pipeline
+## 8. Video production pipeline
 This pipeline does not have its equivalent in code at the moment, but shows a production-ready solution that could be built using Intel® Tiber™ Broadcast Suite.
 
 ![Video production pipeline](images/production-pipeline-example.png)

@@ -12,7 +12,7 @@ The video pipelines are built using Intel-optimized version of FFmpeg and combin
 
 ![Multiviewer](images/all-in-one.png)
 
-### 2.1 High level components description
+### 2.1. High level components description
 
 The Intel® Tiber™ Broadcast Suite uses open-source FFmpeg framework as a baseline, and enhances it with:
 - Media Transport Library (MTL) with [SMPTE ST 2110 transport protocols](https://www.smpte.org/standards/st2110) and yuv422p10le and y210le pixel formats.
@@ -27,7 +27,7 @@ The software package includes several performance features on top of regular [In
 
 ![Architecture](images/sw-architecture.png)
 
-### 2.2 Media Transport Library (MTL) for Intel® Tiber™ Broadcast Suite
+### 2.2. Media Transport Library (MTL) for Intel® Tiber™ Broadcast Suite
 
 - **Lockless Design:** MTL employs a lockless design in the data plane, utilizing busy polling (busy-waiting or spinning) to achieve ultra-high performance and low latency. This technique constantly checks for new data packets, minimizing latency and avoiding costly context switches between the kernel and user space.
 - **Tasklet Scheduler:** MTL incorporates an asynchronous tasklet scheduler, allowing efficient utilization of the pinned polling thread. Tasklets are lightweight functions that run in the context of the pinned thread, enabling more efficient use of the Last Level Cache (LLC) at different processing stages.
@@ -40,7 +40,7 @@ The software package includes several performance features on top of regular [In
 - **Runtime Configuration:** MTL allows runtime updates to source and destination addresses, enabling dynamic reconfiguration without the need for session recreation, providing significant flexibility in switch/forward scenarios.
 - **Timing Parser and Analysis:** MTL provides utilities for verifying the compliance of incoming ST 2110-20 RX streams with the ST 2110 standard, including a built-in status report, detailed parsing results, and a sample timing parser UI constructed using Python bindings.
 
-### 2.3 Intel® Library for Video Super Resolution (RAISR) for Intel® Tiber™ Broadcast Suite
+### 2.3. Intel® Library for Video Super Resolution (RAISR) for Intel® Tiber™ Broadcast Suite
 
 Intel's Library for Video Super Resolution stands out as a high-performance, highly customizable, and efficient solution for video upscaling and sharpening, leveraging Intel's cutting-edge hardware and software technologies, while offering seamless integration with industry-standard tools and fostering an open-source community.
 
@@ -56,7 +56,7 @@ Intel's Library for Video Super Resolution stands out as a high-performance, hig
 
 ## 3. Build Instructions
 
-### 3.1 Quick Start
+### 3.1. Quick Start
 
 To configure your system and build the Intel® Tiber™ Broadcast Suite image, please refer to the [build guide](build.md).
 
@@ -68,7 +68,7 @@ How to run and example usage of the Intel® Tiber™ Broadcast Suite [run guide]
 
 We welcome community contributions to the Intel® Tiber™ Broadcast Suite project. If you have any ideas or issues, please share them with us by using GitHub issues or opening a pull request.
 
-### 5.1 Fork this repository
+### 5.1. Fork this repository
 
 Before opening a pull request, please follow these steps:
 
@@ -78,11 +78,11 @@ Before opening a pull request, please follow these steps:
 4. Push your changes to your forked repository.
 5. Open a pull request to the main repository.
 
-### 5.2 Coding style
+### 5.2. Coding style
 
 We use linters for style checks.
 
-#### 5.2.1 Linter example
+#### 5.2.1. Linter example
 
 Please check with the following example command inside the Docker container for linters:
 
