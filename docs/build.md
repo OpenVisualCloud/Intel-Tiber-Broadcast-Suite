@@ -14,14 +14,16 @@ To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a
       - [1.3.1. Intel Flex GPU driver](#131-intel-flex-gpu-driver)
       - [1.3.2. Nvidia GPU driver](#132-nvidia-gpu-driver)
     - [1.4. Install and configure host's NIC drivers and related software](#14-install-and-configure-hosts-nic-drivers-and-related-software)
-  - [2. Install Intel® Tiber™ Broadcast Suite](#2-install-intel-tiber-broadcast-suite)
-      - [Option #1: Build Docker image from Dockerfile using build.sh script](#option-1-build-docker-image-from-dockerfile-using-buildsh-script)
-      - [Option #2: Local installation from Debian packages](#option-2-local-installation-from-debian-packages)
-      - [Option #3: Install Docker image from Docker Hub](#option-3-install-docker-image-from-docker-hub)
-      - [Option #4: Build Docker image from Dockerfile manually](#option-4-build-docker-image-from-dockerfile-manually)
+  - [2. Install Intel® Tiber™ Broadcast Suite](#2-install-intel®-tiber™-broadcast-suite)
+    - [Option #1: Build Docker image from Dockerfile using build.sh script](#option-1-build-docker-image-from-dockerfile-using-buildsh-script)
+    - [Option #2: Local installation from Debian packages](#option-2-local-installation-from-debian-packages)
+    - [Option #3: Install Docker image from Docker Hub](#option-3-install-docker-image-from-docker-hub)
+    - [Option #4: Build Docker image from Dockerfile manually](#option-4-build-docker-image-from-dockerfile-manually)
   - [3. (Optional) Install Media Communications Mesh Media Proxy](#3-optional-install-media-communications-mesh-media-proxy)
-      - [Option #1: (Recommended) Dockerized installation](#option-1-recommended-dockerized-installation)
-      - [Option #2: Local installation](#option-2-local-installation)
+    - [Option #1: (Recommended) Dockerized installation](#option-1-recommended-dockerized-installation)
+    - [Option #2: Local installation](#option-2-local-installation)
+  - [4. Preparation to run Intel® Tiber™ Broadcast Suite](#4-preparation-to-run-intel®-tiber™-broadcast-suite)
+    - [4.1. First run script](#41-first-run-script)
     - [4.2. Test docker installation](#42-test-docker-installation)
     - [4.3. Test local installation](#43-test-local-installation)
   - [5. Running the image](#5-running-the-image)
@@ -246,7 +248,7 @@ docker pull intel/intel-tiber-broadcast-suite:latest
     docker build $(cat versions.env | xargs -I {} echo --build-arg {}) --build-arg nproc=1 -t video_production_image -f Dockerfile .
     ```
 
-1. Build the mtl manager docker:
+1. Build the MTL Manager docker:
     ```bash
     cd ${HOME}/Media-Transport-Library/manager
     docker build --build-arg VERSION=1.0.0.TIBER -t mtl-manager:latest .

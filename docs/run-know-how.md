@@ -46,7 +46,7 @@ docker run -it \
 - `-v "$(pwd)":/videos`: Binds the current working directory on the host to `/videos` inside the container.
 - `-v /usr/lib/x86_64-linux-gnu/dri:/usr/local/lib/x86_64-linux-gnu/dri/`: Mounts the host's DRI drivers into the container.
 - `-v /tmp/kahawai_lcore.lock:/tmp/kahawai_lcore.lock`: Shares a lock file between the host and the container.
-- `-v /var/run/imtl:/var/run/imtl`: Shares a mtl manager socket between the host and the container.
+- `-v /var/run/imtl:/var/run/imtl`: Shares a MTL Manager socket between the host and the container.
 - `-v /dev/null:/dev/null`: Makes `/dev/null` available inside the container.
 - `-v /tmp/hugepages:/tmp/hugepages`: Shares the hugepages directory for memory management optimizations.
 - `-v /hugepages:/hugepages`: Shares another hugepages directory.

@@ -150,7 +150,7 @@ First, add the CUDA APT repository to your system.
     rm -drf svt-av1
     ```
 
-### 1.4. Download and Extract Vulkan Headers:
+### 1.4. Download and Extract Vulkan Headers
 1. Download Vulkan Headers:
     ```bash
     . versions.env && curl -Lf https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VULKANSDK}.tar.gz | tar -zx --strip-components=1 -C vulkan-headers
@@ -174,7 +174,7 @@ First, add the CUDA APT repository to your system.
     rm -drf vulkan-headers
     ```
 
-### 1.5. Download and Extract XDP-Tools and libbpf:
+### 1.5. Download and Extract XDP-Tools and libbpf
 
 1. Download XDP-Tools and libbpf:
     ```bash
@@ -230,7 +230,7 @@ First, add the CUDA APT repository to your system.
     rm -rf mtl mtl.zip
     ```
 
-#### Option #2: Alternatively Download and Build Media Transport Library (MTL) from source:
+#### Option #2: Alternatively Download and Build Media Transport Library (MTL) from source
 
 1. Download Media Transport Library:
     ```bash
@@ -272,7 +272,7 @@ First, add the CUDA APT repository to your system.
     rm -rf jpegxs jpegxs.zip
     ```
 
-#### Option #2: Alternatively Download, Build, and Install JPEG-XS from source code:
+#### Option #2: Alternatively Download, Build, and Install JPEG-XS from source code
 
 1. Download and Extract JPEG-XS:
     ```bash
@@ -299,7 +299,7 @@ First, add the CUDA APT repository to your system.
     # Run the build script:
     ./build.sh
     ```
-### 1.8. Download, Install, and Set Up Intel IPP:
+### 1.8. Download, Install, and Set Up Intel IPP
 
 1. Download Intel IPP:
     ```bash
@@ -325,7 +325,7 @@ First, add the CUDA APT repository to your system.
     rm -f l_ipp_oneapi_p_2021.10.1.16_offline.sh
     ```
 
-### 1.9. Download, Patch, Build, and Install Video Super Resolution (VSR):
+### 1.9. Download, Patch, Build, and Install Video Super Resolution (VSR)
 
 1. Download and Extract VSR:
     ```bash
@@ -385,7 +385,7 @@ First, add the CUDA APT repository to your system.
     rm -rf mcm mcm.zip
     ```
 
-#### Option #2: Alternatively Download, Build, and Install JPEG-XS froum source code:
+#### Option #2: Alternatively Download, Build, and Install JPEG-XS froum source code
 1. Download and Extract Media Communications Mesh:
     ```bash
     . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz | tar -zx --strip-components=1 -C mcm
@@ -407,7 +407,7 @@ First, add the CUDA APT repository to your system.
     ```
 
 
-### 1.11. Download, Build, and Install FFmpeg NV-Codec-Headers:
+### 1.11. Download, Build, and Install FFmpeg NV-Codec-Headers
 
 1. Download and Extract FFmpeg NV-Codec-Headers:
     ```bash
@@ -452,7 +452,7 @@ First, add the CUDA APT repository to your system.
     sudo dpkg -i ffmpeg/*.deb
     ```
 
-#### Option #2: Alternatively Download, Patch, Build, and Install FFmpeg:
+#### Option #2: Alternatively Download, Patch, Build, and Install FFmpeg
 
 1. Download and Extract FFmpeg:
     ```bash
