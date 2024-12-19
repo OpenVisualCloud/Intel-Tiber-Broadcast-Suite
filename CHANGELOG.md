@@ -3,7 +3,7 @@
 What's Changed
 - Support Nvidia GPU (CUDA filters)
 - Uploaded Intel® Tiber™ Broadcast Suite to the Docker Hub
-- Enabled build of Intel® Tiber™ Broadcast Suite from debian packages
+- Enabled build of Intel® Tiber™ Broadcast Suite from Debian packages
 - Updated supported FFmpeg version to 7.0
 - Updated documentation
 - Updated build.sh

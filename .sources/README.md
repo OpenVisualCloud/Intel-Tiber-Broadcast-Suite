@@ -17,7 +17,7 @@ This Docker image is created solely for the purpose of browsing the source code 
 
 To build the Docker image, use the following command:
 
-```shell
+```bash
 # access the root of the folder
 cd Intel-Tiber-Broadcast-Suite
 
@@ -34,6 +34,6 @@ docker build "${ENV_PROXY_ARGS[@]}" "$@" -f .sources/Dockerfile.sources -t 2024.
 
 To use this Docker image:
 
-```shell
+```bash
 docker run -it 2024.1.0-sources
 ```

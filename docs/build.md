@@ -4,24 +4,24 @@ To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a
 
 #### Table of contents
 - [Build guide](#build-guide)
-  - [Table of contents](#table-of-contents)
+      - [Table of contents](#table-of-contents)
   - [1. Prerequisites](#1-prerequisites)
     - [1.1. BIOS settings](#11-bios-settings)
     - [1.2. Install Docker](#12-install-docker)
       - [1.2.1. Install Docker build environment](#121-install-docker-build-environment)
       - [1.2.2. Setup docker proxy](#122-setup-docker-proxy)
-    - [1.3 Install GPU driver](#13-install-gpu-driver)
+    - [1.3. Install GPU driver](#13-install-gpu-driver)
       - [1.3.1. Intel Flex GPU driver](#131-intel-flex-gpu-driver)
       - [1.3.2. Nvidia GPU driver](#132-nvidia-gpu-driver)
     - [1.4. Install and configure host's NIC drivers and related software](#14-install-and-configure-hosts-nic-drivers-and-related-software)
-  - [2. Install Intel Tiber™ Broadcast Suite](#2-install-intel-tiber-broadcast-suite)
-    - [Option #1: Build Docker image from Dockerfile using build.sh script](#option-1-build-docker-image-from-dockerfile-using-buildsh-script)
-    - [Option #2: Local installation from Debian packages](#option-2-local-installation-from-debian-packages)
-    - [Option #3: Install Docker image from Docker Hub](#option-3-install-docker-image-from-docker-hub)
-    - [Option #4: Build Docker image from Dockerfile manually](#option-4-build-docker-image-from-dockerfile-manually)
+  - [2. Install Intel® Tiber™ Broadcast Suite](#2-install-intel-tiber-broadcast-suite)
+      - [Option #1: Build Docker image from Dockerfile using build.sh script](#option-1-build-docker-image-from-dockerfile-using-buildsh-script)
+      - [Option #2: Local installation from Debian packages](#option-2-local-installation-from-debian-packages)
+      - [Option #3: Install Docker image from Docker Hub](#option-3-install-docker-image-from-docker-hub)
+      - [Option #4: Build Docker image from Dockerfile manually](#option-4-build-docker-image-from-dockerfile-manually)
   - [3. (Optional) Install Media Communications Mesh Media Proxy](#3-optional-install-media-communications-mesh-media-proxy)
-  - [4. Preparation to run Intel Tiber™ Broadcast Suite](#4-preparation-to-run-intel-tiber-broadcast-suite)
-    - [4.1. First run script](#41-first-run-script)
+      - [Option #1: (Recommended) Dockerized installation](#option-1-recommended-dockerized-installation)
+      - [Option #2: Local installation](#option-2-local-installation)
     - [4.2. Test docker installation](#42-test-docker-installation)
     - [4.3. Test local installation](#43-test-local-installation)
   - [5. Running the image](#5-running-the-image)
@@ -61,7 +61,7 @@ To install Flex GPU driver follow the [1.4.3. Ubuntu Install Steps](https://dgpu
 > **Note:** If prompted with `Unable to locate package`, please ensure repository key `intel-graphics.key` is properly dearmored and installed as `/usr/share/keyrings/intel-graphics.gpg`.
 
 Use vainfo command to check the gpu installation:
-```shell
+```bash
 sudo vainfo
 ```
 
@@ -91,26 +91,26 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 1. Install patched ice driver for Intel® E810 Series Ethernet Adapter NICs.
 
    1. Download ice driver.
-       ```shell
+       ```bash
        mkdir -p ${HOME}/ice_patched
        . versions.env && wget -qO- $LINK_ICE_DRIVER | tar -xz -C ${HOME}/ice_patched
        ```
 
    1. Patch the ice driver.
-       ```shell
+       ```bash
         # Ensure the target directory exists
         mkdir -p ${HOME}/Media-Transport-Library
        ```
-       ```shell
+       ```bash
        # Download Media Transport Library:
        . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
        ```
-       ```shell
+       ```bash
        . versions.env && git -C ${HOME}/ice_patched/ice* apply ~/Media-Transport-Library/patches/ice_drv/${ICE_VER}/*.patch
        ```
 
    1. Install the ice driver.
-       ```shell
+       ```bash
        cd ${HOME}/ice_patched/ice-*/src
        make
        sudo make install
@@ -121,16 +121,16 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
        ```
 
    1. Check if the driver is installed properly, and if so - clean up.
-        ```shell
+        ```bash
         # should give you output
         sudo dmesg | grep "Intel(R) Ethernet Connection E800 Series Linux Driver - version Kahawai"
         ```
-        ```shell
+        ```bash
         rm -rf ${HOME}/ice_patched ${HOME}/Media-Transport-Library
         ```
 
    1. Update firmware.
-        ```shell
+        ```bash
         . versions.env && wget ${LINK_ICE_FIRMWARE}
         unzip Release_*.zip
         cd NVMUpdatePackage/E810
@@ -140,7 +140,7 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
         ```
 
     1. Verify installation.
-        ```shell
+        ```bash
         # replace with your device
         ethtool -i ens801f0
         ```
@@ -151,68 +151,75 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
         firmware-version: 4.60 0x8001e8dc 1.3682.0
         ```
 
-    > **Note:** if you encountered any problems please go to <https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md>.
+    > **Note:** if you encountered any problems, please go to [E810 driver guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md).
 
 
 1. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/run.md), chapter 1, and (optionally) 7 for PTP configuration.
 
-## 2. Install Intel Tiber™ Broadcast Suite
+## 2. Install Intel® Tiber™ Broadcast Suite
 
-#### Option #1: Build Docker image from Dockerfile using build.sh script
-> **Note:** This method is recommended instead of Option 2 - layers are built in parallel, cross-compability is possible.
+### Option #1: Build Docker image from Dockerfile using build.sh script
+> **Note:** This method is recommended instead of Option #2 - layers are built in parallel, cross-compability is possible.
 
 Access the project directory.
 
-```shell
+```bash
 cd Intel-Tiber-Broadcast-Suite
+```
+
+Install Dependencies.
+
+```bash
+sudo apt-get update
+sudo apt-get install meson python3-pyelftools libnuma-dev
 ```
 
 Run build.sh script.
 
-> **Note:** For `build.sh` script to run without errors, `docker-buildx-plugin` must be installed. The error thrown without the plugin does not inform about that fact, rather that the flags are not correct. See chapter [1.2. Install Docker build environment](#12-install-docker-build-environment) for installation details.
+> **Note:** For `build.sh` script to run without errors, `docker-buildx-plugin` must be installed. The error thrown without the plugin does not inform about that fact, rather that the flags are not correct. See chapter [1.2.1. Install Docker build environment](#121-install-docker-build-environment) for installation details.
 
-```shell
+```bash
 ./build.sh
 ```
 
-#### Option #2: Local installation from Debian packages
+### Option #2: Local installation from Debian packages
 
 You can install the Intel® Tiber™ Broadcast Suite localy on bare metal. This installation allows you to skip installing docker altogether.
 
-```shell
+```bash
 ./build.sh -l
 ```
 
-#### Option #3: Install Docker image from Docker Hub
+### Option #3: Install Docker image from Docker Hub
 Visit <https://hub.docker.com/r/intel/intel-tiber-broadcast-suite/> Intel® Tiber™ Broadcast Suite image docker hub to select the most appropriate version.
 
 Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
-```shell
+```bash
 docker pull intel/intel-tiber-broadcast-suite:latest
 ```
 
-#### Option #4: Build Docker image from Dockerfile manually
+### Option #4: Build Docker image from Dockerfile manually
 
 > **Note:** Below method does not require buildx, but lacks cross-compability and may prolongate the build process.
 
-Download, Patch, Build, and Install DPDK from source code.
+1. Download, Patch, Build, and Install DPDK from source code.
 
    1. Download and Extract DPDK and MTL:
-        ```shell
+        ```bash
        . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
        ```
-       ```shell
+       ```bash
         . versions.env && curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | tar -zx --strip-components=1 -C dpdk
         ```
 
    1. Apply Patches from Media Transport Library:
-        ```shell
+        ```bash
         # Apply patches:
         . versions.env && cd dpdk && git apply ${HOME}/Media-Transport-Library/patches/dpdk/$DPDK_VER/*.patch
         ```
 
    1. Build and Install DPDK:
-        ```shell
+        ```bash
         # Prepare the build directory:
         meson build
 
@@ -224,27 +231,27 @@ Download, Patch, Build, and Install DPDK from source code.
         ```
 
    1. Clean Up:
-        ```shell
+        ```bash
         cd ..
         rm -drf dpdk
         ```
 
-Build image using Dockerfile:
-```shell
-docker build $(cat versions.env | xargs -I {} echo --build-arg {}) -t video_production_image -f Dockerfile .
-```
+1. Build image using Dockerfile:
+    ```bash
+    docker build $(cat versions.env | xargs -I {} echo --build-arg {}) -t video_production_image -f Dockerfile .
+    ```
 
-Change number of cores used to build by make can be changed  by _--build-arg nproc={number of proc}_
-```shell
-docker build $(cat versions.env | xargs -I {} echo --build-arg {}) --build-arg nproc=1 -t video_production_image -f Dockerfile .
-```
+1. Change number of cores used to build by make can be changed  by _--build-arg nproc={number of proc}_
+    ```bash
+    docker build $(cat versions.env | xargs -I {} echo --build-arg {}) --build-arg nproc=1 -t video_production_image -f Dockerfile .
+    ```
 
-Build the mtl manager docker:
-```shell
-cd ${HOME}/Media-Transport-Library/manager
-docker build --build-arg VERSION=1.0.0.TIBER -t mtl-manager:latest .
-cd -
-```
+1. Build the mtl manager docker:
+    ```bash
+    cd ${HOME}/Media-Transport-Library/manager
+    docker build --build-arg VERSION=1.0.0.TIBER -t mtl-manager:latest .
+    cd -
+    ```
 
 ## 3. (Optional) Install Media Communications Mesh Media Proxy
 
@@ -256,13 +263,13 @@ To install Media Communications Mesh Media Proxy, please follow below steps.
 >  - [mcm_media_proxy_tx.sh](../pipelines/mcm_media_proxy_tx.sh)
 >  - [mcm_media_proxy_rx.sh](../pipelines/mcm_media_proxy_rx.sh)
 
-#### Option #1: (Recommended) Dockerized installation
+### Option #1: (Recommended) Dockerized installation
 For dockerized solution please follow [instruction on this page](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build).
  
-#### Option #2: Local installation
+### Option #2: Local installation
 1. **Clone the Media Communications Mesh repository**
 
-    ```shell
+    ```bash
     git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
     cd Media-Communications-Mesh
    ```
@@ -270,27 +277,27 @@ For dockerized solution please follow [instruction on this page](https://github.
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
     - Install required packages:
       - Ubuntu/Debian
-        ```shell
+        ```bash
         sudo apt-get update
         sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
         ```
       - Centos stream
-        ```shell
+        ```bash
         sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
         ```
     - Install the irdma driver and libfabric:
-        ```shell
+        ```bash
         ./scripts/setup_rdma_env.sh install
         ```
   > [!TIP]
   > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
     - Reboot.
 3. **Build the Media Communications Mesh Media Proxy binary**
-    ```shell
+    ```bash
     ./build.sh
     ```
 
-## 4. Preparation to run Intel Tiber™ Broadcast Suite
+## 4. Preparation to run Intel® Tiber™ Broadcast Suite
 
 ### 4.1. First run script
 
@@ -298,29 +305,29 @@ For dockerized solution please follow [instruction on this page](https://github.
 
 From the root of the Intel® Tiber™ Broadcast Suite repository, execute `first_run.sh` script that sets up the hugepages, locks for MTL, E810 NIC's virtual controllers and runs MtlManager docker container:
 
-```shell
+```bash
 sudo -E ./first_run.sh | tee virtual_functions.txt
 ```
 > **Note:** Please ensure the command is executed with `-E` switch, to copy all the necessary environment variables. Lack of the switch may cause the script to fail silently.
 
-When running the Intel Tiber™ Broadcast Suite locally, please execute first_run with the -l argument.
-```shell
+When running the Intel® Tiber™ Broadcast Suite locally, please execute first_run with the -l argument.
+```bash
 sudo -E ./first_run.sh -l | tee virtual_functions.txt
 ```
 This script will start the Mtl Manager locally. To avoid issues with core assignment in Docker, ensure that the Mtl Manager is running. The Mtl Manager is typically run within a Docker container, but the `-l` argument allows it to be executed directly from the terminal.
 
-> **Note:** Ensure that `MtlManager` is running when using the Intel Tiber™ Broadcast Suite locally. You can check this by running `pgrep -l "MtlManager"`. If it is not running, start it with the command `sudo MtlManager`.
+> **Note:** Ensure that `MtlManager` is running when using the Intel® Tiber™ Broadcast Suite locally. You can check this by running `pgrep -l "MtlManager"`. If it is not running, start it with the command `sudo MtlManager`.
 
 > **Note:** In order to avoid unnecessary reruns, preserve the command's output as a file to note which interface was bound to which Virtual Functions.
 
 ### 4.2. Test docker installation
 
-```shell
+```bash
 docker run --rm -it --user=root --privileged video_production_image --help
 ```
 
 ### 4.3. Test local installation
-```shell
+```bash
 ffmpeg --help
 ```
 

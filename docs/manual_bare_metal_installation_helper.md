@@ -1,4 +1,4 @@
-## Alternative manual build method
+## 1. Alternative manual build method
 > **Note:** This is not the recommended method of bare metal installation only use as a reference if you encounter erros during the build.sh execution
 
 ### 1.1. Installing dependencies
@@ -206,7 +206,7 @@ First, add the CUDA APT repository to your system.
     ```
 
 ### 1.6. Media Transport Library
-#### 1.6.0. Option #1: Install Media Transport Library using a Debian Package
+#### Option #1: Install Media Transport Library using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -230,7 +230,7 @@ First, add the CUDA APT repository to your system.
     rm -rf mtl mtl.zip
     ```
 
-#### 1.6.1. Option #2: Alternatively Download and Build Media Transport Library (MTL) from source:
+#### Option #2: Alternatively Download and Build Media Transport Library (MTL) from source:
 
 1. Download Media Transport Library:
     ```bash
@@ -248,7 +248,7 @@ First, add the CUDA APT repository to your system.
     ./build.sh
     ```
 ### 1.7. JPEG-XS
-#### 1.7.0. Option #1 Installing JPEG-XS Using a Debian Package
+#### Option #1: Installing JPEG-XS Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -272,7 +272,7 @@ First, add the CUDA APT repository to your system.
     rm -rf jpegxs jpegxs.zip
     ```
 
-#### 1.7.1. Option #2 Alternatively Download, Build, and Install JPEG-XS from source code:
+#### Option #2: Alternatively Download, Build, and Install JPEG-XS from source code:
 
 1. Download and Extract JPEG-XS:
     ```bash
@@ -361,7 +361,7 @@ First, add the CUDA APT repository to your system.
 
 ### 1.10. Media Communications Mesh
 
-#### 1.10.0. Option #1 Install Media Communications Mesh (MCM) Using a Debian Package
+#### Option #1: Install Media Communications Mesh Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -385,24 +385,24 @@ First, add the CUDA APT repository to your system.
     rm -rf mcm mcm.zip
     ```
 
-#### 1.10.1. Option #2 Alternatively Download, Build, and Install JPEG-XS froum source code:
-1. Download and Extract MCM:
+#### Option #2: Alternatively Download, Build, and Install JPEG-XS froum source code:
+1. Download and Extract Media Communications Mesh:
     ```bash
     . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz | tar -zx --strip-components=1 -C mcm
     ```
 
-2. Build and Install MCM:
+2. Build and Install Media Communications Mesh:
     ```bash
-    # Navigate to the MCM Directory:
+    # Navigate to the Media Communications Mesh Directory:
     cd mcm
 
     # Prepare the build directory:
     cmake -S sdk -B sdk/out
 
-    # Build MCM:
+    # Build Media Communications Mesh:
     cmake --build sdk/out
 
-    # Install MCM:
+    # Install Media Communications Mesh:
     sudo cmake --install sdk/out
     ```
 
@@ -433,7 +433,7 @@ First, add the CUDA APT repository to your system.
     ```
 
 ### 1.12. FFmpeg
-#### 1.12.0. Option #1 Install FFmpeg Using a Debian Package
+#### Option #1: Install FFmpeg Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -452,7 +452,7 @@ First, add the CUDA APT repository to your system.
     sudo dpkg -i ffmpeg/*.deb
     ```
 
-#### 1.12.1. Option #2 Alternatively Download, Patch, Build, and Install FFmpeg:
+#### Option #2: Alternatively Download, Patch, Build, and Install FFmpeg:
 
 1. Download and Extract FFmpeg:
     ```bash
@@ -489,7 +489,7 @@ First, add the CUDA APT repository to your system.
     git apply ../patches/ffmpeg/004-filtergraph_async.diff
     git apply ../patches/ffmpeg/005-ffmpeg_scheduler.diff
 
-    # Apply MCM patches:
+    # Apply Media Communications Mesh patches:
     git apply -v --whitespace=fix --ignore-space-change ../mcm/ffmpeg-plugin/7.0/*.patch
     cp -f ../mcm/ffmpeg-plugin/mcm_* libavdevice/
     ```
@@ -545,5 +545,5 @@ First, add the CUDA APT repository to your system.
     rm -drf ffmpeg cartwheel
     ```
 
-### 2.0. Go to the run.md instruction for more details on how to run the image
+## 2. Go to the run.md instruction for more details on how to run the image
 **[Running Intel® Tiber™ Broadcast Suite Pipelines](./run.md)**
