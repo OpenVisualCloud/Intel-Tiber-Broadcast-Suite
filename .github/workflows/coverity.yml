@@ -3,6 +3,7 @@ name: Coverity scan
 on:
   workflow_call:
   workflow_dispatch:
+  push:
   
 env:
   BUILD_TYPE: "Release"
@@ -29,87 +30,84 @@ jobs:
         egress-policy: audit
 
     - name: "OS-Configuration: Report memory, block-dev and free disk space."
-      run: |
-        sudo free -h
-        sudo lsblk
-        sudo df -h
+      run: ./build.sh -l
 
-    - name: "OS-Configuration: Disable SWAP in OS, create mnt points, show settings."
-      shell: bash
-      run: |
-        export SWAP_FILE="$(sudo swapon --show=NAME | tail -n 1)"
-        sudo swapoff "${SWAP_FILE}"
-        sudo rm "${SWAP_FILE}"
-        sudo mkdir -p "/mnt/docker/docker-d" "/mnt/docker/docker-tmp"
+#     - name: "OS-Configuration: Disable SWAP in OS, create mnt points, show settings."
+#       shell: bash
+#       run: |
+#         export SWAP_FILE="$(sudo swapon --show=NAME | tail -n 1)"
+#         sudo swapoff "${SWAP_FILE}"
+#         sudo rm "${SWAP_FILE}"
+#         sudo mkdir -p "/mnt/docker/docker-d" "/mnt/docker/docker-tmp"
 
-    - name: "OS-Configuration: Add data-root and other JSON changes to dockerd, reload it."
-      run: |
-        sudo chmod 666 /etc/docker/daemon.json
-        echo "$(sudo jq '. += {"data-root":"/mnt/docker/docker-d","log-driver":"json-file","log-format":"text","log-level":"info","log-opts":{"cache-disabled":"false","cache-max-file":"5","cache-max-size":"20m","max-file":"5","max-size":"10m"}}' /etc/docker/daemon.json)" > /etc/docker/daemon.json
-        sudo chmod 644 /etc/docker/daemon.json
-        sudo systemctl daemon-reload
-        sudo systemctl restart docker
-        sudo cat "/etc/docker/daemon.json"
+#     - name: "OS-Configuration: Add data-root and other JSON changes to dockerd, reload it."
+#       run: |
+#         sudo chmod 666 /etc/docker/daemon.json
+#         echo "$(sudo jq '. += {"data-root":"/mnt/docker/docker-d","log-driver":"json-file","log-format":"text","log-level":"info","log-opts":{"cache-disabled":"false","cache-max-file":"5","cache-max-size":"20m","max-file":"5","max-size":"10m"}}' /etc/docker/daemon.json)" > /etc/docker/daemon.json
+#         sudo chmod 644 /etc/docker/daemon.json
+#         sudo systemctl daemon-reload
+#         sudo systemctl restart docker
+#         sudo cat "/etc/docker/daemon.json"
 
-    - name: "Configuration: Docker with Buildx Toolkit set up"
-      uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
-      with:
-        buildkitd-flags: "--debug --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
-        platforms: "linux/amd64"
-        driver-opts: memory=14Gib,memory-swap=25Gib,env.BUILDKIT_STEP_LOG_MAX_SIZE=50000000,env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000
+#     - name: "Configuration: Docker with Buildx Toolkit set up"
+#       uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+#       with:
+#         buildkitd-flags: "--debug --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
+#         platforms: "linux/amd64"
+#         driver-opts: memory=14Gib,memory-swap=25Gib,env.BUILDKIT_STEP_LOG_MAX_SIZE=50000000,env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000
 
-    - name: 'Login to GitHub Container Registry'
-      uses: docker/login-action@v1
-      with:
-        registry: ghcr.io
-        username: ${{github.actor}}
-        password: ${{secrets.GITHUB_TOKEN}}
+#     - name: 'Login to GitHub Container Registry'
+#       uses: docker/login-action@v1
+#       with:
+#         registry: ghcr.io
+#         username: ${{github.actor}}
+#         password: ${{secrets.GITHUB_TOKEN}}
 
-    - name: "Validation: Build/Push Dokcerfile"
-      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
-      with:
-        file: Dockerfile
-        push: true
-        load: false
-        target: build-stage
-        tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-        platforms: "linux/amd64"
-        cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-        cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
+#     - name: "Validation: Build/Push Dokcerfile"
+#       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+#       with:
+#         file: Dockerfile
+#         push: true
+#         load: false
+#         target: build-stage
+#         tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+#         platforms: "linux/amd64"
+#         cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
+#         cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
 
-  scans:
-    needs: docker
-    name: "Code Analysis"
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
-    container:
-      image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
-    permissions:
-      packages: read
-    steps:
-    - name: "setup machine"
-      run: |
-        apt update
-        apt install -y python3 python3-pip
-        pip3 install --no-cache-dir --break-system-packages dockerfile_parse
+#   scans:
+#     needs: docker
+#     name: "Code Analysis"
+#     runs-on: ubuntu-22.04
+#     timeout-minutes: 120
+#     container:
+#       image: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite-build-stage/tiber-broadcast-suite:${{ github.sha }}"
+#     permissions:
+#       packages: read
+#     steps:
+#     - name: "setup machine"
+#       run: |
+#         apt update
+#         apt install -y python3 python3-pip
+#         pip3 install --no-cache-dir --break-system-packages dockerfile_parse
 
-    - name: "checkout repo"
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-    - name: "generate build script"
-      run: | 
-        python3 .github/tools/coverity/scrap_build_commands.py
-        echo "generated script: "
-        cat .github/tools/coverity/build.sh
+#     - name: "checkout repo"
+#       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+#     - name: "generate build script"
+#       run: | 
+#         python3 .github/tools/coverity/scrap_build_commands.py
+#         echo "generated script: "
+#         cat .github/tools/coverity/build.sh
 
-    - name: 'Run coverity'
-      uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
-      with:
-        project: 'Intel-Tiber-Broadcast-Suite'
-        email: ${{ secrets.COVERITY_SCAN_EMAIL }}
-        token: ${{ secrets.COVERITY_SCAN_TOKEN }}
-        build_language: 'other'
-        build_platform: 'linux64'
-        command: .github/tools/coverity/build.sh
+#     - name: 'Run coverity'
+#       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
+#       with:
+#         project: 'Intel-Tiber-Broadcast-Suite'
+#         email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+#         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+#         build_language: 'other'
+#         build_platform: 'linux64'
+#         command: .github/tools/coverity/build.sh
 
 
 
