@@ -13,3 +13,6 @@ VARIABLES.rc
 # local installation directory
 local_debians
 .temp.env
+
+# ci/cd
+*_build_cmd.sh
