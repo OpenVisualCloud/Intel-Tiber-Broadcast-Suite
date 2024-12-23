@@ -5,29 +5,29 @@
  */
 
 #include "FFmpeg_wrapper_client.h"
+#include <iostream>
 #include <utility>
 #include <vector>
 
 int main(int argc, char* argv[]) {
 
-    if(argc != 3) {
-        std::cout << "client sample app only takes two argument 1) interface 2) port" << std::endl;
+    if (argc != 5) {
+        std::cout << "client sample app only takes two arguments: 1) interface 2) port 3)source_ip 4) destination_port" << std::endl;
         return 1;
     }
 
-    std::vector<std::pair<std::string, std::string>> vec1 = {};
-    std::vector<std::pair<std::string, std::string>> vec2 = {{"key3", "val3"}, {"key4", "val4"}};
-    std::vector<std::pair<std::string, std::string>> vec3 = {{"key5", "val5"}, {"key6", "val6"}};
+    std::string interface = argv[1];//"localhost";
+    std::string port = argv[2];//"50051";
+    std::string source_ip = argv[3];
+    std::string destination_port = argv[4];
 
-    std::string interface = "localhost";
-    std::string port = "50051";
+    // Populate the connection_info vector with the provided values
+    std::vector<std::pair<std::string, std::string>> connection_info = {{"source_ip", source_ip}, {"destination_port", destination_port}};
 
     CmdPassClient obj(interface, port);
 
     // Send multiple asynchronous requests
-    obj.FFmpegCmdExec(vec1);
-    obj.FFmpegCmdExec(vec2);
-    obj.FFmpegCmdExec(vec3);
+    obj.FFmpegCmdExec(connection_info);
 
     // Wait for all asynchronous operations to complete
     obj.WaitForAllRequests();
