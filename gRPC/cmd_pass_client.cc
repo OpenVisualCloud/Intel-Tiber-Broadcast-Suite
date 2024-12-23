@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     std::string destination_port = argv[4];
 
     // Populate the connection_info vector with the provided values
-    std::vector<std::pair<std::string, std::string>> connection_info = {{"source_ip", source_ip}, {"destination_port", destination_port}};
+    std::vector<std::pair<std::string, std::string>> connection_info = {{"ip_addr", source_ip}, {"port", destination_port}};
 
     CmdPassClient obj(interface, port);
 
