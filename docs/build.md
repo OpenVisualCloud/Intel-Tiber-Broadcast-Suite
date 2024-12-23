@@ -232,7 +232,7 @@ docker pull intel/intel-tiber-broadcast-suite:latest
         sudo ninja -C build install
         ```
 
-   1. Clean Up:
+   1. Clean up:
         ```bash
         cd ..
         rm -drf dpdk
