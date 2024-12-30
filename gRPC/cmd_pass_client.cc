@@ -12,7 +12,7 @@
 int main(int argc, char* argv[]) {
 
     if (argc != 5) {
-        std::cout << "client sample app only takes two arguments: 1) interface 2) port 3)source_ip 4) destination_port" << std::endl;
+        std::cout << "client sample app requires the following arguments: 1) interface, 2) port, 3) source_ip, 4) destination_port" << std::endl;
         return 1;
     }
 
