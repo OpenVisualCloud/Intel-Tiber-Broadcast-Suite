@@ -24,7 +24,7 @@ data:
       "frame_width": 1920,
       "frame_height": 1080,
       "video_type": "video/jxsv",
-      "domain": "default.svc.cluster.local""
+      "domain": "default.svc.cluster.local"
     }
 
 ---
