@@ -1,5 +1,5 @@
 diff --git a/Development/nmos-cpp-node/config.json b/Development/nmos-cpp-node/config.json
-index f7e5216..13760eb 100644
+index f7e5216..bb9b6b8 100644
 --- a/Development/nmos-cpp-node/config.json
 +++ b/Development/nmos-cpp-node/config.json
 @@ -14,9 +14,6 @@
@@ -12,7 +12,7 @@ index f7e5216..13760eb 100644
      // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
      //"activate_senders": false,
  
-@@ -26,6 +23,12 @@
+@@ -26,6 +23,18 @@
      //"senders": ["v", "a"],
      //"receivers": [],
  
@@ -21,6 +21,12 @@ index f7e5216..13760eb 100644
 +    // it means that there are 3 senders of type video, 1 sender of type audio and 1 sender of type data
 +    //"senders_count": ["v", "a"],
 +    //"receivers_count": [],
++
++    // IP address and port to connect to ffmpeg grpc service in order to pass properties when another NMOS node
++    // is connected to this NMOS node for BCS pipeline
++    //"ffmpeg_grpc_server_address": "<ip_of_ffmpeg_grpc_server>",
++    //"ffmpeg_grpc_server_port": "50051",
++
 +
      // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
      // and the equivalent parameter constraint on video receivers
@@ -158,7 +164,7 @@ index e4b420f..f09cdc0 100644
  
          slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 diff --git a/Development/nmos-cpp-node/node_implementation.cpp b/Development/nmos-cpp-node/node_implementation.cpp
-index f12cca1..2899672 100644
+index f12cca1..30ff23a 100644
 --- a/Development/nmos-cpp-node/node_implementation.cpp
 +++ b/Development/nmos-cpp-node/node_implementation.cpp
 @@ -1,3 +1,6 @@
@@ -175,7 +181,7 @@ index f12cca1..2899672 100644
 +namespace grpc{
 +// Function to execute the grpc client logic for ffmpeg
 +int sendDataToFfmpeg(const std::string& interface, const std::string& port, const std::string& source_ip, const std::string& destination_port ) {
-+    std::string command = "../../../../gRPC/build/cmd_pass_client";
++    std::string command = "./gRPC/build/cmd_pass_client";
 +    std::string result = command+" "+interface+" "+port+" "+ source_ip+" "+destination_port;
 +    const char* concatenated = result.c_str();
 +    return system(concatenated);
@@ -195,7 +201,7 @@ index f12cca1..2899672 100644
          // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
          const web::json::field_as_bool_or activate_senders{ U("activate_senders"), true };
  
-@@ -83,6 +93,12 @@ namespace impl
+@@ -83,6 +93,17 @@ namespace impl
          const web::json::field_as_value_or senders{ U("senders"), {} };
          const web::json::field_as_value_or receivers{ U("receivers"), {} };
  
@@ -205,19 +211,23 @@ index f12cca1..2899672 100644
 +        const web::json::field_as_value_or senders_count{ U("senders_count"), {} };
 +        const web::json::field_as_value_or receivers_count{ U("receivers_count"), {} };
 +
++        // IP address and port to connect to ffmpeg grpc service in order to pass properties when another NMOS node
++        // is connected to this NMOS node for BCS pipeline
++        const web::json::field_as_string_or ffmpeg_grpc_server_address{ U("ffmpeg_grpc_server_address")};
++        const web::json::field_as_string_or ffmpeg_grpc_server_port{ U("ffmpeg_grpc_server_port")};
++
          // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
          // and the equivalent parameter constraint on video receivers
          // the value must be an object like { "numerator": 25, "denominator": 1 }
-@@ -155,6 +171,8 @@ namespace impl
+@@ -155,6 +176,7 @@ namespace impl
      bool is_rtp_port(const port& port);
      bool is_ws_port(const port& port);
      std::vector<port> parse_ports(const web::json::value& value);
 +    std::vector<int> parse_count(const web::json::value& value);
-+
  
      const std::vector<nmos::channel> channels_repeat{
          { U("Left Channel"), nmos::channel_symbols::L },
-@@ -193,8 +211,8 @@ namespace impl
+@@ -193,8 +215,8 @@ namespace impl
  // forward declarations for node_implementation_thread
  void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
  void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
@@ -228,11 +238,13 @@ index f12cca1..2899672 100644
  
  struct node_implementation_init_exception {};
  
-@@ -248,7 +266,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -248,7 +270,12 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
      const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
      const auto node_id = impl::make_id(seed_id, nmos::types::node);
      const auto device_id = impl::make_id(seed_id, nmos::types::device);
 -    const auto how_many = impl::fields::how_many(model.settings);
++    const auto ffmpeg_grpc_server_address = impl::fields::ffmpeg_grpc_server_address(model.settings);
++    const auto ffmpeg_grpc_server_port = impl::fields::ffmpeg_grpc_server_port(model.settings);
 +    const auto senders_count = impl::parse_count(impl::fields::senders_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
 +    const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
 +    const auto receivers_count = impl::parse_count(impl::fields::receivers_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
@@ -240,7 +252,7 @@ index f12cca1..2899672 100644
      const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
      const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
      const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
-@@ -279,6 +300,16 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -279,6 +306,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
      // any delay between updates to the model resources is unnecessary unless for debugging purposes
      const unsigned int delay_millis{ 0 };
  
@@ -253,11 +265,10 @@ index f12cca1..2899672 100644
 +        throw node_implementation_init_exception();
 +    }
 +
-+
      // it is important that the model be locked before inserting, updating or deleting a resource
      // and that the the node behaviour thread be notified after doing so
      const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
-@@ -293,7 +324,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -293,7 +329,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
          else
              slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
  
@@ -266,7 +277,7 @@ index f12cca1..2899672 100644
          model.notify();
  
          return success;
-@@ -320,15 +351,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -320,15 +356,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
          if (!insert_resource_after(milliseconds, resources, std::move(root), gate)) throw node_implementation_init_exception();
      };
  
@@ -284,7 +295,7 @@ index f12cca1..2899672 100644
      {
          auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
          node.data[nmos::fields::tags] = impl::fields::node_tags(model.settings);
-@@ -370,21 +400,27 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -370,20 +405,25 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
          ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
          : std::vector<utility::string_t>{ primary_interface.name };
  
@@ -315,11 +326,9 @@ index f12cca1..2899672 100644
 +        // senders_count[senders_iterator] is the total count of senders by port type - video/audio/data/mux
 +        for (int index = 0; index < senders_count[senders_iterator]; ++index)
          {
-+            // slog::log<slog::severities::info>(gate, SLOG_FLF) << "SENDERS-ports +";
              const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
              const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
-             const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
-@@ -516,13 +552,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -516,13 +556,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
              if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) throw node_implementation_init_exception();
              if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) throw node_implementation_init_exception();
          }
@@ -340,7 +349,7 @@ index f12cca1..2899672 100644
              const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
  
              nmos::resource receiver;
-@@ -626,774 +664,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -626,774 +668,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
              if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
              if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
          }
@@ -1116,7 +1125,7 @@ index f12cca1..2899672 100644
  }
  
  // Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
-@@ -1438,15 +715,31 @@ nmos::registration_handler make_node_implementation_registration_handler(slog::b
+@@ -1438,14 +719,29 @@ nmos::registration_handler make_node_implementation_registration_handler(slog::b
  }
  
  // Example Connection API callback to parse "transport_file" during a PATCH /staged request
@@ -1126,31 +1135,29 @@ index f12cca1..2899672 100644
      // this example uses a custom transport file parser to handle video/jxsv in addition to the core media types
      // otherwise, it could simply return &nmos::parse_rtp_transport_file
      // (if this callback is specified, an 'empty' std::function is not allowed)
-+
      return [](const nmos::resource& receiver, const nmos::resource& connection_receiver, const utility::string_t& transport_file_type, const utility::string_t& transport_file_data, slog::base_gate& gate)
      {
 -        const auto validate_sdp_parameters = [](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
++        // this is example implementation of retrieviening required params from transport file parameters
++        // and send them to ffmpeg pipeline grpc server
 +        const auto session_description = sdp::parse_session_description(utility::us2s(transport_file_data));
 +        auto sdp_transport_params = nmos::parse_session_description(session_description);
-+         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) 
++        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation)
 +        << sdp_transport_params.second[0][nmos::fields::source_ip];
-+
-+        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) 
++        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation)
 +        << sdp_transport_params.second[0][nmos::fields::destination_port];
 +        std::string source_ip = sdp_transport_params.second[0][nmos::fields::source_ip].as_string();
-+        std::string destination_port = sdp_transport_params.second[0][nmos::fields::destination_port].as_string(); 
-+        int result = grpc::sendDataToFfmpeg("localhost","50051",source_ip, destination_port);
-+          if (result == -1) {
-+         slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) 
++        std::string destination_port = sdp_transport_params.second[0][nmos::fields::destination_port].as_string();
++        int result = grpc::sendDataToFfmpeg(impl::fields::ffmpeg_grpc_server_address, impl::fields::ffmpeg_grpc_server_port, source_ip, destination_port);
++        if (result == -1) {
++        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation)
 +        << "Failed to execute command";
-+    } 
++        }
 +        const auto validate_sdp_parameters = [&gate](const web::json::value& receiver, const nmos::sdp_parameters& sdp_params)
          {
-+
              if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
              {
-                 nmos::validate_video_jxsv_sdp_parameters(receiver, sdp_params);
-@@ -1462,7 +755,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
+@@ -1462,7 +758,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
  }
  
  // Example Connection API callback to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
@@ -1159,7 +1166,7 @@ index f12cca1..2899672 100644
  {
      // this example uses an 'empty' std::function because it does not need to do any validation
      // beyond what is expressed by the schemas and /constraints endpoint
-@@ -1470,26 +763,28 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
+@@ -1470,26 +766,28 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
  }
  
  // Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
@@ -1196,7 +1203,7 @@ index f12cca1..2899672 100644
      {
          const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
          // this code relies on the specific constraints added by node_implementation_thread
-@@ -1528,21 +823,24 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
+@@ -1528,21 +826,24 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
  }
  
  // Example Connection API activation callback to update senders' /transportfile endpoint - captures node_resources by reference!
@@ -1227,7 +1234,7 @@ index f12cca1..2899672 100644
      {
          const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
          if (rtp_sender_ids.end() != found)
-@@ -1621,10 +919,11 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
+@@ -1621,10 +922,11 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
  nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
  {
      const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
@@ -1241,7 +1248,7 @@ index f12cca1..2899672 100644
  
      // the message handler will be used for all Events WebSocket connections, and each connection may potentially
      // have subscriptions to a number of sources, for multiple receivers, so this example uses a handler adaptor
-@@ -1666,14 +965,11 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
+@@ -1666,14 +968,11 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
      auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
      // this example uses this callback to update IS-12 Receiver-Monitor connection status
      auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
@@ -1256,7 +1263,7 @@ index f12cca1..2899672 100644
          receiver_monitor_connection_activation_handler(connection_resource);
      };
  }
-@@ -1752,6 +1048,15 @@ namespace impl
+@@ -1752,6 +1051,15 @@ namespace impl
          }));
      }
  
@@ -1272,7 +1279,7 @@ index f12cca1..2899672 100644
      // find interface with the specified address
      std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address)
      {
-@@ -1861,12 +1166,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
+@@ -1861,12 +1169,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
          .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
          .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
          .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required

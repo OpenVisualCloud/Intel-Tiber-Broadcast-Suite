@@ -1,8 +1,16 @@
 diff --git a/Dockerfile b/Dockerfile
-index f24a67a..792777f 100644
+index f24a67a..a9d04f8 100644
 --- a/Dockerfile
 +++ b/Dockerfile
-@@ -28,10 +28,14 @@ RUN cd /home && mkdir certs && git config --global http.sslVerify false && \
+@@ -8,6 +8,7 @@ ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
+ 
+ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get install -y --no-install-recommends \
+     g++ build-essential \
++    autoconf libtool pkg-config clang libc++-dev \
+     openssl libssl-dev git wget gnupg curl ca-certificates nano \
+     python3 python3-pip python3-setuptools rdma-core && \
+ # Avahi:    dbus avahi-daemon libavahi-compat-libdnssd-dev libnss-mdns AND NOT make \
+@@ -28,10 +29,17 @@ RUN cd /home && mkdir certs && git config --global http.sslVerify false && \
  
  ## Get source for Sony nmos-cpp
  ## Commit 0fb6b51 corresponds to Conan package nmos-cpp/cci.20221203
@@ -15,10 +23,13 @@ index f24a67a..792777f 100644
 +COPY ./node_implementation.cpp /home/nmos-cpp/Development/nmos-cpp-node/node_implementation.cpp
 +COPY ./main.cpp /home/nmos-cpp/Development/nmos-cpp-node/main.cpp
 +
++# Install BCS gRPC client
++COPY ./gRPC/build/ /home/gRPC/build/
++
  ## You should use either Avahi or Apple mDNS - DO NOT use both
  ##
  ## mDNSResponder 878.260.1 Build and install
-@@ -42,10 +46,17 @@ RUN cd /home/ && curl --output - -s -k https://codeload.github.com/apple-oss-dis
+@@ -42,10 +50,17 @@ RUN cd /home/ && curl --output - -s -k https://codeload.github.com/apple-oss-dis
      patch -d mDNSResponder/ -p1 <nmos-cpp/Development/third_party/mDNSResponder/poll-rather-than-select.patch && \
      cd /home/mDNSResponder/mDNSPosix && make os=linux && make os=linux install
  
@@ -38,7 +49,7 @@ index f24a67a..792777f 100644
      -G "Unix Makefiles" \
      -DCMAKE_BUILD_TYPE:STRING="MinSizeRel" \
      -DCMAKE_CONFIGURATION_TYPES:STRING="MinSizeRel" \
-@@ -88,8 +99,9 @@ RUN cd /home/nmos-js/Development && \
+@@ -88,12 +103,13 @@ RUN cd /home/nmos-js/Development && \
      cp -rf /home/nmos-js/Development/build/* /home/admin
  
  ## Move executables, libraries and clean up container as much as possible
@@ -50,6 +61,22 @@ index f24a67a..792777f 100644
      cd /home && rm -rf .git nmos-cpp nmos-js
  
  ## Re-build container for optimised runtime environment using clean Ubuntu Bionic release
+-FROM ubuntu:focal
++FROM ubuntu:jammy
+ 
+ ##Copy required files from build container
+ COPY --from=stage1-build /home /home
+@@ -105,8 +121,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive && apt-get install -
+     cd /home/mDNSResponder/mDNSPosix && make os=linux install && \
+     cd /home && rm -rf /home/mDNSResponder /etc/nsswitch.conf.pre-mdns && \
+     curl -sS -k "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x77b7346a59027b33c10cafe35e64e954262c4500" | apt-key add - && \
+-    echo "deb http://ppa.launchpad.net/mosquitto-dev/mosquitto-ppa/ubuntu focal main" | tee /etc/apt/sources.list.d/mosquitto.list && \
+-    apt-get update && apt-get install -y --no-install-recommends mosquitto && \
++    echo "deb http://ppa.launchpad.net/mosquitto-dev/mosquitto-ppa/ubuntu jammy main" | tee /etc/apt/sources.list.d/mosquitto.list && \
++    apt-get update && apt-get install -y --no-install-recommends mosquitto libc6 && \
+     apt-get remove --purge -y make gnupg && \
+     apt-get autoremove -y && \
+     apt-get clean -y --no-install-recommends && \
 diff --git a/Makefile b/Makefile
 index f04cb04..afdb54c 100644
 --- a/Makefile
@@ -68,10 +95,10 @@ index f04cb04..afdb54c 100644
  
  start: run
 diff --git a/node.json b/node.json
-index 6d36960..9e28c30 100644
+index 6d36960..cf97d42 100644
 --- a/node.json
 +++ b/node.json
-@@ -1,7 +1,17 @@
+@@ -1,7 +1,19 @@
  {
 -"logging_level": 0,
 -"http_port": 11000,
@@ -93,7 +120,9 @@ index 6d36960..9e28c30 100644
 +    "frame_width": 1920,
 +    "frame_height": 1080,
 +    "video_type": "video/jxsv",
-+    "domain": "local"
++    "domain": "local",
++    "ffmpeg_grpc_server_address": "<ip_of_ffmpeg_grpc_server>",
++    "ffmpeg_grpc_server_port": "50051"
 +}
 \ No newline at end of file
 diff --git a/registry.json b/registry.json
