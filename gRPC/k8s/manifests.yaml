@@ -26,6 +26,8 @@ spec:
         args: ["localhost", "50051"]
         ports:
         - containerPort: 50051
+        securityContext:
+          readOnlyRootFilesystem: true
 
 ---
 
