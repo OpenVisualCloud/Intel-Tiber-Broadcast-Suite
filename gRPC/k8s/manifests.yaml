@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: ffmpeg-pipeline
-        image: tiber-broadcast-suite:latest
+        image: video_production_image:latest
         imagePullPolicy: IfNotPresent
         command: ["/usr/bin/FFmpeg_wrapper_service"]
         args: ["localhost", "50051"]
