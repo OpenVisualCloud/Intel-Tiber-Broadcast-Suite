@@ -1,6 +1,13 @@
 # Overview
 The `FFmpeg_wrapper_service.cc` file implements a gRPC server that executes FFmpeg commands received from clients. The server handles requests asynchronously using a completion queue and processes each request in a separate instance of the CallData class.
 
+### Run the service :
+
+gRPC service needs two arguments, interface and port. These arguments are passed in command line style.
+
+- When using the wrapper sevice as a command line utility : ./FFmpeg_wrapper_service <interface/ip> <port> i.e `./FFmpeg_wrapper_service 10.10.10.10 5555`
+- When spawning the service as a docker image entry point : docker run <name of the docker image> <interface/ip> <port> i.e `docker run video_production_image 10.10.10.10 5555`
+
 ### Key Components : 
 
 **1. Includes and Using Declarations**:
