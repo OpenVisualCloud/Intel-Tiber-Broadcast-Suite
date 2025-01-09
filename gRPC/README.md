@@ -1,6 +1,11 @@
 # Overview
 The `FFmpeg_wrapper_service.cc` file implements a gRPC server that executes FFmpeg commands received from clients. The server handles requests asynchronously using a completion queue and processes each request in a separate instance of the CallData class.
 
+### Requirements :
+To be able to build and run the service :
+- Requirement to build grp first: https://grpc.io/docs/protoc-installation/
+- Then run the compilation script `./compile.sh` and using optional argument `--unit_testing` to build and run the unit tests. i.e `./compile.sh --unit_testing`.
+
 ### Run the service :
 
 gRPC service needs two arguments, interface and port. These arguments are passed in command line style.
