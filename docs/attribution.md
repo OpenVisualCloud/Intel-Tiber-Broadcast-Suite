@@ -1327,7 +1327,7 @@ Files in this repository fall under one of these licenses:
 Note: With the exception of `parse_dependency.py` the files using `MIT` license
 also fall under `Apache-2.0`. Example:
 
-```
+```text
 SPDX-License-Identifier: Apache-2.0 OR MIT
 ```
 

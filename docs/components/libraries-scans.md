@@ -8,11 +8,11 @@ Libraries components list based on Trivy scan results.
 
 ## Used Libraries Scan Results (Trivy)
 
-```
+```text
 Total: 53 (UNKNOWN: 0, LOW: 43, MEDIUM: 10, HIGH: 0, CRITICAL: 0)
 ```
 
-```
+```text
 +--------------------------------------------------------------------------------------------------------------------------------------------+
 ¦     Library      ¦ Vulnerability  ¦ Severity ¦      Installed Version       ¦                            Title                             ¦
 +------------------+----------------+----------+------------------------------+--------------------------------------------------------------¦

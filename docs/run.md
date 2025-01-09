@@ -29,7 +29,7 @@ Additionally, make sure you have the necessary environment variables set. You ca
 ### 1.2. Providing input files
 #### 1.2.1. You can provide your own input files
 
-```
+```bash
 # Create the src directory if it doesn't exist
 mkdir src
 
@@ -40,7 +40,7 @@ cp name_of_your_video3.yuv src/2160p_yuv422_10b.yuv
 ```
 
 #### 1.2.2. Alternatively, You Can Also Use FFmpeg to Generate Videos with This Format
-```
+```bash
 # Create the src directory if it doesn't exist
 mkdir -p src
 
@@ -62,7 +62,7 @@ ffmpeg -an -y -f lavfi \
 
 ### 1.3. Setting Up VFIO-PCI Addresses
 To configure your VFIO-PCI (DPDK binded devices) for use, you'll need to add their PCI addresses to the VARIABLES.rc file located in your Current Working Directory (CWD). Follow these steps to ensure proper setup:
-```
+```bash
 # Check your vfio-pci device PCI address
 dpdk-devbind.py -s
 ```
@@ -72,7 +72,7 @@ Next, create variables in the VARIABLES.rc file to store the PCI addresses for t
 1. **VFIO_PORT_R** - Address for the receive device.
 1. **VFIO_PORT_PROC** - Address for the processing device.
 
-```
+```bash
 # Example commands to set VFIO PCI addresses
 echo "VFIO_PORT_T=0000:b1:00.0" >> VARIABLES.rc
 echo "VFIO_PORT_R=0000:b1:00.1" >> VARIABLES.rc
@@ -86,11 +86,14 @@ By following these steps, you'll have correctly configured the necessary variabl
 
 ---
 
->📝 **Notice:** To run the pipelines using the bare-metal installation of the Intel® Tiber™ Broadcast Suite, include the `-l` argument with the pipeline scripts:
->```bash
->./pipelines/<pipelines_script_example>.sh -l
->```
-> in local mode you also need to have kahawai.json in your Current Working Directory [kahawai.json](../kahawai.json)
+📝 **Notice:** To run the pipelines using the bare-metal installation of the Intel® Tiber™ Broadcast Suite, include the `-l` argument with the pipeline scripts:
+
+```bash
+./pipelines/<pipelines_script_example>.sh -l
+```
+
+in local mode you also need to have kahawai.json in your Current Working Directory [kahawai.json](../kahawai.json).
+
 ---
 
 ## 2. Multiviewer

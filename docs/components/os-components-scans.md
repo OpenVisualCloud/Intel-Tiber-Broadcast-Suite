@@ -8,11 +8,11 @@ Components list based on Trivy scan with licenses types.
 
 ## OS Packages Scan Results (license)
 
-```
+```text
 Total: 583 (UNKNOWN: 202, LOW: 156, MEDIUM: 4, HIGH: 221, CRITICAL: 0)
 ```
 
-```
+```text
 +--------------------------------------------------------------------------------------------+
 ¦       Package        ¦                 License                 ¦ Classification ¦ Severity ¦
 +----------------------+-----------------------------------------+----------------+----------¦
@@ -1186,10 +1186,10 @@ Total: 583 (UNKNOWN: 202, LOW: 156, MEDIUM: 4, HIGH: 221, CRITICAL: 0)
 
 ## Loose File License(s) (license)
 
-```
+```text
 Total: 4 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 4, CRITICAL: 0)
 ```
-```
+```text
 +-------------------------------------------------------------------------------------+
 ¦ Classification ¦ Severity ¦ License ¦                 File Location                 ¦
 +----------------+----------+---------+-----------------------------------------------¦
