@@ -1,6 +1,7 @@
 docs/_build
 _build
 gRPC/build
+gRPC/unit_test/build
 file*.json
 .reports
 NVMUpdatePackage
