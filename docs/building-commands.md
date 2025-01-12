@@ -7,7 +7,7 @@ In order to properly build commands for Intel® Tiber™ Broadcast Suite's image
 
 ## 1. NIC-related settings
 
-This chapter explains how to gather the platform information regarding network card/s and Virtual Functions, and use them in commands.
+This section explains how to gather the platform information regarding network card/s and Virtual Functions, and use them in commands.
 
 ### 1.1. Container's IP address
 Use the network defined for docker containers to determine a pool of addresses (this may also be taken from output of [`first_run.sh`](../first_run.sh)).
@@ -149,7 +149,7 @@ The `-p_rx_ip` parameter is used for the destination IP, e.g. `-p_rx_ip 192.168.
 
 
 ## 2. GPU-related settings
-This chapter explains how to gather the platform information regarding graphics card/s and use them in commands.
+This section explains how to gather the platform information regarding graphics card/s and use them in commands.
 
 ### 2.1. Gathering information about render device
 Following commands can be used to determine the rendering device's location:

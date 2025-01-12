@@ -14,6 +14,8 @@ To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a
       - [1.3.1. Intel Flex GPU Driver](#131-intel-flex-gpu-driver)
       - [1.3.2. Nvidia GPU Driver](#132-nvidia-gpu-driver)
     - [1.4. Install and Configure Host's NIC Drivers and Related Software](#14-install-and-configure-hosts-nic-drivers-and-related-software)
+    - [1.5. Configure VFIO (IOMMU) required by PMD-based DPDK](#15-configure-vfio-iommu-required-by-pmd-based-dpdk)
+    - [1.6. (Optional) Configure PTP)](#16-optional-configure-ptp)
   - [2. Install Intel® Tiber™ Broadcast Suite](#2-install-intel®-tiber™-broadcast-suite)
     - [Option #1: Build Docker Image from Dockerfile Using build.sh Script](#option-1-build-docker-image-from-dockerfile-using-buildsh-script)
     - [Option #2: Local Installation from Debian Packages](#option-2-local-installation-from-debian-packages)
@@ -110,18 +112,13 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
        . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library
        ```
        ```bash
-       . versions.env && git -C ${HOME}/ice_patched/ice* apply ~/Media-Transport-Library/patches/ice_drv/${ICE_VER}/*.patch
+       . versions.env && git -C ${HOME}/ice_patched/ice-* apply ~/Media-Transport-Library/patches/ice_drv/${ICE_VER}/*.patch
+
+       cd ${HOME}/ice_patched/ice-*
        ```
 
    1. Install the ice driver.
-       ```bash
-       cd ${HOME}/ice_patched/ice-*/src
-       make
-       sudo make install
-       sudo rmmod irdma 2>/dev/null
-       sudo rmmod ice
-       sudo modprobe ice
-       cd -
+       ```{include} ../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_build_install_ice_driver.md
        ```
 
    1. Check if the driver is installed properly, and if so - clean up.
@@ -158,7 +155,13 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
     > **Note:** if you encountered any problems, please go to [E810 driver guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md).
 
 
-1. Configure VFIO (IOMMU) required by PMD-based DPDK using [Run Guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/run.md), chapter 1, and (optionally) 7 for PTP configuration.
+### 1.5. Configure VFIO (IOMMU) required by PMD-based DPDK
+```{include} ../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_iommu_setup.md
+```
+
+### 1.6. (Optional) Configure PTP
+```{include} ../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_ptp_setup.md
+```
 
 ## 2. Install Intel® Tiber™ Broadcast Suite
 
@@ -180,7 +183,7 @@ sudo apt-get install meson python3-pyelftools libnuma-dev
 
 Run build.sh script.
 
-> **Note:** For `build.sh` script to run without errors, `docker-buildx-plugin` must be installed. The error thrown without the plugin does not inform about that fact, rather that the flags are not correct. See chapter [1.2.1. Install Docker build environment](#121-install-docker-build-environment) for installation details.
+> **Note:** For `build.sh` script to run without errors, `docker-buildx-plugin` must be installed. The error thrown without the plugin does not inform about that fact, rather that the flags are not correct. See section [1.2.1. Install Docker build environment](#121-install-docker-build-environment) for installation details.
 
 ```bash
 ./build.sh
@@ -245,7 +248,7 @@ docker pull intel/intel-tiber-broadcast-suite:latest
     docker build $(cat versions.env | xargs -I {} echo --build-arg {}) -t video_production_image -f Dockerfile .
     ```
 
-1. Change the number of cores used to build by make can be changed  by _--build-arg nproc={number of proc}_
+1. Change the number of cores used to build by make can be changed with the flag `--build-arg nproc={number of proc}`
     ```bash
     docker build $(cat versions.env | xargs -I {} echo --build-arg {}) --build-arg nproc=1 -t video_production_image -f Dockerfile .
     ```
@@ -272,11 +275,11 @@ For a dockerized solution, please follow [instructions on this page](https://git
  
 ### Option #2: Local installation
 1. **Clone the Media Communications Mesh repository**
-
     ```bash
     git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
     cd Media-Communications-Mesh
    ```
+
 2. **Install Dependencies**
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
     - Install required packages:
@@ -293,8 +296,10 @@ For a dockerized solution, please follow [instructions on this page](https://git
         ```bash
         ./scripts/setup_rdma_env.sh install
         ```
-  > [!TIP]
-  > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
+
+      > [!TIP]
+      > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
+
     - Reboot.
 3. **Build the Media Communications Mesh Media Proxy binary**
     ```bash
