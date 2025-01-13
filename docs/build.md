@@ -6,7 +6,7 @@ To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a
 
 - [Build guide](#build-guide)
       - [Table of contents](#table-of-contents)
-  - [1. Prerequisites](#)
+  - [1. Prerequisites](#1-prerequisites)
     - [1.1. BIOS Settings](#11-bios-settings)
     - [1.2. Install Docker](#12-install-docker)
       - [1.2.1. Install Docker Build Environment](#121-install-docker-build-environment)
