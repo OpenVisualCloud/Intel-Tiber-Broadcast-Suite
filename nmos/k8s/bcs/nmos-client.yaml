@@ -24,7 +24,9 @@ data:
       "frame_width": 1920,
       "frame_height": 1080,
       "video_type": "video/jxsv",
-      "domain": "local"
+      "domain": "default.svc.cluster.local",
+      "ffmpeg_grpc_server_address": "<ip_of_ffmpeg_grpc_server>",
+      "ffmpeg_grpc_server_port": "50051"
     }
 
 ---
