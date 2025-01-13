@@ -131,6 +131,7 @@ git apply ../patches/nmos-cpp.patch
 ```bash
 cd <repo>/nmos/nmos-cpp
 # 1. Follow instructions <repo>/nmos/nmos-cpp/Documents/Installation-with-Conan.md
+> IMPORTANT! You should install conan using command: $ pip install --upgrade conan~=2.4 
 # 2. Follow instructions <repo>/nmos/nmos-cpp/Documents/Getting-Started.md
 ```
 
@@ -140,10 +141,8 @@ cd <repo>/nmos/nmos-cpp
 cd <repo>/
 cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/node_implementation.h <repo>/nmos/build-nmos-cpp/
 cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/node_implementation.cpp <repo>/nmos/build-nmos-cpp/
-cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/nmos-client-wrapper.h <repo>/nmos/build-nmos-cpp/
-cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/nmos-client-wrapper.cpp <repo>/nmos/build-nmos-cpp/
 cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/main.cpp <repo>/nmos/build-nmos-cpp/
-cp <repo>/nmos/nmos-cpp/Development/cmake/NmosCppNode.cmake <repo>/nmos/build-nmos-cpp/
+
 
 cd <repo>/nmos/build-nmos-cpp/
 make build # build NMOS registry and controller

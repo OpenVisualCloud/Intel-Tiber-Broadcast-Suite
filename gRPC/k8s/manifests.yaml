@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ffmpeg-pipeline
+  labels:
+    app: ffmpeg-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ffmpeg-pipeline
+  template:
+    metadata:
+      labels:
+        app: ffmpeg-pipeline
+    spec:
+      containers:
+      - name: ffmpeg-pipeline
+        image: video_production_image:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/bin/FFmpeg_wrapper_service"]
+        args: ["localhost", "50051"]
+        ports:
+        - containerPort: 50051
+        securityContext:
+          readOnlyRootFilesystem: true
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ffmpeg-pipeline
+spec:
+  selector:
+    app: ffmpeg-pipeline
+  ports:
+    - protocol: TCP
+      port: 50051
+      targetPort: 50051
+  type: ClusterIP

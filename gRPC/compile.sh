@@ -8,3 +8,8 @@ COMPILE_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 
 cmake -S "${COMPILE_DIR}" -B "${COMPILE_DIR}/build" && \
 make -C "${COMPILE_DIR}/build"
+
+if [[ "$1" == "--unit_testing" ]]; then
+cmake -S "${COMPILE_DIR}/unit_test" -B "${COMPILE_DIR}/unit_test/build" && \
+make -C "${COMPILE_DIR}/unit_test/build" && ctest --test-dir "${COMPILE_DIR}/unit_test/build"
+fi
