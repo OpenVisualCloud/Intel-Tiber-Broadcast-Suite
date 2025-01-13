@@ -33,6 +33,8 @@ include_directories(${googletest_SOURCE_DIR}/googletest/include)
 include_directories(${googletest_SOURCE_DIR}/googlemock/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../config_parser)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build/_deps/json-src/include)
 
 # Source files
 set(SOURCE_FILES
@@ -46,8 +48,11 @@ set(SOURCE_FILES
 # Add the executable
 add_executable(FFmpegWrapperServiceTests ${SOURCE_FILES})
 
+target_link_directories(FFmpegWrapperServiceTests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../build/config_parser)
+
 # Link libraries
 target_link_libraries(FFmpegWrapperServiceTests
+    ffmpegconfig
     gRPC::grpc++
     protobuf::libprotobuf
     absl::check

@@ -88,8 +88,17 @@ add_executable(cmd_pass_client cmd_pass_client.cc)
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
+add_subdirectory(config_parser)
+
 add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc)
+
+target_include_directories(FFmpeg_wrapper_service
+  PUBLIC
+  ${CMAKE_SOURCE_DIR}/config_parser)
+
   target_link_libraries(FFmpeg_wrapper_service
+  ffmpegconfig
+  nlohmann_json::nlohmann_json
     hw_grpc_proto
     absl::check
     absl::flags

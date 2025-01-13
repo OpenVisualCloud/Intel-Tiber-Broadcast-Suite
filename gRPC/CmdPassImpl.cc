@@ -1,4 +1,5 @@
 #include "CmdPassImpl.h"
+#include "ffmpeg_config_processor.h"
 
 void CmdPassImpl::Run(std::string server_address) {
     ServerBuilder builder;
@@ -63,6 +64,8 @@ void CmdPassImpl::CallData::Proceed() {
         for (const auto &cmd : request_.obj()) {
             ss << " -" << cmd.cmd_key() << " " << cmd.cmd_val();
         }
+
+        ss << " " << processConfigFile(std::getenv("CONFIG_FILE"));
 
         std::string ffmpeg_full_cmd = ss.str();
 
