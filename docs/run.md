@@ -84,8 +84,6 @@ By following these steps, you'll have correctly configured the necessary variabl
 
 ### 1.4. Optional for bare-metal
 
----
-
 📝 **Notice:** To run the pipelines using the bare-metal installation of the Intel® Tiber™ Broadcast Suite, include the `-l` argument with the pipeline scripts:
 
 ```bash
@@ -93,8 +91,6 @@ By following these steps, you'll have correctly configured the necessary variabl
 ```
 
 in local mode you also need to have kahawai.json in your Current Working Directory [kahawai.json](../kahawai.json).
-
----
 
 ## 2. Multiviewer
 

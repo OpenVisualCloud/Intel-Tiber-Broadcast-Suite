@@ -1,3 +1,5 @@
+# Alternative manual build method
+
 ## 1. Alternative manual build method
 > **Note:** This is not the recommended method of bare metal installation only use as a reference if you encounter erros during the build.sh execution
 

@@ -2,10 +2,11 @@
 
 To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a series of steps involving BIOS configuration, driver installation, host machine setup, and package installation. Depending on your preference, you can install the suite as a Docker application (the recommended method) or directly on a bare metal machine.
 
-#### Table of contents
+## Table of contents
+
 - [Build guide](#build-guide)
       - [Table of contents](#table-of-contents)
-  - [1. Prerequisites](#1-prerequisites)
+  - [1. Prerequisites](#)
     - [1.1. BIOS Settings](#11-bios-settings)
     - [1.2. Install Docker](#12-install-docker)
       - [1.2.1. Install Docker Build Environment](#121-install-docker-build-environment)
@@ -117,7 +118,8 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
        cd ${HOME}/ice_patched/ice-*
        ```
 
-   1. Install the ice driver.
+   1. [Install the ice driver.](../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_build_install_ice_driver.md)
+       
        ```{include} ../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_build_install_ice_driver.md
        ```
 
@@ -155,11 +157,11 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
     > **Note:** if you encountered any problems, please go to [E810 driver guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md).
 
 
-### 1.5. Configure VFIO (IOMMU) required by PMD-based DPDK
+### 1.5. [Configure VFIO (IOMMU) required by PMD-based DPDK](../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_iommu_setup.md)
 ```{include} ../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_iommu_setup.md
 ```
 
-### 1.6. (Optional) Configure PTP
+### 1.6. [(Optional) Configure PTP](../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_ptp_setup.md)
 ```{include} ../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_ptp_setup.md
 ```
 
