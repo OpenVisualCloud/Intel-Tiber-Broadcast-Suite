@@ -7,4 +7,5 @@
 [submodule "submodules/Media-Communications-Mesh"]
 	path = submodules/Media-Communications-Mesh
 	url = https://github.com/OpenVisualCloud/Media-Communications-Mesh
+	branch = main
 
