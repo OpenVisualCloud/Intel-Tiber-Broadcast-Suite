@@ -298,11 +298,11 @@ For a dockerized solution, please follow [instructions on this page](https://git
         ```bash
         ./scripts/setup_rdma_env.sh install
         ```
-
-      > [!TIP]
-      > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
-
     - Reboot.
+
+    > [!TIP]
+    > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
+
 3. **Build the Media Communications Mesh Media Proxy binary**
     ```bash
     ./build.sh
