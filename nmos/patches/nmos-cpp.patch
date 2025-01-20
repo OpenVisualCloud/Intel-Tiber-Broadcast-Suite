@@ -354,7 +354,7 @@ index e4b420f..f09cdc0 100644
  
          slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 diff --git a/Development/nmos-cpp-node/node_implementation.cpp b/Development/nmos-cpp-node/node_implementation.cpp
-index f12cca1..c0b25cb 100644
+index f12cca1..b5e476a 100644
 --- a/Development/nmos-cpp-node/node_implementation.cpp
 +++ b/Development/nmos-cpp-node/node_implementation.cpp
 @@ -1,3 +1,7 @@
@@ -1266,7 +1266,7 @@ index f12cca1..c0b25cb 100644
 -    const auto how_many = impl::fields::how_many(model.settings);
 -    const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
 -    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
--
+ 
 -    // start background tasks to intermittently update the state of the event sources, to cause events to be emitted to connected receivers
 -
 -    nmos::details::seed_generator events_seeder;
@@ -1323,7 +1323,7 @@ index f12cca1..c0b25cb 100644
 -            {
 -                const auto temperature_sensor_control_class_id = nmos::make_nc_class_id(nmos::nc_worker_class_id, 0, { 3 });
 -                const web::json::field_as_number temperature{ U("temperature") };
- 
+-
 -                auto& resources = model.control_protocol_resources;
 -
 -                auto found = nmos::find_resource_if(resources, nmos::types::nc_worker, [&temperature_sensor_control_class_id](const nmos::resource& resource)
@@ -1513,7 +1513,7 @@ index f12cca1..c0b25cb 100644
  nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
  {
      auto handle_load_ca_certificates = nmos::make_load_ca_certificates_handler(model.settings, gate);
-@@ -1666,14 +988,112 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
+@@ -1666,14 +988,173 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
      auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
      // this example uses this callback to update IS-12 Receiver-Monitor connection status
      auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
@@ -1523,9 +1523,16 @@ index f12cca1..c0b25cb 100644
      {
          const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
 -        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
--
 +        if(id_type.second == nmos::types::sender)
 +        {
+ 
+-        connection_events_activation_handler(resource, connection_resource);
++            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "this is "<< id_type << "---> send json for sender";
++            auto data = connection_resource.data;
++            auto sender_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
++            auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
++            auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
++
 +            FrameRate framerate;
 +            auto fr = impl::fields::frame_rate(model.settings);
 +            framerate.numerator = nmos::fields::numerator(fr);
@@ -1540,24 +1547,51 @@ index f12cca1..c0b25cb 100644
 +            File file;
 +            file.path=impl::fields::sender_input_path(model.settings);
 +            file.filename=impl::fields::sender_input_path_name(model.settings);
-+            // payload_type current_payload = video;
++            Payload payload = {
++                payload_type::video,
++                v,
++                audio
++            };
++            ST2110 st2110 = {};
++            // ST2110 st2110 = {
++            //     "0000:00:00.0", // network_interface TODO
++            //     sender_source_ip, // local_ip
++            //     receiver_destination_ip, // remote_ip
++            //     "udp", // transport
++            //     receiver_destination_port, // remote_port
++            //     impl::fields::sender_payload_type(model.settings) // payload_type
++            // };
++            MCM mcm = {};
++            // MCM mcm = {
++            //     "tcp", // conn_type
++            //     "rtp", // transport
++            //     impl::fields::sender_pixel_format(model.settings), // transport_pixel_format
++            //     receiver_destination_ip, // ip
++            //     receiver_destination_port, // port
++            //     "urn:example:service" // urn
++            // };
 +
-+            // Payload payload;
-+            // payload.type=current_payload;
-+            // payload.video=video;
-+            // payload.audio=audio;
-+            Config conf;
-+            conf.function="multiviewer";
-+            conf.gpu_hw_acceleration="intel";
-+            conf.logging_level=0;
++             StreamType streamType = {
++                stream_type::file, //can be changed
++                file,
++                st2110,
++                mcm
++            };
++
++            Stream stream = {
++                payload, // payload
++                streamType // stream_type
++            };
++
++            Config config = {
++                {stream}, // senders
++                {stream}, // receivers - mock - TODO
++                "multiviewer", // function
++                "intel", // gpu_hw_acceleration
++                0 // logging_level
++            };
 +            
-+
-+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "this is "<< id_type << "---> send json for sender";
-+            auto data = connection_resource.data;
-+            auto sender_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
-+            auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
-+            auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
-+
++            
 +            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "|| Send data: " <<
 +            " source_ip=" << sender_source_ip << "  " <<
 +            " destination_ip=" << receiver_destination_ip << "  " <<
@@ -1580,6 +1614,13 @@ index f12cca1..c0b25cb 100644
 +        }
 +        if(id_type.second == nmos::types::receiver)
 +        {
+ 
++            // Name of the environment variable you want to read
++             const char* vfio_port = "VFIO_PORT_T";
++
++            // Get the value of the environment variable
++            const char* vfio_port_value = std::getenv(vfio_port);
++
 +            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation)<<"send sdp of sender for receiver";
 +            auto data = connection_resource.data;
 +            auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
@@ -1624,14 +1665,33 @@ index f12cca1..c0b25cb 100644
 +            " trasportfile_sdp:: depth=" <<sdp::fields::value(*depth).as_string()<< " " <<
 +            " trasportfile_sdp:: ssn=" <<sdp::fields::value(*ssn).as_string()<< " " <<
 +            "";
++
++            // frameRate is unsafe ad unstable, only for dev version
++            FrameRate frameRate = {std::stoi(sdp::fields::value(*fps).as_string()), 1};
++            Video video = {std::stoi(sdp::fields::value(*width_param).as_string()), std::stoi(sdp::fields::value(*height_param).as_string()), frameRate, "yuv420p", encoding_name};
++            Audio audio = {};
++            File fileSender = {"/path/to/file", "1280x720_422p10le.yuv"};
++            
++            auto source_filter = sdp::find_name(attributes, sdp::attributes::source_filter);
++            auto destination_addr=sdp::fields::destination_address(sdp::fields::value(*source_filter));
++            ST2110 st2110 = {vfio_port_value, receiver_source_ip.as_string(), destination_addr, "udp", sdp::fields::port(media), payload_type};
++            MCM mcm = {};
++            Payload payload = {payload_type::video, video, audio};
++            StreamType streamTypeSaving = {stream_type::file, fileSender, st2110, mcm};
++            StreamType streamTypeR = {stream_type::st2110, fileSender, st2110, mcm};
++
++            Stream streamSaving = {payload, streamTypeSaving};
++            Stream stream = {payload, streamTypeR};
++
++            Config configSaving = {{streamSaving}, {stream}, "multiviewer", "intel", 0};
++
 +            grpc::sendDataToFfmpeg(impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip].as_string(), data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port].as_integer());
 +        }       
-         connection_events_activation_handler(resource, connection_resource);
--
++        connection_events_activation_handler(resource, connection_resource);
          receiver_monitor_connection_activation_handler(connection_resource);
      };
  }
-@@ -1752,6 +1172,15 @@ namespace impl
+@@ -1752,6 +1233,15 @@ namespace impl
          }));
      }
  
@@ -1647,7 +1707,7 @@ index f12cca1..c0b25cb 100644
      // find interface with the specified address
      std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address)
      {
-@@ -1861,12 +1290,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
+@@ -1861,12 +1351,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
          .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
          .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
          .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
