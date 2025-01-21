@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "new_struct.hpp"
+#include "config_params.hpp"
 #include "FFmpeg_wrapper_client.h"
 #include "build/ffmpeg_cmd_wrap.pb.h"
 #include <sstream>
