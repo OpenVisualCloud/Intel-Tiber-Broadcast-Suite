@@ -22,7 +22,7 @@ To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a
     - [Option #2: Local Installation from Debian Packages](#option-2-local-installation-from-debian-packages)
     - [Option #3: Install Docker Image from Docker Hub](#option-3-install-docker-image-from-docker-hub)
     - [Option #4: Build Docker Image from Dockerfile Manually](#option-4-build-docker-image-from-dockerfile-manually)
-  - [3. (Optional) Install Media Communications Mesh Media Proxy](#3-optional-install-media-communications-mesh-media-proxy)
+  - [3. (Optional) Install Media Proxy](#3-optional-install-media-proxy)
     - [Option #1: (Recommended) Dockerized Installation](#option-1-recommended-dockerized-installation)
     - [Option #2: Local Installation](#option-2-local-installation)
   - [4. Preparation to Run Intel® Tiber™ Broadcast Suite](#4-preparation-to-run-intel®-tiber™-broadcast-suite)
@@ -91,7 +91,7 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
 
 1. If you didn't do it already, then download the project from the GitHub repo.
     ```bash
-    git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
+    git clone --recurse-submodules https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite
     cd Intel-Tiber-Broadcast-Suite
     ```
 
@@ -262,13 +262,13 @@ docker pull intel/intel-tiber-broadcast-suite:latest
     cd -
     ```
 
-## 3. (Optional) Install Media Communications Mesh Media Proxy
+## 3. (Optional) Install Media Proxy
 
-To use Media Communications Mesh as a transport layer, make sure that Media Communications Mesh Media Proxy is available on the host.
+To use Media Communications Mesh as a transport layer, make sure that Media Proxy is available on the host.
 
-To install Media Communications Mesh Media Proxy, please follow the steps below.
+To install Media Proxy, please follow the steps below.
 
-> **Note:** This step is required e.g. for the **Media Communications Mesh Media Proxy Pipeline**:
+> **Note:** This step is required e.g. for the **Media Proxy Pipeline**:
 >  - [mcm_media_proxy_tx.sh](../pipelines/mcm_media_proxy_tx.sh)
 >  - [mcm_media_proxy_rx.sh](../pipelines/mcm_media_proxy_rx.sh)
 
@@ -303,7 +303,7 @@ For a dockerized solution, please follow [instructions on this page](https://git
     > [!TIP]
     > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
 
-3. **Build the Media Communications Mesh Media Proxy binary**
+3. **Build the Media Proxy binary**
     ```bash
     ./build.sh
     ```

@@ -2,7 +2,7 @@
 
 > ⚠️ Make sure that all of the hosts used are set up according to the [host setup](build.md).
 
-> ⚠️ To run pipelines with Media Communications Mesh, make sure that [Media Communications Mesh Media Proxy is available](build.md#3-optional-install-media-communications-mesh-media-proxy).
+> ⚠️ To run pipelines with Media Communications Mesh, make sure that [Media Proxy is available](build.md#3-optional-install-media-proxy).
 
 > **Note:** This instruction regards running the predefined scripts from `pipelines` folder present in the root of the repository. For more information on how to prepare an own pipeline, see:
 > - [Docker command breakdown](run-know-how.md)
@@ -178,7 +178,7 @@ session B > jpeg_xs_rx.sh
 Two input streams from local drive are encoded using JPEG XS codec and send out via Media Communications Mesh using ST2110-22 streams.
 Input streams from two ST2110-22 cameras are decoded using JPEG XS codec stored on local drive.
 
-> ⚠️ **Warning:** You need to have the [Media Communications Mesh Media Proxy](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build) installed to run this pipeline.
+> ⚠️ **Warning:** You need to have the [Media Proxy](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main?tab=readme-ov-file#dockerfiles-build) installed to run this pipeline.
 
 ![JPEG XS Media Communications Mesh process](images/jpeg_xs-process.png)
 ![JPEG XS Media Communications Mesh](images/mcm_jpeg_xs.png)
