@@ -1,3 +1,65 @@
+diff --git a/Development/cmake/NmosCppNode.cmake b/Development/cmake/NmosCppNode.cmake
+index df1ab1c..03510f2 100644
+--- a/Development/cmake/NmosCppNode.cmake
++++ b/Development/cmake/NmosCppNode.cmake
+@@ -8,11 +8,34 @@ set(NMOS_CPP_NODE_HEADERS
+     nmos-cpp-node/node_implementation.h
+     )
+ 
++# Find gRPC installation
++# Looks for gRPCConfig.cmake file installed by gRPC's cmake installation.
++
++set(protobuf_MODULE_COMPATIBLE TRUE)
++find_package(Protobuf CONFIG REQUIRED)
++message(STATUS "Using protobuf ${Protobuf_VERSION}")
++
++set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
++set(_REFLECTION gRPC::grpc++_reflection)
++
++find_package(gRPC CONFIG REQUIRED)
++message(STATUS "Using gRPC ${gRPC_VERSION}")
++
++# set(_GRPC_GRPCPP gRPC::grpc++)
++# if(CMAKE_CROSSCOMPILING)
++#   find_program(_GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin)
++# else()
++#   set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
++# endif()
++
++
+ add_executable(
+     nmos-cpp-node
+     ${NMOS_CPP_NODE_SOURCES}
+     ${NMOS_CPP_NODE_HEADERS}
+     nmos-cpp-node/config.json
++    nmos-cpp-node/config_params.hpp
++    nmos-cpp-node/FFmpeg_wrapper_client.h
+     )
+ 
+ source_group("Source Files" FILES ${NMOS_CPP_NODE_SOURCES})
+@@ -22,6 +45,10 @@ target_link_libraries(
+     nmos-cpp-node
+     nmos-cpp::compile-settings
+     nmos-cpp::nmos-cpp
++    FFmpeg_wrapper_client
++    protobuf::libprotobuf
++    # hw_grpc_proto
++    gRPC::grpc++
+     )
+ # root directory to find e.g. nmos-cpp-node/node_implementation.h
+ target_include_directories(nmos-cpp-node PRIVATE
+diff --git a/Development/conanfile.txt b/Development/conanfile.txt
+index aa55298..1d1e097 100644
+--- a/Development/conanfile.txt
++++ b/Development/conanfile.txt
+@@ -2,7 +2,6 @@
+ boost/1.83.0
+ cpprestsdk/2.10.19
+ websocketpp/0.8.2
+-openssl/3.2.1
+ json-schema-validator/2.3.0
+ nlohmann_json/3.11.3
+ zlib/1.2.13
 diff --git a/Development/nmos-cpp-node/config.json b/Development/nmos-cpp-node/config.json
 index f7e5216..bb9b6b8 100644
 --- a/Development/nmos-cpp-node/config.json
@@ -354,7 +416,7 @@ index e4b420f..f09cdc0 100644
  
          slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
 diff --git a/Development/nmos-cpp-node/node_implementation.cpp b/Development/nmos-cpp-node/node_implementation.cpp
-index f12cca1..b5e476a 100644
+index f12cca1..f7b6380 100644
 --- a/Development/nmos-cpp-node/node_implementation.cpp
 +++ b/Development/nmos-cpp-node/node_implementation.cpp
 @@ -1,3 +1,7 @@
@@ -369,7 +431,7 @@ index f12cca1..b5e476a 100644
  #include "nmos/video_jxsv.h"
  #include "sdp/sdp.h"
  
-+#include "ffmpeg_communication/ffmpeg_communication.hpp"
++#include "config_params.hpp"
 +
 +namespace grpc {
 +// Function to execute the grpc client logic for ffmpeg
