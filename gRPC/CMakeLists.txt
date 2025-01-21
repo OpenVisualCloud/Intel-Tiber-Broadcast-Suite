@@ -71,10 +71,15 @@ target_link_libraries(hw_grpc_proto
 
 add_library(FFmpeg_wrapper_client FFmpeg_wrapper_client.cc FFmpeg_wrapper_client.h)
 target_link_libraries(FFmpeg_wrapper_client
-  absl::check
-  ${_REFLECTION}
-  ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF})
+hw_grpc_proto
+absl::check
+absl::flags
+absl::flags_parse
+absl::log
+${_REFLECTION}
+${_GRPC_GRPCPP}
+${_PROTOBUF_LIBPROTOBUF})
+
 
 add_executable(cmd_pass_client cmd_pass_client.cc)
   target_link_libraries(cmd_pass_client
