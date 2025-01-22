@@ -1,5 +1,6 @@
 
 #include "ffmpeg_pipeline_generator.hpp"
+#include "config_serialize_deserialize.hpp"
 #include <sstream>
 #include "CmdPassImpl.h"
 
@@ -110,6 +111,16 @@ Stream stringPairsToStream(const std::unordered_map<std::string, std::string>& p
 // Function to convert vector of string pairs to Config
 static Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs) {
     Config config;
+
+    if (pairs.front().first == "json") {
+        if (deserialize_config_json(config, pairs.front().second) != 0) {
+            std::cout << "Error deserializing Config from json, trying previous solution" << std::endl;
+        }
+        else {
+            return config;
+        }
+    }
+
     std::unordered_map<std::string, std::string> pairs_map(pairs.begin(), pairs.end());
     config.function = pairs_map.at("function");
     config.gpu_hw_acceleration = pairs_map.at("gpu_hw_acceleration");
