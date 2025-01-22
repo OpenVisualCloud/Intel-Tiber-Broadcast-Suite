@@ -9,6 +9,7 @@ project(ffmpeg_cmd_wrap C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+set(CMAKE_BUILD_TYPE Debug)
 
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
@@ -81,7 +82,7 @@ ${_GRPC_GRPCPP}
 ${_PROTOBUF_LIBPROTOBUF})
 
 
-add_executable(cmd_pass_client cmd_pass_client.cc)
+add_executable(cmd_pass_client cmd_pass_client.cc CmdPassImpl.cc ffmpeg_pipeline_generator.cpp)
   target_link_libraries(cmd_pass_client
     FFmpeg_wrapper_client
     hw_grpc_proto

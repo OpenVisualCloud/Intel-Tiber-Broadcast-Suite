@@ -178,7 +178,7 @@ static Stream stringPairsToStream(const std::vector<std::pair<std::string, std::
 }
 
 // Function to convert vector of string pairs to Config
-static Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs) {
+Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs) {
     Config config;
 
     for (const auto& pair : pairs) {

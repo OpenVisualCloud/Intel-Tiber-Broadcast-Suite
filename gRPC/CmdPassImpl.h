@@ -17,12 +17,16 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
+#include "config_params.hpp"
+
 using grpc::Server;
 using grpc::ServerAsyncResponseWriter;
 using grpc::ServerBuilder;
 using grpc::ServerCompletionQueue;
 using grpc::ServerContext;
 using grpc::Status;
+
+Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs);
 
 #define FFMPEG_INVALID_COMMAND_STATUS "1"
 #define FFMPEG_INVALID_COMMAND_MSG std::string("Failed to execute ffmpeg command : No commands provided")
