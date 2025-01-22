@@ -59,9 +59,30 @@ int main(int argc, char* argv[]) {
         Config conf;
         fill_conf_sender(conf);
 
+
+    std::string ffmpeg_pipeline_reference;
+    if(ffmpeg_generate_pipeline(conf, ffmpeg_pipeline_reference) != 0) {
+        std::cout << "Error generating reference pipeline" << std::endl;
+        return 1;
+    }
+
     auto aaa = commitConfigs(conf);
 
     Config recv = stringPairsToConfig(aaa);
+    std::string ffmpeg_pipeline_mod;
+    if(ffmpeg_generate_pipeline(recv, ffmpeg_pipeline_mod) != 0) {
+        std::cout << "Error generating reference pipeline" << std::endl;
+        return 1;
+    }
+
+    if(ffmpeg_pipeline_reference != ffmpeg_pipeline_mod) {
+        std::cout << "Error: pipelines do not match" << std::endl;
+        std::cout << "Reference pipeline: " << std::endl << ffmpeg_pipeline_reference << std::endl;
+        std::cout << "Modified pipeline: " << std::endl << ffmpeg_pipeline_mod << std::endl;
+        return 1;
+    } else{
+        std::cout << "Pipelines match" << std::endl;
+    }
     
     // if (argc != 5) {
     //     std::cout << "client sample app requires the following arguments: 1) interface, 2) port, 3) source_ip, 4) destination_port" << std::endl;
