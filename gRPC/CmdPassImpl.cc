@@ -56,7 +56,7 @@ ST2110 stringPairsToST2110(const std::unordered_map<std::string, std::string>& p
     st2110.remote_ip = pairs.at(prefix + "remote_ip");
     st2110.transport = pairs.at(prefix + "transport");
     st2110.remote_port = from_string<int>(pairs.at(prefix + "remote_port"));
-    st2110.payload_type = from_string<int>(pairs.at(prefix + "payload_type"));
+    st2110.payload_type = from_string<int>(pairs.at(prefix + "st_payload_type"));
     return st2110;
 }
 

@@ -137,7 +137,7 @@ void st2110ToStringPairs(const ST2110& st2110, std::vector<std::pair<std::string
     result.push_back({prefix + "remote_ip", st2110.remote_ip});
     result.push_back({prefix + "transport", st2110.transport});
     result.push_back({prefix + "remote_port", to_string<int>(st2110.remote_port)});
-    result.push_back({prefix + "payload_type", to_string<int>(st2110.payload_type)});
+    result.push_back({prefix + "st_payload_type", to_string<int>(st2110.payload_type)});
 }
 
 // Function to convert MCM to vector of string pairs
