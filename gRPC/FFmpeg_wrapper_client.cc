@@ -93,101 +93,89 @@ void CmdPassClient::WaitForAllRequests() {
     all_tasks_completed.wait(false);
 }
 
-// Function to convert FrameRate to vector of string pairs
-static void frameRateToStringPairs(const FrameRate& frameRate,
-								   std::vector<std::pair<std::string, std::string>>& result) {
+// Helper function to convert any type to string
+template <typename T>
+std::string to_string(const T& value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
 
-    result.push_back({"numerator", std::to_string(frameRate.numerator)});
-    result.push_back({"denominator", std::to_string(frameRate.denominator)});
+// Function to convert FrameRate to vector of string pairs
+void frameRateToStringPairs(const FrameRate& frameRate, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "frame_rate_numerator", to_string<int>(frameRate.numerator)});
+    result.push_back({prefix + "frame_rate_denominator", to_string<int>(frameRate.denominator)});
 }
 
 // Function to convert Video to vector of string pairs
-static void videoToStringPairs(const Video& video,
-							   std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"frame_width", std::to_string(video.frame_width)});
-    result.push_back({"frame_height", std::to_string(video.frame_height)});
-    result.push_back({"pixel_format", video.pixel_format});
-    result.push_back({"video_type", video.video_type});
-    frameRateToStringPairs(video.frame_rate, result);
+void videoToStringPairs(const Video& video, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "frame_width", to_string<int>(video.frame_width)});
+    result.push_back({prefix + "frame_height", to_string<int>(video.frame_height)});
+    result.push_back({prefix + "pixel_format", video.pixel_format});
+    result.push_back({prefix + "video_type", video.video_type});
+    frameRateToStringPairs(video.frame_rate, result, prefix);
 }
 
 // Function to convert Audio to vector of string pairs
-static void audioToStringPairs(const Audio& audio,
-							   std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"channels", std::to_string(audio.channels)});
-    result.push_back({"sample_rate", std::to_string(audio.sample_rate)});
-    result.push_back({"format", audio.format});
-    result.push_back({"packet_time", audio.packet_time});
+void audioToStringPairs(const Audio& audio, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "channels", to_string<int>(audio.channels)});
+    result.push_back({prefix + "sample_rate", to_string<int>(audio.sample_rate)});
+    result.push_back({prefix + "format", audio.format});
+    result.push_back({prefix + "packet_time", audio.packet_time});
 }
 
 // Function to convert File to vector of string pairs
-static void fileToStringPairs(const File& file,
-							  std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"path", file.path});
-    result.push_back({"filename", file.filename});
+void fileToStringPairs(const File& file, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "file_path", file.path});
+    result.push_back({prefix + "file_filename", file.filename});
 }
 
 // Function to convert ST2110 to vector of string pairs
-static void st2110ToStringPairs(const ST2110& st2110,
-								std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"network_interface", st2110.network_interface});
-    result.push_back({"local_ip", st2110.local_ip});
-    result.push_back({"remote_ip", st2110.remote_ip});
-    result.push_back({"transport", st2110.transport});
-    result.push_back({"remote_port", std::to_string(st2110.remote_port)});
-    result.push_back({"payload_type", std::to_string(st2110.payload_type)});
+void st2110ToStringPairs(const ST2110& st2110, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "network_interface", st2110.network_interface});
+    result.push_back({prefix + "local_ip", st2110.local_ip});
+    result.push_back({prefix + "remote_ip", st2110.remote_ip});
+    result.push_back({prefix + "transport", st2110.transport});
+    result.push_back({prefix + "remote_port", to_string<int>(st2110.remote_port)});
+    result.push_back({prefix + "payload_type", to_string<int>(st2110.payload_type)});
 }
 
 // Function to convert MCM to vector of string pairs
-static void mcmToStringPairs(const MCM& mcm,
-							 std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"conn_type", mcm.conn_type});
-    result.push_back({"transport", mcm.transport});
-    result.push_back({"transport_pixel_format", mcm.transport_pixel_format});
-    result.push_back({"ip", mcm.ip});
-    result.push_back({"port", std::to_string(mcm.port)});
-    result.push_back({"urn", mcm.urn});
+void mcmToStringPairs(const MCM& mcm, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "conn_type", mcm.conn_type});
+    result.push_back({prefix + "transport", mcm.transport});
+    result.push_back({prefix + "transport_pixel_format", mcm.transport_pixel_format});
+    result.push_back({prefix + "ip", mcm.ip});
+    result.push_back({prefix + "port", to_string<int>(mcm.port)});
+    result.push_back({prefix + "urn", mcm.urn});
 }
 
 // Function to convert Payload to vector of string pairs
-static void payloadToStringPairs(const Payload& payload,
-								 std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"type", std::to_string(payload.type)});
-
-	if (payload.type == video) {
-        videoToStringPairs(payload.video, result);
+void payloadToStringPairs(const Payload& payload, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "payload_type", to_string<int>(payload.type)});
+    if (payload.type == video) {
+        videoToStringPairs(payload.video, result, prefix);
     } else if (payload.type == audio) {
-        audioToStringPairs(payload.audio, result);
+        audioToStringPairs(payload.audio, result, prefix);
     }
 }
 
 // Function to convert StreamType to vector of string pairs
-static void streamTypeToStringPairs(const StreamType& streamType,
-									std::vector<std::pair<std::string, std::string>>& result) {
-
-    result.push_back({"type", std::to_string(streamType.type)});
-
+void streamTypeToStringPairs(const StreamType& streamType, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    result.push_back({prefix + "stream_type", to_string<int>(streamType.type)});
     if (streamType.type == file) {
-        fileToStringPairs(streamType.file, result);
+        fileToStringPairs(streamType.file, result, prefix);
     } else if (streamType.type == st2110) {
-        st2110ToStringPairs(streamType.st2110, result);
+        st2110ToStringPairs(streamType.st2110, result, prefix);
     } else if (streamType.type == mcm) {
-        mcmToStringPairs(streamType.mcm, result);
+        mcmToStringPairs(streamType.mcm, result, prefix);
     }
 }
 
 // Function to convert Stream to vector of string pairs
-static void streamToStringPairs(const Stream& stream,
-								std::vector<std::pair<std::string, std::string>>& result) {
-
-    payloadToStringPairs(stream.payload, result);
-    streamTypeToStringPairs(stream.stream_type, result);
+void streamToStringPairs(const Stream& stream, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+    payloadToStringPairs(stream.payload, result, prefix);
+    streamTypeToStringPairs(stream.stream_type, result, prefix);
 }
 
 // Function to convert Config to vector of string pairs
@@ -196,15 +184,13 @@ std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& con
 
     result.push_back({"function", config.function});
     result.push_back({"gpu_hw_acceleration", config.gpu_hw_acceleration});
-    result.push_back({"logging_level", std::to_string(config.logging_level)});
-
-	for (const auto& sender : config.senders) {
-        streamToStringPairs(sender, result);
+    result.push_back({"logging_level", to_string<int>(config.logging_level)});
+    for (size_t i = 0; i < config.senders.size(); ++i) {
+        streamToStringPairs(config.senders[i], result, "sender_" + to_string<int>(i) + "_");
+    }
+    for (size_t i = 0; i < config.receivers.size(); ++i) {
+        streamToStringPairs(config.receivers[i], result, "receiver_" + to_string<int>(i) + "_");
     }
 
-    for (const auto& receiver : config.receivers) {
-        streamToStringPairs(receiver, result);
-    }
-
-	return result;
+    return result;
 }

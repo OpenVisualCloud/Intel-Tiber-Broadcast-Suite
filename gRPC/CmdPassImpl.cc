@@ -12,198 +12,124 @@ T from_string(const std::string& str) {
 }
 
 // Function to convert vector of string pairs to FrameRate
-static FrameRate stringPairsToFrameRate(const std::vector<std::pair<std::string, std::string>>& pairs) {
+FrameRate stringPairsToFrameRate(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     FrameRate frameRate;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "numerator") {
-            frameRate.numerator = from_string<int>(pair.second);
-        } else if (pair.first == "denominator") {
-            frameRate.denominator = from_string<int>(pair.second);
-        }
-    }
-
+    frameRate.numerator = from_string<int>(pairs.at(prefix + "frame_rate_numerator"));
+    frameRate.denominator = from_string<int>(pairs.at(prefix + "frame_rate_denominator"));
     return frameRate;
 }
 
 // Function to convert vector of string pairs to Video
-static Video stringPairsToVideo(const std::vector<std::pair<std::string, std::string>>& pairs) {
+Video stringPairsToVideo(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Video video;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "frame_width") {
-            video.frame_width = from_string<int>(pair.second);
-        } else if (pair.first == "frame_height") {
-            video.frame_height = from_string<int>(pair.second);
-        } else if (pair.first == "pixel_format") {
-            video.pixel_format = pair.second;
-        } else if (pair.first == "video_type") {
-            video.video_type = pair.second;
-        } else if (pair.first == "numerator" || pair.first == "denominator") {
-            video.frame_rate = stringPairsToFrameRate(pairs);
-        }
-    }
-
+    video.frame_width = from_string<int>(pairs.at(prefix + "frame_width"));
+    video.frame_height = from_string<int>(pairs.at(prefix + "frame_height"));
+    video.pixel_format = pairs.at(prefix + "pixel_format");
+    video.video_type = pairs.at(prefix + "video_type");
+    video.frame_rate = stringPairsToFrameRate(pairs, prefix);
     return video;
 }
 
 // Function to convert vector of string pairs to Audio
-static Audio stringPairsToAudio(const std::vector<std::pair<std::string, std::string>>& pairs) {
+Audio stringPairsToAudio(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Audio audio;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "channels") {
-            audio.channels = from_string<int>(pair.second);
-        } else if (pair.first == "sample_rate") {
-            audio.sample_rate = from_string<int>(pair.second);
-        } else if (pair.first == "format") {
-            audio.format = pair.second;
-        } else if (pair.first == "packet_time") {
-            audio.packet_time = pair.second;
-        }
-    }
-
+    audio.channels = from_string<int>(pairs.at(prefix + "channels"));
+    audio.sample_rate = from_string<int>(pairs.at(prefix + "sample_rate"));
+    audio.format = pairs.at(prefix + "format");
+    audio.packet_time = pairs.at(prefix + "packet_time");
     return audio;
 }
 
 // Function to convert vector of string pairs to File
-static File stringPairsToFile(const std::vector<std::pair<std::string, std::string>>& pairs) {
+File stringPairsToFile(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     File file;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "path") {
-            file.path = pair.second;
-        } else if (pair.first == "filename") {
-            file.filename = pair.second;
-        }
-    }
-
+    file.path = pairs.at(prefix + "file_path");
+    file.filename = pairs.at(prefix + "file_filename");
     return file;
 }
 
 // Function to convert vector of string pairs to ST2110
-static ST2110 stringPairsToST2110(const std::vector<std::pair<std::string, std::string>>& pairs) {
+ST2110 stringPairsToST2110(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     ST2110 st2110;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "network_interface") {
-            st2110.network_interface = pair.second;
-        } else if (pair.first == "local_ip") {
-            st2110.local_ip = pair.second;
-        } else if (pair.first == "remote_ip") {
-            st2110.remote_ip = pair.second;
-        } else if (pair.first == "transport") {
-            st2110.transport = pair.second;
-        } else if (pair.first == "remote_port") {
-            st2110.remote_port = from_string<int>(pair.second);
-        } else if (pair.first == "payload_type") {
-            st2110.payload_type = from_string<int>(pair.second);
-        }
-    }
-
+    st2110.network_interface = pairs.at(prefix + "network_interface");
+    st2110.local_ip = pairs.at(prefix + "local_ip");
+    st2110.remote_ip = pairs.at(prefix + "remote_ip");
+    st2110.transport = pairs.at(prefix + "transport");
+    st2110.remote_port = from_string<int>(pairs.at(prefix + "remote_port"));
+    st2110.payload_type = from_string<int>(pairs.at(prefix + "payload_type"));
     return st2110;
 }
 
 // Function to convert vector of string pairs to MCM
-static MCM stringPairsToMCM(const std::vector<std::pair<std::string, std::string>>& pairs) {
+MCM stringPairsToMCM(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     MCM mcm;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "conn_type") {
-            mcm.conn_type = pair.second;
-        } else if (pair.first == "transport") {
-            mcm.transport = pair.second;
-        } else if (pair.first == "transport_pixel_format") {
-            mcm.transport_pixel_format = pair.second;
-        } else if (pair.first == "ip") {
-            mcm.ip = pair.second;
-        } else if (pair.first == "port") {
-            mcm.port = from_string<int>(pair.second);
-        } else if (pair.first == "urn") {
-            mcm.urn = pair.second;
-        }
-    }
-
+    mcm.conn_type = pairs.at(prefix + "conn_type");
+    mcm.transport = pairs.at(prefix + "transport");
+    mcm.transport_pixel_format = pairs.at(prefix + "transport_pixel_format");
+    mcm.ip = pairs.at(prefix + "ip");
+    mcm.port = from_string<int>(pairs.at(prefix + "port"));
+    mcm.urn = pairs.at(prefix + "urn");
     return mcm;
 }
 
 // Function to convert vector of string pairs to Payload
-static Payload stringPairsToPayload(const std::vector<std::pair<std::string, std::string>>& pairs) {
+Payload stringPairsToPayload(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Payload payload;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "type") {
-            payload.type = static_cast<payload_type>(from_string<int>(pair.second));
-        } else if (pair.first == "frame_width" || pair.first == "frame_height" ||
-                   pair.first == "pixel_format" || pair.first == "video_type" ||
-                   pair.first == "numerator" || pair.first == "denominator") {
-            payload.video = stringPairsToVideo(pairs);
-
-        } else if (pair.first == "channels" || pair.first == "sample_rate" ||
-                   pair.first == "format" || pair.first == "packet_time") {
-            payload.audio = stringPairsToAudio(pairs);
-        }
+    payload.type = static_cast<payload_type>(from_string<int>(pairs.at(prefix + "payload_type")));
+    if (payload.type == video) {
+        payload.video = stringPairsToVideo(pairs, prefix);
+    } else if (payload.type == audio) {
+        payload.audio = stringPairsToAudio(pairs, prefix);
     }
-
     return payload;
 }
 
 // Function to convert vector of string pairs to StreamType
-static StreamType stringPairsToStreamType(const std::vector<std::pair<std::string, std::string>>& pairs) {
+StreamType stringPairsToStreamType(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     StreamType streamType;
-
-    for (const auto& pair : pairs) {
-        if (pair.first == "type") {
-            streamType.type = static_cast<stream_type>(from_string<int>(pair.second));
-        } else if (pair.first == "path" || pair.first == "filename") {
-            streamType.file = stringPairsToFile(pairs);
-        } else if (pair.first == "network_interface" || pair.first == "local_ip" || pair.first == "remote_ip" || pair.first == "transport" || pair.first == "remote_port" || pair.first == "payload_type") {
-            streamType.st2110 = stringPairsToST2110(pairs);
-        } else if (pair.first == "conn_type" || pair.first == "transport" || pair.first == "transport_pixel_format" || pair.first == "ip" || pair.first == "port" || pair.first == "urn") {
-            streamType.mcm = stringPairsToMCM(pairs);
-        }
+    streamType.type = static_cast<stream_type>(from_string<int>(pairs.at(prefix + "stream_type")));
+    if (streamType.type == file) {
+        streamType.file = stringPairsToFile(pairs, prefix);
+    } else if (streamType.type == st2110) {
+        streamType.st2110 = stringPairsToST2110(pairs, prefix);
+    } else if (streamType.type == mcm) {
+        streamType.mcm = stringPairsToMCM(pairs, prefix);
     }
-
     return streamType;
 }
 
 // Function to convert vector of string pairs to Stream
-static Stream stringPairsToStream(const std::vector<std::pair<std::string, std::string>>& pairs) {
+Stream stringPairsToStream(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Stream stream;
-
-    stream.payload = stringPairsToPayload(pairs);
-    stream.stream_type = stringPairsToStreamType(pairs);
-
+    stream.payload = stringPairsToPayload(pairs, prefix);
+    stream.stream_type = stringPairsToStreamType(pairs, prefix);
     return stream;
 }
 
 // Function to convert vector of string pairs to Config
 Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs) {
     Config config;
+    std::unordered_map<std::string, std::string> pairs_map(pairs.begin(), pairs.end());
+    config.function = pairs_map.at("function");
+    config.gpu_hw_acceleration = pairs_map.at("gpu_hw_acceleration");
+    config.logging_level = from_string<int>(pairs_map.at("logging_level"));
 
-    for (const auto& pair : pairs) {
-        if (pair.first == "function") {
-            config.function = pair.second;
-        } else if (pair.first == "gpu_hw_acceleration") {
-            config.gpu_hw_acceleration = pair.second;
-        } else if (pair.first == "logging_level") {
-            config.logging_level = from_string<int>(pair.second);
-        } else if (pair.first == "type" || pair.first == "path" || pair.first == "filename" ||
-                   pair.first == "network_interface" || pair.first == "local_ip" || pair.first == "remote_ip" ||
-                   pair.first == "transport" || pair.first == "remote_port" || pair.first == "payload_type" ||
-                   pair.first == "conn_type" || pair.first == "transport_pixel_format" || pair.first == "ip" ||
-                   pair.first == "port" || pair.first == "urn" || pair.first == "frame_width" || pair.first == "frame_height" ||
-                   pair.first == "pixel_format" || pair.first == "video_type" || pair.first == "numerator" || pair.first == "denominator" ||
-                   pair.first == "channels" || pair.first == "sample_rate" || pair.first == "format" || pair.first == "packet_time") {
-            Stream stream = stringPairsToStream(pairs);
-            if (pair.first == "type" && pair.second == "0") {
-                config.senders.push_back(stream);
-            } else {
-                config.receivers.push_back(stream);
-            }
+    // Extract senders and receivers
+    size_t sender_index = 0;
+    size_t receiver_index = 0;
+    while (true) {
+        std::string sender_prefix = "sender_" + std::to_string(sender_index) + "_";
+        std::string receiver_prefix = "receiver_" + std::to_string(receiver_index) + "_";
+        if (pairs_map.find(sender_prefix + "payload_type") != pairs_map.end()) {
+            config.senders.push_back(stringPairsToStream(pairs_map, sender_prefix));
+            ++sender_index;
+        } else if (pairs_map.find(receiver_prefix + "payload_type") != pairs_map.end()) {
+            config.receivers.push_back(stringPairsToStream(pairs_map, receiver_prefix));
+            ++receiver_index;
+        } else {
+            break;
         }
     }
-
     return config;
 }
 
