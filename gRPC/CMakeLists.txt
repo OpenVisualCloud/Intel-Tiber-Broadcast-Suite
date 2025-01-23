@@ -88,7 +88,7 @@ add_executable(cmd_pass_client cmd_pass_client.cc)
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc)
+add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc ffmpeg_pipeline_generator.cpp)
   target_link_libraries(FFmpeg_wrapper_service
     hw_grpc_proto
     absl::check

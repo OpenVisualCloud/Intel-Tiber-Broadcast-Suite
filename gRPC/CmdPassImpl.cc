@@ -1,4 +1,6 @@
-#include "config_params.hpp"
+
+#include "ffmpeg_pipeline_generator.hpp"
+#include <sstream>
 #include "CmdPassImpl.h"
 
 // Helper function to convert string to any type
@@ -178,7 +180,8 @@ void CmdPassImpl::CallData::Proceed() {
     } else if (status_ == PROCESS) { /* FFmpeg command processing starts */
         new CallData(service_, cq_);
 
-        std::string ffmpeg_full_cmd;
+        std::stringstream ss;
+        std::string pipelinie_string;
         std::vector<std::pair<std::string, std::string>> committed_config;
 
         if (request_.obj().empty()) {
@@ -198,12 +201,21 @@ void CmdPassImpl::CallData::Proceed() {
 
         Config recieved_config = stringPairsToConfig(committed_config);
 
-        // call ffmpeg pipeline constructor -> ffmpeg_full_cmd
+        if (ffmpeg_generate_pipeline(recieved_config, pipelinie_string) != 0) {
+            pipelinie_string.clear();
+            std::cout << "Error generating pipeline" << std::endl; //TODO : need to return as response error code
+            //return 1;
+        }
+
+        ss << "ffmpeg ";
+        ss << pipelinie_string;
+
+        pipelinie_string = ss.str();
 
         std::array<char, 128> buffer;
         std::string result;
 
-        FILE *pipe = popen(ffmpeg_full_cmd.c_str(), "r");
+        FILE *pipe = popen(pipelinie_string.c_str(), "r");
         if (!pipe) { /* FFmpeg pipeline/execution failed i.e memory allocation */
             responder_.Finish(response_,
                               Status(grpc::INTERNAL, FFMPEG_APP_EXEC_FAIL_STATUS,

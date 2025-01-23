@@ -40,6 +40,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/../../build/ffmpeg_cmd_wrap.pb.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../CmdPassImpl.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../FFmpeg_wrapper_client.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/../FFmpeg_wrapper_service_UT.cc
 )
 
