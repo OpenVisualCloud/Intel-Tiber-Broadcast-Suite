@@ -108,7 +108,7 @@ Stream stringPairsToStream(const std::unordered_map<std::string, std::string>& p
 }
 
 // Function to convert vector of string pairs to Config
-Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs) {
+static Config stringPairsToConfig(const std::vector<std::pair<std::string, std::string>>& pairs) {
     Config config;
 
     if (pairs.front().first == "json") {

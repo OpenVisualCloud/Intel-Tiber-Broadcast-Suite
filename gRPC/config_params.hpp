@@ -1,9 +1,6 @@
 #include <string>
 #include <vector>
 
-#ifndef CONFIG_PARAMS_H
-#define CONFIG_PARAMS_H
-
 struct FrameRate {
     int numerator;
     int denominator;
@@ -87,5 +84,3 @@ struct Config {
     std::string gpu_hw_acceleration; //intel, nvidia, none
     int logging_level;
 };
-
-#endif // CONFIG_PARAMS_H

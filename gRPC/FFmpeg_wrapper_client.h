@@ -30,8 +30,6 @@ using grpc::ClientContext;
 using grpc::CompletionQueue;
 using grpc::Status;
 
-std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& config);
-
 class CmdPassClient {
 public:
     CmdPassClient(std::string interface, std::string port);
