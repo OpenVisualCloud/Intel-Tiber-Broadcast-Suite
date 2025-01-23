@@ -79,13 +79,20 @@ int ffmpeg_append_st2110_transport(std::string &transport, std::string &pipeline
 int ffmpeg_append_stream_type(StreamType &s, bool is_rx, int idx, std::string &pipeline_string) {
     switch (s.type) {
     case file:
-        if(is_rx) {
-            pipeline_string += " -i " + s.file.path + "/" + s.file.filename;
+    {
+        pipeline_string += " ";
+        if (is_rx) {
+            pipeline_string += "-i ";
         }
-        else {
-            pipeline_string += " " + s.file.path + "/" + s.file.filename;
+
+        pipeline_string += s.file.path;
+        if (!s.file.path.empty() && s.file.path.back() != '/') {
+            pipeline_string += '/';
         }
+        pipeline_string += s.file.filename;
+
         break;
+    }
     case st2110:
         pipeline_string += " -p_port " + s.st2110.network_interface;
         pipeline_string += " -p_sip " + s.st2110.local_ip;
