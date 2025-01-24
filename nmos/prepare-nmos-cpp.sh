@@ -32,7 +32,8 @@ cp ../../../gRPC/build/ffmpeg_cmd_wrap.grpc.pb.h nmos-cpp-node/build/ || handle_
 cd build || handle_error "Failed to change directory to build"
 
 # Set the LIBRARY_PATH environment variable
-export LIBRARY_PATH=$(pwd)
+LIBRARY_PATH=$(pwd)
+export LIBRARY_PATH
 
 # Run cmake with error checking
 cmake .. -DCMAKE_BUILD_TYPE:STRING="Release" -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING="third_party/cmake/conan_provider.cmake" || handle_error "CMake configuration failed"
