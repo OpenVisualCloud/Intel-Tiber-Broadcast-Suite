@@ -42,6 +42,18 @@ index df1ab1c..4bf706f 100644
      )
  # root directory to find e.g. nmos-cpp-node/node_implementation.h
  target_include_directories(nmos-cpp-node PRIVATE
+diff --git a/Development/conanfile.txt b/Development/conanfile.txt
+index aa55298..fdc9ace 100644
+--- a/Development/conanfile.txt
++++ b/Development/conanfile.txt
+@@ -15,6 +15,7 @@ lib, *.dylib* -> ./lib
+ 
+ [options]
+ boost/*:shared=False
++openssl/*:shared=True
+ 
+ [generators]
+ CMakeDeps
 diff --git a/Development/nmos-cpp-node/config.json b/Development/nmos-cpp-node/config.json
 index f7e5216..bb9b6b8 100644
 --- a/Development/nmos-cpp-node/config.json
