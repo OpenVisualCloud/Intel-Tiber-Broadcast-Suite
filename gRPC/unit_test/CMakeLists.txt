@@ -23,6 +23,9 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
 # Ensure GoogleTest is built with C++20
 set_target_properties(gtest PROPERTIES CXX_STANDARD 20)
 set_target_properties(gtest_main PROPERTIES CXX_STANDARD 20)
@@ -40,6 +43,7 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/../../build/ffmpeg_cmd_wrap.pb.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../CmdPassImpl.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../FFmpeg_wrapper_client.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/../FFmpeg_wrapper_service_UT.cc
 )
 
@@ -59,6 +63,7 @@ target_link_libraries(FFmpegWrapperServiceTests
     gtest_main
     gmock
     gmock_main
+    nlohmann_json::nlohmann_json
 )
 
 # Enable testing

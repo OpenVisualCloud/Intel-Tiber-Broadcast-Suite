@@ -57,6 +57,10 @@ add_custom_command(
 # Include generated *.pb.h files
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
+include(FetchContent)
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
 # hw_grpc_proto
 add_library(hw_grpc_proto
   ${hw_grpc_srcs}
@@ -74,7 +78,8 @@ target_link_libraries(FFmpeg_wrapper_client
   absl::check
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
-  ${_PROTOBUF_LIBPROTOBUF})
+  ${_PROTOBUF_LIBPROTOBUF}
+  nlohmann_json::nlohmann_json)
 
 add_executable(cmd_pass_client cmd_pass_client.cc)
   target_link_libraries(cmd_pass_client
@@ -88,7 +93,7 @@ add_executable(cmd_pass_client cmd_pass_client.cc)
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc)
+add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc ffmpeg_pipeline_generator.cpp)
   target_link_libraries(FFmpeg_wrapper_service
     hw_grpc_proto
     absl::check
@@ -97,4 +102,5 @@ add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc)
     absl::log
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
+    ${_PROTOBUF_LIBPROTOBUF}
+    nlohmann_json::nlohmann_json)

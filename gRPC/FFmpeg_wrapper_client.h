@@ -24,11 +24,14 @@
 #include <grpcpp/create_channel.h>
 #include <grpcpp/security/credentials.h>
 #include "build/ffmpeg_cmd_wrap.grpc.pb.h"
+#include "config_params.hpp"
 
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::CompletionQueue;
 using grpc::Status;
+
+std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& config);
 
 class CmdPassClient {
 public:
