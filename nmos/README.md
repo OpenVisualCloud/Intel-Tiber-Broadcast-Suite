@@ -157,7 +157,7 @@ pip install --upgrade conan~=2.4
 conan profile detect
 conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy --build=missing
 cd <repo>/nmos/
-./run-before-nmos-cpp-build.sh
+./prepare-nmos-cpp.sh
 ```
 
 #### 4. Build images
