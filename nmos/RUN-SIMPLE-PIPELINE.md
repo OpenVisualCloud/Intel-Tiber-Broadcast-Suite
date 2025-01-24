@@ -1,4 +1,5 @@
 # Test pipeline on baremetal
+> In each terminal - remove http/https proxy before running app
 
 Open 5 terminal   windows:
 
