@@ -103,13 +103,13 @@ std::string to_string(const T& value) {
 }
 
 // Function to convert FrameRate to vector of string pairs
-void frameRateToStringPairs(const FrameRate& frameRate, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void frameRateToStringPairs(const FrameRate& frameRate, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "frame_rate_numerator", to_string<int>(frameRate.numerator)});
     result.push_back({prefix + "frame_rate_denominator", to_string<int>(frameRate.denominator)});
 }
 
 // Function to convert Video to vector of string pairs
-void videoToStringPairs(const Video& video, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void videoToStringPairs(const Video& video, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "frame_width", to_string<int>(video.frame_width)});
     result.push_back({prefix + "frame_height", to_string<int>(video.frame_height)});
     result.push_back({prefix + "pixel_format", video.pixel_format});
@@ -118,7 +118,7 @@ void videoToStringPairs(const Video& video, std::vector<std::pair<std::string, s
 }
 
 // Function to convert Audio to vector of string pairs
-void audioToStringPairs(const Audio& audio, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void audioToStringPairs(const Audio& audio, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "channels", to_string<int>(audio.channels)});
     result.push_back({prefix + "sample_rate", to_string<int>(audio.sample_rate)});
     result.push_back({prefix + "format", audio.format});
@@ -126,13 +126,13 @@ void audioToStringPairs(const Audio& audio, std::vector<std::pair<std::string, s
 }
 
 // Function to convert File to vector of string pairs
-void fileToStringPairs(const File& file, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void fileToStringPairs(const File& file, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "file_path", file.path});
     result.push_back({prefix + "file_filename", file.filename});
 }
 
 // Function to convert ST2110 to vector of string pairs
-void st2110ToStringPairs(const ST2110& st2110, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void st2110ToStringPairs(const ST2110& st2110, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "network_interface", st2110.network_interface});
     result.push_back({prefix + "local_ip", st2110.local_ip});
     result.push_back({prefix + "remote_ip", st2110.remote_ip});
@@ -142,7 +142,7 @@ void st2110ToStringPairs(const ST2110& st2110, std::vector<std::pair<std::string
 }
 
 // Function to convert MCM to vector of string pairs
-void mcmToStringPairs(const MCM& mcm, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void mcmToStringPairs(const MCM& mcm, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "conn_type", mcm.conn_type});
     result.push_back({prefix + "transport", mcm.transport});
     result.push_back({prefix + "transport_pixel_format", mcm.transport_pixel_format});
@@ -152,7 +152,7 @@ void mcmToStringPairs(const MCM& mcm, std::vector<std::pair<std::string, std::st
 }
 
 // Function to convert Payload to vector of string pairs
-void payloadToStringPairs(const Payload& payload, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void payloadToStringPairs(const Payload& payload, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "payload_type", to_string<int>(payload.type)});
     if (payload.type == video) {
         videoToStringPairs(payload.video, result, prefix);
@@ -162,7 +162,7 @@ void payloadToStringPairs(const Payload& payload, std::vector<std::pair<std::str
 }
 
 // Function to convert StreamType to vector of string pairs
-void streamTypeToStringPairs(const StreamType& streamType, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void streamTypeToStringPairs(const StreamType& streamType, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     result.push_back({prefix + "stream_type", to_string<int>(streamType.type)});
     if (streamType.type == file) {
         fileToStringPairs(streamType.file, result, prefix);
@@ -174,7 +174,7 @@ void streamTypeToStringPairs(const StreamType& streamType, std::vector<std::pair
 }
 
 // Function to convert Stream to vector of string pairs
-void streamToStringPairs(const Stream& stream, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
+static void streamToStringPairs(const Stream& stream, std::vector<std::pair<std::string, std::string>>& result, const std::string& prefix) {
     payloadToStringPairs(stream.payload, result, prefix);
     streamTypeToStringPairs(stream.stream_type, result, prefix);
 }
@@ -184,20 +184,22 @@ std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& con
     std::vector<std::pair<std::string, std::string>> result;
 
     std::string json_str;
-    if(serialize_config_json(config, json_str) != 0) {
-        std::cout << "Error serializing Config" << std::endl;
-    }; 
-    result.push_back({"json", json_str});
+    if (serialize_config_json(config, json_str) == 0) {
+        result.push_back({"json", json_str});
+    }
+    else {
+        std::cout << "Error serializing Config to json, trying previos solution" << std::endl;
 
-    // result.push_back({"function", config.function});
-    // result.push_back({"gpu_hw_acceleration", config.gpu_hw_acceleration});
-    // result.push_back({"logging_level", to_string<int>(config.logging_level)});
-    // for (size_t i = 0; i < config.senders.size(); ++i) {
-    //     streamToStringPairs(config.senders[i], result, "sender_" + to_string<int>(i) + "_");
-    // }
-    // for (size_t i = 0; i < config.receivers.size(); ++i) {
-    //     streamToStringPairs(config.receivers[i], result, "receiver_" + to_string<int>(i) + "_");
-    // }
+        result.push_back({"function", config.function});
+        result.push_back({"gpu_hw_acceleration", config.gpu_hw_acceleration});
+        result.push_back({"logging_level", to_string<int>(config.logging_level)});
+        for (size_t i = 0; i < config.senders.size(); ++i) {
+            streamToStringPairs(config.senders[i], result, "sender_" + to_string<int>(i) + "_");
+        }
+        for (size_t i = 0; i < config.receivers.size(); ++i) {
+            streamToStringPairs(config.receivers[i], result, "receiver_" + to_string<int>(i) + "_");
+        }
+    };
 
     return result;
 }

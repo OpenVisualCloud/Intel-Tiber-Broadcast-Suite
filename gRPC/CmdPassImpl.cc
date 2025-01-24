@@ -14,7 +14,7 @@ T from_string(const std::string& str) {
 }
 
 // Function to convert vector of string pairs to FrameRate
-FrameRate stringPairsToFrameRate(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static FrameRate stringPairsToFrameRate(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     FrameRate frameRate;
     frameRate.numerator = from_string<int>(pairs.at(prefix + "frame_rate_numerator"));
     frameRate.denominator = from_string<int>(pairs.at(prefix + "frame_rate_denominator"));
@@ -22,7 +22,7 @@ FrameRate stringPairsToFrameRate(const std::unordered_map<std::string, std::stri
 }
 
 // Function to convert vector of string pairs to Video
-Video stringPairsToVideo(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static Video stringPairsToVideo(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Video video;
     video.frame_width = from_string<int>(pairs.at(prefix + "frame_width"));
     video.frame_height = from_string<int>(pairs.at(prefix + "frame_height"));
@@ -33,7 +33,7 @@ Video stringPairsToVideo(const std::unordered_map<std::string, std::string>& pai
 }
 
 // Function to convert vector of string pairs to Audio
-Audio stringPairsToAudio(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static Audio stringPairsToAudio(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Audio audio;
     audio.channels = from_string<int>(pairs.at(prefix + "channels"));
     audio.sample_rate = from_string<int>(pairs.at(prefix + "sample_rate"));
@@ -43,7 +43,7 @@ Audio stringPairsToAudio(const std::unordered_map<std::string, std::string>& pai
 }
 
 // Function to convert vector of string pairs to File
-File stringPairsToFile(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static File stringPairsToFile(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     File file;
     file.path = pairs.at(prefix + "file_path");
     file.filename = pairs.at(prefix + "file_filename");
@@ -51,7 +51,7 @@ File stringPairsToFile(const std::unordered_map<std::string, std::string>& pairs
 }
 
 // Function to convert vector of string pairs to ST2110
-ST2110 stringPairsToST2110(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static ST2110 stringPairsToST2110(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     ST2110 st2110;
     st2110.network_interface = pairs.at(prefix + "network_interface");
     st2110.local_ip = pairs.at(prefix + "local_ip");
@@ -63,7 +63,7 @@ ST2110 stringPairsToST2110(const std::unordered_map<std::string, std::string>& p
 }
 
 // Function to convert vector of string pairs to MCM
-MCM stringPairsToMCM(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static MCM stringPairsToMCM(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     MCM mcm;
     mcm.conn_type = pairs.at(prefix + "conn_type");
     mcm.transport = pairs.at(prefix + "transport");
@@ -75,7 +75,7 @@ MCM stringPairsToMCM(const std::unordered_map<std::string, std::string>& pairs, 
 }
 
 // Function to convert vector of string pairs to Payload
-Payload stringPairsToPayload(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static Payload stringPairsToPayload(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Payload payload;
     payload.type = static_cast<payload_type>(from_string<int>(pairs.at(prefix + "payload_type")));
     if (payload.type == video) {
@@ -87,7 +87,7 @@ Payload stringPairsToPayload(const std::unordered_map<std::string, std::string>&
 }
 
 // Function to convert vector of string pairs to StreamType
-StreamType stringPairsToStreamType(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static StreamType stringPairsToStreamType(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     StreamType streamType;
     streamType.type = static_cast<stream_type>(from_string<int>(pairs.at(prefix + "stream_type")));
     if (streamType.type == file) {
@@ -101,7 +101,7 @@ StreamType stringPairsToStreamType(const std::unordered_map<std::string, std::st
 }
 
 // Function to convert vector of string pairs to Stream
-Stream stringPairsToStream(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
+static Stream stringPairsToStream(const std::unordered_map<std::string, std::string>& pairs, const std::string& prefix) {
     Stream stream;
     stream.payload = stringPairsToPayload(pairs, prefix);
     stream.stream_type = stringPairsToStreamType(pairs, prefix);
