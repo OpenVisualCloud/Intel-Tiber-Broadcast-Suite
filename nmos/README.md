@@ -10,7 +10,7 @@
 ## Configuration note for NMOS simplified client in the contect of Intel Broadcast Suite
 
 `nmos-cpp` repository has been simplified to **IS-04** & **IS-05** implementation only.
-The key change is in configurationn of senders and receivers for BCS pipeline.
+The key change is in configuration of senders and receivers for BCS pipeline.
 
 BCS Pipeline is a NMOS client that is treated as one node that has 1 device and has x senders and y receivers that are provided from the level of json config `node.json`.
 Here is sample config `node.json`:
@@ -18,20 +18,36 @@ Here is sample config `node.json`:
 ```json
 {
     "logging_level": 0,
-    "http_port": 84,
+    "http_port": 90,
+    "activate_senders": true,
     "label": "intel-broadcast-suite",
-    "senders": ["v","d"],
-    "senders_count": [2, 1],
+    "senders": ["v"],
+    "senders_count": [1],
     "receivers": ["v"],
-    "receivers_count": [4],
+    "receivers_count": [0],
     "device_tags": {
-        "pipeline": ["multiviewer"]
+        "pipeline": ["tx-sender"]
     },
     "frame_rate": { "numerator": 60, "denominator": 1 },
     "frame_width": 1920,
     "frame_height": 1080,
     "video_type": "video/jxsv",
-    "domain": "local"
+    "domain": "local",
+    "function" : "tx",
+    "gpu_hw_acceleration": "none",
+    "sender_ffmpeg_video_type": "rawvideo",
+    "sender_payload_type": 96,
+    "sender_pixel_format": "yuv422p10le",
+    "sender_transportFormat": "mcm",
+    "sender_conn_type": "st2110",
+    "sender_transport": "st2110-20",
+    "sender_input_path": "/root",
+    "sender_input_path_name": "1920x1080p10le_1.yuv",
+    "receiver_transportFormat": "mcm",
+    "receiver_conn_type": "st2110",
+    "receiver_transport": "st2110-20",
+    "ffmpeg_grpc_server_address": "localhost",
+    "ffmpeg_grpc_server_port": "50051"
 }
 ```
 
@@ -101,6 +117,9 @@ Run script that prepares images dor NMOS client node and NMOS registry:
 ``` bash
 cd <repo>/nmos/docker
 ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images --prepare-only
+```
+
+```bash
 cd <repo>/nmos/k8s
 # Install minikube https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
 minikube start
@@ -133,10 +152,12 @@ git apply ../patches/nmos-cpp.patch
 #### 3. Build NMOS binaries (client & registry/controller) (optional for user, useful for dev)
 
 ``` bash
-cd <repo>/nmos/nmos-cpp
-# 1. Follow instructions <repo>/nmos/nmos-cpp/Documents/Installation-with-Conan.md
-> IMPORTANT! You should install conan using command: $ pip install --upgrade conan~=2.4 
-# 2. Follow instructions <repo>/nmos/nmos-cpp/Documents/Getting-Started.md
+cd <repo>/nmos/nmos-cpp/Development/
+pip install --upgrade conan~=2.4 
+conan profile detect
+conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy --build=missing
+cd <repo>/nmos/
+./run-before-nmos-cpp-build.sh
 ```
 
 #### 4. Build images
