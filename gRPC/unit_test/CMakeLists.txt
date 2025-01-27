@@ -47,8 +47,14 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/../FFmpeg_wrapper_service_UT.cc
 )
 
+set(SOURCE_FILES_PIPELINE_GENERATOR
+    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../ffmpeg_pipeline_generator_test.cc
+)
+
 # Add the executable
 add_executable(FFmpegWrapperServiceTests ${SOURCE_FILES})
+add_executable(FFmpegPipelineGeneratorTests ${SOURCE_FILES_PIPELINE_GENERATOR})
 
 # Link libraries
 target_link_libraries(FFmpegWrapperServiceTests
@@ -66,6 +72,12 @@ target_link_libraries(FFmpegWrapperServiceTests
     nlohmann_json::nlohmann_json
 )
 
+target_link_libraries(FFmpegPipelineGeneratorTests
+  gtest
+  gtest_main
+  nlohmann_json::nlohmann_json
+)
+
 # Enable testing
 enable_testing()
 
@@ -73,3 +85,4 @@ enable_testing()
 add_test(NAME RunTest COMMAND FFmpegWrapperServiceTests)
 add_test(NAME handleEmptyArgs COMMAND FFmpegWrapperServiceTests)
 add_test(NAME handleInvalidArgs COMMAND FFmpegWrapperServiceTests)
+add_test(NAME FFmpegPipelineGeneratorTest COMMAND FFmpegPipelineGeneratorTests)
