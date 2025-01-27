@@ -138,7 +138,7 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
     }
 
     if(rx.payload.video.video_type != "rawvideo"){
-        std::cout << "Error: video type not supported " << rx.payload.video.video_type << std::endl;
+        std::cout << "Error: only raw video is supported, received: " << rx.payload.video.video_type << std::endl;
         return 1;
     }
 
@@ -171,7 +171,7 @@ int ffmpeg_append_multiviewer_input(Stream &s, int idx, std::string &pipeline_st
     }
 
     if(s.payload.video.video_type != "rawvideo"){
-        std::cout << "Error: video type not supported " << s.payload.video.video_type << std::endl;
+        std::cout << "Error: only raw video is supported, received: " << s.payload.video.video_type << std::endl;
         return 1;
     }
 
@@ -270,7 +270,7 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
             return 1;
         }
         if (config.receivers.size() < 2) {
-            std::cout << "Error: multiviewer requires at least 2 receiver" << std::endl;
+            std::cout << "Error: multiviewer requires at least 2 receivers" << std::endl;
             return 1;
         }
 
