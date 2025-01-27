@@ -1,0 +1,23 @@
+{
+    "master_enable": true,
+    "receiver_id": "",
+    "activation": {
+        "mode": "activate_immediate"
+    },
+    "transport_params": [
+        {
+            "destination_ip": "232.105.26.177",
+            "destination_port": 20000,
+            "rtp_enabled": true,
+            "source_ip": "auto",
+            "source_port": 20000
+        },
+        {
+            "destination_ip": "232.105.26.177",
+            "destination_port": 20000,
+            "rtp_enabled": true,
+            "source_ip": "auto",
+            "source_port": 20000
+        }
+    ]
+}
