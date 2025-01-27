@@ -6,6 +6,8 @@
 
 #include "ffmpeg_pipeline_generator.hpp"
 
+#include <cmath>
+#include <cstdint>
 // Return 0 if payloads match, 1 otherwise:
 int compare_payloads(Payload &p1, Payload &p2) {
     if (p1.type != p2.type) {
@@ -136,7 +138,7 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
     }
 
     if(rx.payload.video.video_type != "rawvideo"){
-        std::cout << "Error: video type not supported" << rx.payload.video.video_type << std::endl;
+        std::cout << "Error: video type not supported " << rx.payload.video.video_type << std::endl;
         return 1;
     }
 
@@ -158,6 +160,62 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
         std::cout << "Error appending tx stream type" << std::endl;
         return 1;
     }
+
+    return 0;
+}
+
+int ffmpeg_append_multiviewer_input(Stream &s, int idx, std::string &pipeline_string){
+    if(s.payload.type != payload_type::video){
+        std::cout << "Error: multiviewer requires video payload all receivers" << std::endl;
+        return 1;
+    }
+
+    if(s.payload.video.video_type != "rawvideo"){
+        std::cout << "Error: video type not supported " << s.payload.video.video_type << std::endl;
+        return 1;
+    }
+
+    if(ffmpeg_append_payload(s.payload,  pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending rx payload" << std::endl;
+        return 1;
+    }
+
+    if(ffmpeg_append_stream_type(s.stream_type, true/*is_rx*/, idx, pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending rx stream type" << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &output_video, std::string &pipeline_string, uint32_t columns) {
+    pipeline_string += " -filter_complex \"";
+
+    const uint rows = std::ceil((float)receivers.size() / columns);
+
+    const uint single_screen_height = output_video.frame_height / rows;
+    const uint single_screen_width = output_video.frame_width / columns;
+
+    for (int i = 0; i < receivers.size(); i++) {
+        //[X:v]hwupload,scale_qsv=w:h[outX];
+        pipeline_string += "[" + std::to_string(i) + ":v]hwupload,scale_qsv=" + std::to_string(single_screen_width) + ":" + std::to_string(single_screen_height) + "[out" + std::to_string(i) + "];";
+    }
+    for (int i = 0; i < receivers.size(); i++) {
+        pipeline_string += "[out" + std::to_string(i) + "]";
+    }
+    //xstack_qsv=inputs=Z:layout=
+    pipeline_string += "xstack_qsv=inputs=" + std::to_string(receivers.size()) + ":layout=";
+    for (int i = 0; i < receivers.size(); i++) {
+        const uint x_cord = (i % columns) * single_screen_width;
+        const uint y_cord = (i / columns) * single_screen_height;
+        pipeline_string += std::to_string(x_cord) + "_" + std::to_string(y_cord);
+        if(i != receivers.size() - 1) {
+            pipeline_string += "|";
+        }
+    }
+    pipeline_string += ",format=y210le,format=yuv422p10le\"";
 
     return 0;
 }
@@ -196,6 +254,49 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
                 }
             }
         }
+        return 0;
+    }
+    else if (config.function == "multiviewer") {
+        if(config.gpu_hw_acceleration != "intel") {
+            std::cout << "Error: multiviewer requires intel GPU acceleration" << std::endl;
+            return 1;
+        }
+        if (config.senders.size() != 1) {
+            std::cout << "Error: multiviewer requires exactly 1 sender" << std::endl;
+            return 1;
+        }
+        if(config.senders[0].payload.type != payload_type::video) {
+            std::cout << "Error: multiviewer requires video payload" << std::endl;
+            return 1;
+        }
+        if (config.receivers.size() < 2) {
+            std::cout << "Error: multiviewer requires at least 2 receiver" << std::endl;
+            return 1;
+        }
+
+        for (int i = 0; i < config.receivers.size(); i++) {
+            if(ffmpeg_append_multiviewer_input(config.receivers[i], i, pipeline_string) != 0) {
+                pipeline_string.clear();
+                std::cout << "Error appending multiviewer input" << std::endl;
+                return 1;
+            }
+        }
+        if(ffmpeg_append_multiviewer_process(config.receivers, config.senders[0].payload.video, pipeline_string, 3/*columns*/) != 0) {
+            pipeline_string.clear();
+            std::cout << "Error appending multiviewer process" << std::endl;
+            return 1;
+        }
+        if (ffmpeg_append_stream_type(config.senders[0].stream_type, false /*is_rx*/, 0, pipeline_string) != 0) {
+            pipeline_string.clear();
+            std::cout << "Error appending multiviewer tx stream" << std::endl;
+            return 1;
+        }
+
+        return 0;
+    }
+    else {
+        std::cout << "Error: function " << config.function << " not supported yet" << std::endl;
+        return 1;
     }
     return 0;
 }
