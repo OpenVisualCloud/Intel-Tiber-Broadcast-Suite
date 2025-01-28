@@ -4,8 +4,3 @@
 [submodule "nmos/nmos-cpp"]
 	path = nmos/nmos-cpp
 	url = https://github.com/sony/nmos-cpp.git
-[submodule "submodules/Media-Communications-Mesh"]
-	path = submodules/Media-Communications-Mesh
-	url = https://github.com/OpenVisualCloud/Media-Communications-Mesh
-	branch = main
-
