@@ -98,7 +98,7 @@ int ffmpeg_append_st2110_transport(std::string &transport, std::string &pipeline
         pipeline_string += " -f mtl_st30p";
     }
     else {
-        std::cout << "Error: transport " << transport << "not supported yet" << std::endl;
+        std::cout << "Error: transport " << transport << " not supported yet" << std::endl;
         return 1;
     }
     return 0;
@@ -266,7 +266,7 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
         pipeline_string += " -y -hwaccel cuda -hwaccel_output_format cuda";
     }
     else {
-        std::cout << "Unsupported GPU acceleration" << config.gpu_hw_acceleration << std::endl;
+        std::cout << "Unsupported GPU acceleration " << config.gpu_hw_acceleration << std::endl;
         return 1;
     }
 
