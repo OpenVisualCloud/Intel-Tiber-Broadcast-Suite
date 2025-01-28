@@ -8,11 +8,14 @@
 
 #include <cmath>
 #include <cstdint>
-// Return 0 if payloads match, 1 otherwise:
+
+// Return 0 if payloads match,
+// Return -1 if payload types are incompatible,
+// Return 1 otherwise
 int compare_payloads(Payload &p1, Payload &p2) {
     if (p1.type != p2.type) {
         std::cout << "Error: payloads types do not match" << std::endl;
-        return 1;
+        return -1;
     }
 
     if (p1.type == payload_type::video && (
@@ -23,7 +26,6 @@ int compare_payloads(Payload &p1, Payload &p2) {
         p1.video.pixel_format != p2.video.pixel_format ||
         p1.video.video_type != p2.video.video_type))
     {
-        std::cout << "Error: video payloads do not match" << std::endl;
         return 1;
     }
 
@@ -32,7 +34,6 @@ int compare_payloads(Payload &p1, Payload &p2) {
         p1.audio.format != p2.audio.format ||
         p1.audio.packet_time != p2.audio.packet_time))
     {
-        std::cout << "Error: audio payloads do not match" << std::endl;
         return 1;
     }
 
@@ -42,12 +43,13 @@ int compare_payloads(Payload &p1, Payload &p2) {
 int ffmpeg_append_payload(Payload &p, std::string &pipeline_string) {
     switch (p.type) {
     case video:
+        if(p.video.video_type == "rawvideo") {
         pipeline_string += " -video_size " + std::to_string(p.video.frame_width) + "x" + std::to_string(p.video.frame_height);
         pipeline_string += " -pix_fmt " + p.video.pixel_format;
         pipeline_string += " -r " + std::to_string(p.video.frame_rate.numerator) + "/" + std::to_string(p.video.frame_rate.denominator);
-        if(p.video.video_type == "rawvideo")
-            pipeline_string += " -f rawvideo";
-        else{
+        pipeline_string += " -f rawvideo";
+        }
+        else if (!p.video.video_type.empty()) {
             pipeline_string += " -c:v " + p.video.video_type;
         }
         break;
@@ -58,6 +60,30 @@ int ffmpeg_append_payload(Payload &p, std::string &pipeline_string) {
         std::cout << "Error: unknown payload type" << std::endl;
         break;
     }
+    return 0;
+}
+
+int ffmpeg_append_stream_convert(Payload &rx, Payload &tx, std::string &pipeline_string) {
+    if (rx.type != tx.type) {
+        std::cout << "Error: payloads types do not match" << std::endl;
+        return 1;
+    }
+
+    if (rx.type != payload_type::video) {
+        std::cout << "Error: audio payload conversion not supported yet" << std::endl;
+        return 1;
+    }
+
+    if (rx.video.pixel_format != tx.video.pixel_format) {
+        pipeline_string += " -pix_fmt " + tx.video.pixel_format;
+    }
+    if (rx.video.frame_width != tx.video.frame_width || rx.video.frame_height != tx.video.frame_height) {
+        pipeline_string += " -vf scale=" + std::to_string(tx.video.frame_width) + "x" + std::to_string(tx.video.frame_height);
+    }
+    if (rx.video.frame_rate.numerator != tx.video.frame_rate.numerator || rx.video.frame_rate.denominator != tx.video.frame_rate.denominator) {
+        pipeline_string += " -r " + std::to_string(tx.video.frame_rate.numerator) + "/" + std::to_string(tx.video.frame_rate.denominator);
+    }
+
     return 0;
 }
 
@@ -132,30 +158,27 @@ int ffmpeg_append_stream_type(StreamType &s, bool is_rx, int idx, std::string &p
 }
 
 int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_string){
-    if(compare_payloads(rx.payload, tx.payload) != 0){
-        std::cout << "Error: payloads do not match" << std::endl;
-        return 1;
-    }
-
-    if(rx.payload.video.video_type != "rawvideo"){
-        std::cout << "Error: only raw video is supported, received: " << rx.payload.video.video_type << std::endl;
-        return 1;
-    }
-
-
-    if(ffmpeg_append_payload(rx.payload,  pipeline_string) != 0){
+    if (ffmpeg_append_payload(rx.payload,  pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending rx payload" << std::endl;
         return 1;
     }
 
-    if(ffmpeg_append_stream_type(rx.stream_type, true/*is_rx*/, idx, pipeline_string) != 0){
+    if (ffmpeg_append_stream_type(rx.stream_type, true/*is_rx*/, idx, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending rx stream type" << std::endl;
         return 1;
     }
 
-    if(ffmpeg_append_stream_type(tx.stream_type, false/*is_rx*/, idx, pipeline_string) != 0){
+    if (compare_payloads(rx.payload, tx.payload) > 0) {
+        if (ffmpeg_append_stream_convert(rx.payload, tx.payload, pipeline_string)) {
+            pipeline_string.clear();
+            std::cout << "Error appending tx payload" << std::endl;
+            return 1;
+        }
+    }
+
+    if (ffmpeg_append_stream_type(tx.stream_type, false/*is_rx*/, idx, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending tx stream type" << std::endl;
         return 1;
@@ -167,11 +190,6 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
 int ffmpeg_append_multiviewer_input(Stream &s, int idx, std::string &pipeline_string){
     if(s.payload.type != payload_type::video){
         std::cout << "Error: multiviewer requires video payload all receivers" << std::endl;
-        return 1;
-    }
-
-    if(s.payload.video.video_type != "rawvideo"){
-        std::cout << "Error: only raw video is supported, received: " << s.payload.video.video_type << std::endl;
         return 1;
     }
 

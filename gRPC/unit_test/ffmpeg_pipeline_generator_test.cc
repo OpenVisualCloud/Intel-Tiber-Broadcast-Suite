@@ -89,7 +89,7 @@ void fill_conf_receiver(Config &config) {
     }
 }
 
-void fill_conf_sender_multiviewer(Config &config) {
+void fill_conf_multiviewer(Config &config) {
     config.function = "multiviewer";
     config.gpu_hw_acceleration = "intel";
     config.logging_level = 0;
@@ -130,6 +130,37 @@ void fill_conf_sender_multiviewer(Config &config) {
     }
 }
 
+void fill_conf_convert(Config &config) {
+    config.function = "rx";
+    config.gpu_hw_acceleration = "none";
+    config.logging_level = 0;
+
+    {
+        Stream s;
+
+        s.payload = get_video_payload_common();
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos/";
+        s.stream_type.file.filename = "1920x1080p10le_1.yuv";
+        config.receivers.push_back(s);
+    }
+
+    {
+        Stream s;
+
+        s.payload.type = payload_type::video;
+        s.payload.video.frame_width = 1280;
+        s.payload.video.frame_height = 720;
+        s.payload.video.pixel_format = "yuv422p";
+        s.payload.video.frame_rate = {5, 1};
+
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos/recv";
+        s.stream_type.file.filename = "1920x1080p10le_1.mp4";
+        config.senders.push_back(s);
+    }
+}
+
 TEST(FFmpegPipelineGeneratorTest, test_sender) {
     Config conf;
     fill_conf_sender(conf);
@@ -158,7 +189,7 @@ TEST(FFmpegPipelineGeneratorTest, test_receiver) {
 
 TEST(FFmpegPipelineGeneratorTest, test_multiviewer) {
     Config conf;
-    fill_conf_sender_multiviewer(conf);
+    fill_conf_multiviewer(conf);
 
     std::string pipeline_string;
 
@@ -166,5 +197,35 @@ TEST(FFmpegPipelineGeneratorTest, test_multiviewer) {
             ASSERT_EQ(1, 0) << "Error generating multiviewer pipeline" << std::endl;
     }
     std::string expected_string = " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]hwupload,scale_qsv=640:360[out0];[1:v]hwupload,scale_qsv=640:360[out1];[2:v]hwupload,scale_qsv=640:360[out2];[3:v]hwupload,scale_qsv=640:360[out3];[4:v]hwupload,scale_qsv=640:360[out4];[5:v]hwupload,scale_qsv=640:360[out5];[6:v]hwupload,scale_qsv=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack_qsv=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=y210le,format=yuv422p10le\" /videos/recv/1920x1080p10le_1.yuv";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_multiviewer_2) {
+    Config conf;
+    fill_conf_multiviewer(conf);
+
+    conf.receivers[0].payload.video.video_type = "";
+    conf.receivers[0].stream_type.file.filename = "compressed720p.mp4";
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating multiviewer pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv -i /videos/compressed720p.mp4 -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]hwupload,scale_qsv=640:360[out0];[1:v]hwupload,scale_qsv=640:360[out1];[2:v]hwupload,scale_qsv=640:360[out2];[3:v]hwupload,scale_qsv=640:360[out3];[4:v]hwupload,scale_qsv=640:360[out4];[5:v]hwupload,scale_qsv=640:360[out5];[6:v]hwupload,scale_qsv=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack_qsv=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=y210le,format=yuv422p10le\" /videos/recv/1920x1080p10le_1.yuv";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+
+TEST(FFmpegPipelineGeneratorTest, test_convert) {
+    Config conf;
+    fill_conf_convert(conf);
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -pix_fmt yuv422p -vf scale=1280x720 -r 5/1 /videos/recv/1920x1080p10le_1.mp4";   
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
