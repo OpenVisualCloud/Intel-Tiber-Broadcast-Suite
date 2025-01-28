@@ -192,7 +192,7 @@ void CmdPassImpl::CallData::Proceed() {
         new CallData(service_, cq_);
 
         std::stringstream ss;
-        std::string pipelinie_string;
+        std::string pipeline_string;
         std::vector<std::pair<std::string, std::string>> committed_config;
 
         if (request_.obj().empty()) {
@@ -212,21 +212,21 @@ void CmdPassImpl::CallData::Proceed() {
 
         Config recieved_config = stringPairsToConfig(committed_config);
 
-        if (ffmpeg_generate_pipeline(recieved_config, pipelinie_string) != 0) {
-            pipelinie_string.clear();
+        if (ffmpeg_generate_pipeline(recieved_config, pipeline_string) != 0) {
+            pipeline_string.clear();
             std::cout << "Error generating pipeline" << std::endl; //TODO : need to return as response error code
             //return 1;
         }
 
         ss << "ffmpeg ";
-        ss << pipelinie_string;
+        ss << pipeline_string;
 
-        pipelinie_string = ss.str();
+        pipeline_string = ss.str();
 
         std::array<char, 128> buffer;
         std::string result;
 
-        FILE *pipe = popen(pipelinie_string.c_str(), "r");
+        FILE *pipe = popen(pipeline_string.c_str(), "r");
         if (!pipe) { /* FFmpeg pipeline/execution failed i.e memory allocation */
             responder_.Finish(response_,
                               Status(grpc::INTERNAL, FFMPEG_APP_EXEC_FAIL_STATUS,
