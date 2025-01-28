@@ -216,6 +216,19 @@ TEST(FFmpegPipelineGeneratorTest, test_multiviewer_2) {
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
+TEST(FFmpegPipelineGeneratorTest, test_multiviewer_3) {
+    Config conf;
+    fill_conf_multiviewer(conf);
+    conf.gpu_hw_acceleration = "none";
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating multiviewer pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]scale=640:360[out0];[1:v]scale=640:360[out1];[2:v]scale=640:360[out2];[3:v]scale=640:360[out3];[4:v]scale=640:360[out4];[5:v]scale=640:360[out5];[6:v]scale=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=y210le,format=yuv422p10le\" /videos/recv/1920x1080p10le_1.yuv";
+      ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
 
 TEST(FFmpegPipelineGeneratorTest, test_convert) {
     Config conf;

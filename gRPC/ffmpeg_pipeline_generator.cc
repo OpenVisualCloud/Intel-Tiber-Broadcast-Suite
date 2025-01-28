@@ -208,7 +208,7 @@ int ffmpeg_append_multiviewer_input(Stream &s, int idx, std::string &pipeline_st
     return 0;
 }
 
-int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &output_video, std::string &pipeline_string, uint32_t columns) {
+int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &output_video, uint32_t columns, uint32_t intel_gpu, std::string &pipeline_string) {
     pipeline_string += " -filter_complex \"";
 
     const uint rows = std::ceil((float)receivers.size() / columns);
@@ -217,14 +217,26 @@ int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &out
     const uint single_screen_width = output_video.frame_width / columns;
 
     for (int i = 0; i < receivers.size(); i++) {
-        //[X:v]hwupload,scale_qsv=w:h[outX];
-        pipeline_string += "[" + std::to_string(i) + ":v]hwupload,scale_qsv=" + std::to_string(single_screen_width) + ":" + std::to_string(single_screen_height) + "[out" + std::to_string(i) + "];";
+        pipeline_string += "[" + std::to_string(i) + ":v]";
+        if(intel_gpu){
+            pipeline_string += "hwupload,scale_qsv=";
+        }
+        else{
+            pipeline_string += "scale=";
+        }
+        pipeline_string += std::to_string(single_screen_width) + ":" + std::to_string(single_screen_height) + "[out" + std::to_string(i) + "];";
     }
     for (int i = 0; i < receivers.size(); i++) {
         pipeline_string += "[out" + std::to_string(i) + "]";
     }
     //xstack_qsv=inputs=Z:layout=
-    pipeline_string += "xstack_qsv=inputs=" + std::to_string(receivers.size()) + ":layout=";
+    if(intel_gpu){
+        pipeline_string += "xstack_qsv";
+    }
+    else{
+        pipeline_string += "xstack";
+    }
+    pipeline_string += "=inputs=" + std::to_string(receivers.size()) + ":layout=";
     for (int i = 0; i < receivers.size(); i++) {
         const uint x_cord = (i % columns) * single_screen_width;
         const uint y_cord = (i / columns) * single_screen_height;
@@ -275,10 +287,6 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
         return 0;
     }
     else if (config.function == "multiviewer") {
-        if(config.gpu_hw_acceleration != "intel") {
-            std::cout << "Error: multiviewer requires intel GPU acceleration" << std::endl;
-            return 1;
-        }
         if (config.senders.size() != 1) {
             std::cout << "Error: multiviewer requires exactly 1 sender" << std::endl;
             return 1;
@@ -299,7 +307,7 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
                 return 1;
             }
         }
-        if(ffmpeg_append_multiviewer_process(config.receivers, config.senders[0].payload.video, pipeline_string, 3/*columns*/) != 0) {
+        if(ffmpeg_append_multiviewer_process(config.receivers, config.senders[0].payload.video, 3/*columns*/, config.gpu_hw_acceleration == "intel", pipeline_string) != 0) {
             pipeline_string.clear();
             std::cout << "Error appending multiviewer process" << std::endl;
             return 1;
