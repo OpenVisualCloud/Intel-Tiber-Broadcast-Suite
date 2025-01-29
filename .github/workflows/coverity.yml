@@ -2,7 +2,6 @@ name: Coverity scan
 
 on:
   push:
-  workflow_call:
   workflow_dispatch:
 
 env:
@@ -17,6 +16,9 @@ jobs:
     name: 'build BCS build stage'
     runs-on: ['self-hosted', 'Linux', 'cov']
     steps:
+      - name: 'setup: checkout repo'
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
       - name: "Validation: Build/Push Dokcerfile"
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
