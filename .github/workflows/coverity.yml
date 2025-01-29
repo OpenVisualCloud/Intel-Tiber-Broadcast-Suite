@@ -26,8 +26,8 @@ jobs:
          push: false
          load: true
          target: build-stage
-         cache-from: type=local,src=/tmp/.buildx-cache
-         cache-to: type=local,dest=/tmp/.buildx-cache
+         cache-from: type=inline
+         cache-to: type=inline
          tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
          platforms: "linux/amd64"
       - name: install coverity in docker
