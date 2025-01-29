@@ -783,7 +783,7 @@ function install_locally {
 ### docker installation
 
 # this should support every distribution
-function docker_software_prerequisites {
+function docker_host_prerequisites {
     if ! (mkdir -p "${HOME}/dpdk" &&
           curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | \
           tar -zx --strip-components=1 -C "${HOME}/dpdk" ); then

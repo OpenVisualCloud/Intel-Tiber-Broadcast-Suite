@@ -31,7 +31,7 @@ BUILD=false
 # Enable/disable to apply patches to 3rd party submodules nmos-cpp and build-nmos-cpp
 APPLY_PATCHES=false
 # Run script but without running containers
-PREPARE=false
+PREPARE=true
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -112,6 +112,17 @@ fi
 echo "Copying files to build directory..."
 cp "${SOURCE_DIR}/Development/nmos-cpp-node/node_implementation.cpp" "${BUILD_DIR}/"
 cp "${SOURCE_DIR}/Development/nmos-cpp-node/main.cpp" "${BUILD_DIR}/"
+cp -r ../../gRPC/ "${BUILD_DIR}/"
+
+# Build grpc client that is necessary for NMOS node and ffmpeg pipeline communication
+echo "Building grpc client that is necessary for NMOS node and ffmpeg pipeline communication..."
+cd "${BUILD_DIR}/gRPC" || exit
+./compile.sh
+
+if [ $? -ne 0 ]; then
+  echo "Error: ./compile.sh failed. Check if all necesarry packages are installed"
+  exit 1
+fi
 
 # Build NMOS registry and controller
 if [[ "${BUILD}" == true ]]; then

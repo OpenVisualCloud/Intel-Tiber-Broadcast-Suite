@@ -23,6 +23,9 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+
 # Ensure GoogleTest is built with C++20
 set_target_properties(gtest PROPERTIES CXX_STANDARD 20)
 set_target_properties(gtest_main PROPERTIES CXX_STANDARD 20)
@@ -40,11 +43,18 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/../../build/ffmpeg_cmd_wrap.pb.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../CmdPassImpl.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../FFmpeg_wrapper_client.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../FFmpeg_wrapper_service_UT.cc
+)
+
+set(SOURCE_FILES_PIPELINE_GENERATOR
+    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../ffmpeg_pipeline_generator_test.cc
 )
 
 # Add the executable
 add_executable(FFmpegWrapperServiceTests ${SOURCE_FILES})
+add_executable(FFmpegPipelineGeneratorTests ${SOURCE_FILES_PIPELINE_GENERATOR})
 
 # Link libraries
 target_link_libraries(FFmpegWrapperServiceTests
@@ -59,6 +69,13 @@ target_link_libraries(FFmpegWrapperServiceTests
     gtest_main
     gmock
     gmock_main
+    nlohmann_json::nlohmann_json
+)
+
+target_link_libraries(FFmpegPipelineGeneratorTests
+  gtest
+  gtest_main
+  nlohmann_json::nlohmann_json
 )
 
 # Enable testing
@@ -68,3 +85,4 @@ enable_testing()
 add_test(NAME RunTest COMMAND FFmpegWrapperServiceTests)
 add_test(NAME handleEmptyArgs COMMAND FFmpegWrapperServiceTests)
 add_test(NAME handleInvalidArgs COMMAND FFmpegWrapperServiceTests)
+add_test(NAME FFmpegPipelineGeneratorTest COMMAND FFmpegPipelineGeneratorTests)

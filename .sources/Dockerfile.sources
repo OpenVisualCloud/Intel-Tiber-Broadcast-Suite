@@ -18,40 +18,44 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install dependencies
 RUN \
   apt-get update && \
-  apt-get install --no-install-recommends ca-certificates -y \
-    wget
+  apt-get install --no-install-recommends \
+    ca-certificates -y \
+    wget && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 
 COPY /patches /root/patches
 WORKDIR /root
 RUN \
   source /root/versions.env && \
+  export WGET="wget --progress=dot:giga" && \
   echo "**** DOWNLOAD ONEVPL ****" && \
-  wget  https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz -O oneVPL-intel-gpu.tar.gz && \
+  $WGET  https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz -O oneVPL-intel-gpu.tar.gz && \
   echo "**** DOWNLOAD VMAF ****" && \
-  wget  https://github.com/Netflix/vmaf/archive/refs/tags/v${LIBVMAF}.tar.gz -O vmaf.tar.gz && \
+  $WGET  https://github.com/Netflix/vmaf/archive/refs/tags/v${LIBVMAF}.tar.gz -O vmaf.tar.gz && \
   echo "**** DOWNLOAD SVT-AV1 ****" && \
-  wget  https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${SVTAV1}/SVT-AV1-v${SVTAV1}.tar.gz -O SVT-AV1.tar.gz && \
+  $WGET  https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${SVTAV1}/SVT-AV1-v${SVTAV1}.tar.gz -O SVT-AV1.tar.gz && \
   echo "**** DOWNLOAD VULKAN HEADERS ****" && \
-  wget  https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VULKANSDK}.tar.gz -O Vulkan-Headers.tar.gz && \
+  $WGET  https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VULKANSDK}.tar.gz -O Vulkan-Headers.tar.gz && \
   echo "**** DOWNLOAD MTL ****" && \
-  wget  https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz -O Media-Transport-Library.tar.gz && \
+  $WGET  https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz -O Media-Transport-Library.tar.gz && \
   echo "**** DOWNLOAD DPDK ****" && \
-  wget  https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz -O dpdk.tar.gz && \
+  $WGET  https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz -O dpdk.tar.gz && \
   echo "**** DOWNLOAD XDP-TOOLS ****" && \
-  wget  https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz -O xdp-tools.tar.gz && \
-  wget  https://github.com/libbpf/libbpf/archive/${BPF_VER}.tar.gz -O libbpf.tar.gz && \
+  $WGET  https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz -O xdp-tools.tar.gz && \
+  $WGET  https://github.com/libbpf/libbpf/archive/${BPF_VER}.tar.gz -O libbpf.tar.gz && \
   echo "**** DOWNLOAD JPEG-XS ****" && \
-  wget  https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz -O SVT-JPEG-XS.tar.gz&& \
+  $WGET  https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz -O SVT-JPEG-XS.tar.gz&& \
   echo "**** DOWNLOAD FFMPEG ****" && \
-  wget  https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz -O ffmpeg.tar.gz && \
+  $WGET  https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz -O ffmpeg.tar.gz && \
   echo "**** DOWNLOAD CARTWHEEL PATCHES ****" && \
-  wget  https://github.com/intel/cartwheel-ffmpeg/archive/${CARTWHEEL_COMMIT_ID}.tar.gz -O cartwheel-ffmpeg.tar.gz && \
+  $WGET  https://github.com/intel/cartwheel-ffmpeg/archive/${CARTWHEEL_COMMIT_ID}.tar.gz -O cartwheel-ffmpeg.tar.gz && \
   echo "**** DOWNLOAD VIDEO SUPER RESOLUTION ****" && \
-  wget  https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz -O Video-Super-Resolution.tar.gz && \
+  $WGET  https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz -O Video-Super-Resolution.tar.gz && \
   echo "**** DOWNLOAD MEDIA COMMUNICATIONS MESH ****" && \
-  wget  https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz -O Media-Communications-Mesh.tar.gz && \
+  $WGET  https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz -O Media-Communications-Mesh.tar.gz && \
   echo "**** DOWNLOAD FFNVCODED HEADERS ****" && \
-  wget  https://github.com/FFmpeg/nv-codec-headers/archive/${FFNVCODED_VER}.tar.gz -O nv-codec-headers.tar.gz && \
+  $WGET  https://github.com/FFmpeg/nv-codec-headers/archive/${FFNVCODED_VER}.tar.gz -O nv-codec-headers.tar.gz && \
   echo "**** DOWNLOAD IPP ****" && \
   export no_proxy="" && wget --progress=dot:giga https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh
 
