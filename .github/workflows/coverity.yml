@@ -15,9 +15,6 @@ env:
 jobs:
   build-stage-build:
     name: 'build BCS build stage'
-    permissions:
-      actions: read
-      contents: read
     runs-on: ['self-hosted', 'Linux', 'cov']
     steps:
       - name: "Validation: Build/Push Dokcerfile"
