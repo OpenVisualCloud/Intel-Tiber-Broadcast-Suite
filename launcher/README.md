@@ -35,7 +35,6 @@ In case of kuberenetes, MediaProxy/MCM things should only be run once and BCS po
 cd <repo>/launcher/cmd/
 # Adjust to your needs: ./configuration_files/bcslauncher-static-config.yaml
 go run main.go
-
 ```
 
 ### To Deploy on the cluster
@@ -55,7 +54,6 @@ kubectl apply -f ./configuration_files/bcsconfig-crd.yaml
 kubectl apply -f ./configuration_files/bcs-launcher.yaml
 # Adjust to your needs: ./configuration_files/bcsconfig-example.yaml
 kubectl apply -f ./configuration_files/bcsconfig-example.yaml
-
 ```
 
 **BCS pod launcher roles of files in k8s cluster:**  

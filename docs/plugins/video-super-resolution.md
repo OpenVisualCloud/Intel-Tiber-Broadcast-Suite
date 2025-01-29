@@ -125,7 +125,7 @@ The Raisr OpenCL filter plugin for FFmpeg is designed to perform super-resolutio
 
 ### Usage Example
 
-```sh
+```bash
 ffmpeg -i input.mp4 -vf "raisr=ratio=2:bits=10:range=full" output.mp4
 ```
 
@@ -187,6 +187,6 @@ ffmpeg -i input.mp4 -vf "raisr=ratio=2:bits=10:range=full" output.mp4
 
 ### Usage Example
 
-```sh
+```bash
 ffmpeg -init_hw_device vaapi=va -init_hw_device opencl@va -i input.mp4 -vf "format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le" -c:v h264 output.mp4
 ```
