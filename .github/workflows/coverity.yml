@@ -32,10 +32,10 @@ jobs:
          platforms: "linux/amd64"
       - name: install coverity in docker
         run: |
-         docker run --rm -v $(pwd):/tmp/coverity\
-         -e  COVERITY_PROJECT='Intel-Tiber-Broadcast-Suite'\
-         -e  COVERITY_TOKEN=${{ secrets.COVERITY_SCAN_TOKEN }}\
-         -e  COVERITY_EMAIL=${{ secrets.COVERITY_SCAN_EMAIL }}\
-         -e  LANGUAGE='other'\
-          ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}\
+         docker run --rm -v $(pwd):/tmp/coverity \
+         -e  COVERITY_PROJECT='Intel-Tiber-Broadcast-Suite' \
+         -e  COVERITY_TOKEN=${{ secrets.COVERITY_SCAN_TOKEN }} \
+         -e  COVERITY_EMAIL=${{ secrets.COVERITY_SCAN_EMAIL }} \
+         -e  LANGUAGE='other' \
+          ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
           /bin/bash -c "cd /tmp/coverity && .github/coverity/install_coverity.sh" \
