@@ -250,6 +250,33 @@ int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &out
     return 0;
 }
 
+int ffmpeg_append_split_process(std::vector<Stream> &senders, uint32_t intel_gpu, std::string &pipeline_string) {
+    pipeline_string += " -filter_complex \"split=" + std::to_string(senders.size());
+    for (int i = 0; i < senders.size(); i++) {
+        pipeline_string += "[in" + std::to_string(i) + "]";
+    }
+    pipeline_string += ";";
+    for (int i = 0; i < senders.size(); i++) {
+        if(intel_gpu){
+            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=";
+        }
+        else{
+            pipeline_string += "[in" + std::to_string(i) + "]scale=";
+        }
+        pipeline_string += std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
+    }
+    pipeline_string += "\"";
+
+    for (int i = 0; i < senders.size(); i++) {
+        pipeline_string += " -map \"[out" + std::to_string(i) + "]\"";
+        if(senders[i].payload.video.video_type != "rawvideo") {
+            pipeline_string += " -c:v " + senders[i].payload.video.video_type;
+        }
+        ffmpeg_append_stream_type(senders[i].stream_type, false /*is_rx*/, i, pipeline_string);
+    }
+    return 0;
+}
+
 int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
     if (config.logging_level > 0) {
         // TODO: add more logging level
@@ -319,6 +346,36 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
         }
 
         return 0;
+    }
+    else if (config.function == "recorder") {
+        if (config.receivers.size() != 1) {
+            std::cout << "Error: recorder requires exactly 1 receiver" << std::endl;
+            return 1;
+        }
+        if(config.receivers[0].payload.type != payload_type::video) {
+            std::cout << "Error: recorder requires video payload" << std::endl;
+            return 1;
+        }
+        if (config.senders.size() < 2) {
+            std::cout << "Error: recorder requires at least 2 senders" << std::endl;
+        }
+
+        if(ffmpeg_append_payload(config.receivers[0].payload,  pipeline_string) != 0){
+            pipeline_string.clear();
+            std::cout << "Error appending recorder rx payload" << std::endl;
+            return 1;
+        }
+        if (ffmpeg_append_stream_type(config.receivers[0].stream_type, true /*is_rx*/, 0, pipeline_string) != 0) {
+            pipeline_string.clear();
+            std::cout << "Error appending recorder rx stream" << std::endl;
+            return 1;
+        }
+        if(ffmpeg_append_split_process(config.senders, config.gpu_hw_acceleration == "intel", pipeline_string) != 0) {
+            pipeline_string.clear();
+            std::cout << "Error appending recorder process" << std::endl;
+            return 1;
+        }
+
     }
     else {
         std::cout << "Error: function " << config.function << " not supported yet" << std::endl;

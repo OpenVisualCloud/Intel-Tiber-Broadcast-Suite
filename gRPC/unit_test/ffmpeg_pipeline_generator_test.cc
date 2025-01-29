@@ -161,6 +161,43 @@ void fill_conf_convert(Config &config) {
     }
 }
 
+void fill_conf_recorder(Config &config) {
+    config.function = "recorder";
+    config.gpu_hw_acceleration = "none";
+    config.logging_level = 0;
+
+    Payload p = get_video_payload_common();
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos";
+        s.stream_type.file.filename = "1920x1080p10le_1.yuv";
+        config.receivers.push_back(s);
+    }
+
+    {
+        Stream s;
+        s.payload = p;
+
+        s.payload.video.frame_width = 640;
+        s.payload.video.frame_height = 360;
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos/recv";
+        s.stream_type.file.filename = "recv_1.yuv";
+        config.senders.push_back(s);
+
+        s.payload.video.frame_width = 1280;
+        s.payload.video.frame_height = 720;
+        s.payload.video.video_type = "h263p";
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos/recv";
+        s.stream_type.file.filename = "recv_2.mov";
+        config.senders.push_back(s);
+    }
+}
+
 TEST(FFmpegPipelineGeneratorTest, test_sender) {
     Config conf;
     fill_conf_sender(conf);
@@ -240,5 +277,18 @@ TEST(FFmpegPipelineGeneratorTest, test_convert) {
             ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
     }
     std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -pix_fmt yuv422p -vf scale=1280x720 -r 5/1 /videos/recv/1920x1080p10le_1.mp4";   
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_recorder) {
+    Config conf;
+    fill_conf_recorder(conf);
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"split=2[in0][in1];[in0]scale=640:360[out0];[in1]scale=1280:720[out1];\" -map \"[out0]\" /videos/recv/recv_1.yuv -map \"[out1]\" -c:v h263p /videos/recv/recv_2.mov";   
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
