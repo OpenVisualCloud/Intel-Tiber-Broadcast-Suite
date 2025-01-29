@@ -359,6 +359,41 @@ int ffmpeg_append_recorder(Config &config, std::string &pipeline_string) {
     return 0;
 }
 
+int ffmpeg_append_upscale(Config &config, std::string &pipeline_string) {
+    if (config.receivers.size() != 1 || config.senders.size() != 1) {
+        std::cout << "Error: upscale is requires exactly 1 receiver and sender" << std::endl;
+        return 1;
+    }
+    if (config.receivers[0].payload.type != payload_type::video || config.senders[0].payload.type != payload_type::video) {
+        std::cout << "Error: upscale requires video payload" << std::endl;
+        return 1;
+    }
+    if((2 * config.receivers[0].payload.video.frame_width) != config.senders[0].payload.video.frame_width ||
+       (2 * config.receivers[0].payload.video.frame_height) != config.senders[0].payload.video.frame_height) {
+        std::cout << "Error: upscale uses the raisir library that upscales width and height by a power of 2" << std::endl;
+        return 1;
+    }
+
+    pipeline_string += " -init_hw_device vaapi=va -init_hw_device opencl@va";
+    if(ffmpeg_append_payload(config.receivers[0].payload,  pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending upscale rx payload" << std::endl;
+        return 1;
+    }
+    if(ffmpeg_append_stream_type(config.receivers[0].stream_type, true /*is_rx*/, 0, pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending upscale rx stream" << std::endl;
+        return 1;
+    }
+    pipeline_string += " -vf \"format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le\"";
+    if(ffmpeg_append_stream_type(config.senders[0].stream_type, false /*is_rx*/, 0, pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending upscale tx stream" << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
 int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
     if (config.logging_level > 0) {
         // TODO: add more logging level
@@ -394,6 +429,12 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
     else if (config.function == "recorder") {
         if(ffmpeg_append_recorder(config, pipeline_string) != 0){
             std::cout << "Error appending recorder" << std::endl;
+            return 1;
+        }
+    }
+    else if (config.function == "upscale") {
+        if(ffmpeg_append_upscale(config, pipeline_string) != 0){
+            std::cout << "Error appending upscale" << std::endl;
             return 1;
         }
     }

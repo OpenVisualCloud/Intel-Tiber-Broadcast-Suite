@@ -198,6 +198,38 @@ void fill_conf_recorder(Config &config) {
     }
 }
 
+void fill_conf_upscale(Config &config) {
+    config.function = "upscale";
+    config.gpu_hw_acceleration = "none";
+    config.logging_level = 0;
+
+    {
+        Stream s;
+
+        s.payload = get_video_payload_common();
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos/";
+        s.stream_type.file.filename = "1920x1080p10le_1.yuv";
+        config.receivers.push_back(s);
+    }
+
+    {
+        Stream s;
+
+        s.payload.type = payload_type::video;
+        s.payload.video.frame_width = 3840;
+        s.payload.video.frame_height = 2160;
+        s.payload.video.pixel_format = "yuv422p10le";
+        s.payload.video.frame_rate = {30, 1};
+
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/videos/recv";
+        s.stream_type.file.filename = "3840x2160p10le_1.yuv";
+        config.senders.push_back(s);
+    }
+}
+
+
 TEST(FFmpegPipelineGeneratorTest, test_sender) {
     Config conf;
     fill_conf_sender(conf);
@@ -290,5 +322,18 @@ TEST(FFmpegPipelineGeneratorTest, test_recorder) {
             ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
     }
     std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"split=2[in0][in1];[in0]scale=640:360[out0];[in1]scale=1280:720[out1];\" -map \"[out0]\" /videos/recv/recv_1.yuv -map \"[out1]\" -c:v h263p /videos/recv/recv_2.mov";   
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_upscale) {
+    Config conf;
+    fill_conf_upscale(conf);
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -init_hw_device vaapi=va -init_hw_device opencl@va -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -vf \"format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le\" /videos/recv/3840x2160p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
