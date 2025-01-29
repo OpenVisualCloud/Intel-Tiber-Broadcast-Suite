@@ -45,4 +45,7 @@ jobs:
         run: |
           docker commit ${{ env.COVERITY_CONTARINER }} \
           ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}-coverity:${{ env.DOCKER_IMAGE_TAG }}
-          docker rm ${{ env.COVERITY_CONTARINER }}
+      - name: cleanup containers
+        if: always()
+        run: |
+          docker rm ${{ env.COVERITY_CONTARINER }} | exit 0
