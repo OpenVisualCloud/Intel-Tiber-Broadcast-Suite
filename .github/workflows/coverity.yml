@@ -32,3 +32,8 @@ jobs:
          target: build-stage
          tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
          platforms: "linux/amd64"
+      - name: install coverity in docker
+        run: |
+         docker run --rm -v $(pwd):/tmp/coverity\
+          ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}\
+          /bin/bash -c "cd /tmp/coverity && .github/coverity/install-coverity.sh"
