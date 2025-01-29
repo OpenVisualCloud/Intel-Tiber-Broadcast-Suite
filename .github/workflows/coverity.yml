@@ -18,18 +18,11 @@ jobs:
     steps:
       - name: 'setup: checkout repo'
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        
-      - name: "Validation: Build/Push Dokcerfile"
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
-        with:
-         file: Dockerfile
-         push: false
-         load: true
-         target: build-stage
-         cache-from: type=local,src=/tmp/.buildx-cache
-         cache-to: type=local,dest=/tmp/.buildx-cache
-         tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-         platforms: "linux/amd64"
+      - name: build docker image
+        run: |
+          docker build --target build-stage\
+          -t ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} . 
+
       - name: install coverity in docker
         run: |
          docker run --rm -v $(pwd):/tmp/coverity\
