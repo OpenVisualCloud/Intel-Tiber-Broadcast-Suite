@@ -307,6 +307,10 @@ int ffmpeg_append_multiviewer(Config &config, std::string &pipeline_string) {
         std::cout << "Error: multiviewer requires at least 2 receivers" << std::endl;
         return 1;
     }
+    if(config.multiviewer_columns < 1 || config.multiviewer_columns > 50){// Soft limit of 50 columns
+        std::cout << "Error: multiviewer requires number of columns to be greater than 0 and less than 50, got " << std::to_string(config.multiviewer_columns) << std::endl;
+        return 1;
+    }
 
     for (int i = 0; i < config.receivers.size(); i++) {
         if (ffmpeg_append_multiviewer_input(config.receivers[i], i, pipeline_string) != 0) {
@@ -315,7 +319,7 @@ int ffmpeg_append_multiviewer(Config &config, std::string &pipeline_string) {
             return 1;
         }
     }
-    if (ffmpeg_append_multiviewer_process(config.receivers, config.senders[0].payload.video, 3/*columns*/, config.gpu_hw_acceleration == "intel", pipeline_string) != 0) {
+    if (ffmpeg_append_multiviewer_process(config.receivers, config.senders[0].payload.video, config.multiviewer_columns, config.gpu_hw_acceleration == "intel", pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending multiviewer process" << std::endl;
         return 1;
@@ -404,7 +408,11 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
         pipeline_string += " -y";
     }
     else if (config.gpu_hw_acceleration == "intel") {
-        pipeline_string += " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv";
+        if(config.gpu_hw_acceleration_device.empty()){
+            std::cout << "Error: Intel GPU acceleration requires a device path" << std::endl;
+            return 1;
+        }
+        pipeline_string += " -y -qsv_device " + config.gpu_hw_acceleration_device + " -hwaccel qsv";
     }
     else if (config.gpu_hw_acceleration == "nvidia") {
         pipeline_string += " -y -hwaccel cuda -hwaccel_output_format cuda";

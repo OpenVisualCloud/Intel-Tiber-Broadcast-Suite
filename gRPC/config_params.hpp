@@ -90,7 +90,11 @@ struct Config {
     std::vector<Stream> receivers;
 
     std::string function; //multiviewer, upscale, replay, recorder, jpegxs, rx, tx
+    int multiviewer_columns; //number of streams in a row
+
     std::string gpu_hw_acceleration; //intel, nvidia, none
+    std::string gpu_hw_acceleration_device; // /dev/dri/renderD128
+
     int logging_level;
 };
 
