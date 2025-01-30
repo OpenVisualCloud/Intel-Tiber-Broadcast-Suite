@@ -7,7 +7,7 @@ on:
 
 
 jobs:
-  grpc:
+#  grpc:
     # name: 'scan gRPC code'
     # runs-on: 'ubuntu-22.04'
     # timeout-minutes: 90
