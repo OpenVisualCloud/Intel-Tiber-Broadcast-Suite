@@ -4,48 +4,52 @@ on:
   push:
   workflow_dispatch:
 
-env:
-  BUILD_TYPE: "Release"
-  DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite"
-  DOCKER_IMAGE_NAME: "tiber-broadcast-suite-build"
-  DOCKER_IMAGE_TAG: "${{ github.sha }}"
-  DEBIAN_FRONTEND: "noninteractive"
-  COVERITY_CONTARINER: "coverity-tmp-container"
+
 
 jobs:
-  build-stage-build:
-    name: 'build BCS build stage'
-    runs-on: ['self-hosted', 'Linux', 'cov']
+  grpc:
+    name: 'scan gRPC code'
+    runs-on: 'ubuntu-22.04'
+    timeout-minutes: 90
     steps:
       - name: 'setup: checkout repo'
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-      - name: "Validation: Build/Push Dokcerfile"
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      - name: 'Run coverity'
+        uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
         with:
-         file: Dockerfile
-         push: false
-         load: true
-         target: build-stage
-         cache-from: type=inline
-         cache-to: type=inline
-         tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-         platforms: "linux/amd64"
-      - name: install coverity in docker
-        run: |
-         docker run --name ${{ env.COVERITY_CONTARINER }} \
-         -v $(pwd):/tmp/coverity \
-         -e  COVERITY_PROJECT='Intel-Tiber-Broadcast-Suite' \
-         -e  COVERITY_TOKEN=${{ secrets.COVERITY_SCAN_TOKEN }} \
-         -e  COVERITY_EMAIL=${{ secrets.COVERITY_SCAN_EMAIL }} \
-         -e  LANGUAGE='other' \
-          ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }} \
-          /bin/bash -c "cd /tmp/coverity && .github/coverity/install_coverity.sh" 
-      - name: commit docker container to new image
-        run: |
-          docker commit ${{ env.COVERITY_CONTARINER }} \
-          ${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}-coverity:${{ env.DOCKER_IMAGE_TAG }}
-      - name: cleanup containers
-        if: always()
-        run: |
-          docker rm ${{ env.COVERITY_CONTARINER }} | exit 0
+          project: 'Intel-Tiber-Broadcast-Suite'
+          email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+          token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          build_language: 'cxx'
+          build_platform: 'linux64'
+          command: ${{ github.workspace }}/gRPC/compile.sh
+
+      - name: 'Upload Coverity reports'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: coverity-grpc-reports
+          path: '${{ github.workspace }}/cov-int'
+  launcher:
+    name: 'scan launcher code'
+    runs-on: 'ubuntu-22.04'
+    timeout-minutes: 90 
+    steps:
+      - name: 'setup: checkout repo'
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: 'Run coverity'
+        uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
+        with:
+          project: 'Intel-Tiber-Broadcast-Suite'
+          email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+          token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          build_language: 'other'
+          build_platform: 'linux64'
+          command: "cd ${{ github.workspace }}/launcher && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager cmd/main.go"
+
+      - name: 'Upload Coverity reports'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: coverity-launcher-reports
+          path: '${{ github.workspace }}/cov-int'
