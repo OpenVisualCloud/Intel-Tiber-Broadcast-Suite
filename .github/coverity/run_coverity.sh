@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 COV_VER="$(ls /opt/coverity/bin/)"
 COVERITY_BIN_DIR="/opt/coverity/bin/$COV_VER/bin"
@@ -12,7 +12,7 @@ rm -rf cov/*
 
 for SCRIPT in "${BUILD_SCRIPTS[@]}"; do 
   # Run cov-build in the background and store the PID
-  cov-build --dir "cov/${NAME/_build_cmd.sh/}" "$SCRIPT" &
+  cov-build --dir "cov/${NAME/_build_cmd.sh/}" "$SCRIPT" > ${SCRIPT/.sh/.log} &
   PIDS+=($!)
 done
 
