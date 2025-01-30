@@ -5,7 +5,7 @@
 COVERITY_URL=https://scan.coverity.com/download/${LANGUAGE}/linux64
 COVERITY_TOOL_FILE=coverity_tool.tgz
 
-if [ -e ${COVERITY_TOOL_FILE} ]; then
+if [ -e "${COVERITY_TOOL_FILE}" ]; then
  echo coverity already installed, skipping installation
  exit 0
 fi 
