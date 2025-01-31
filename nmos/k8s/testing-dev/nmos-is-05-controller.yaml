@@ -21,5 +21,8 @@ spec:
         ports:
         - containerPort: 90
         - containerPort: 95
+        securityContext:
+          readOnlyRootFilesystem: true
       restartPolicy: Never
   backoffLimit: 10
+
