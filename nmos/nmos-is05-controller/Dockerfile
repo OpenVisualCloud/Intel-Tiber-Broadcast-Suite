@@ -1,4 +1,6 @@
 FROM python:3.9-slim
+RUN groupadd -r nmosgroup && useradd -r -g nmosgroup nmosuser
+USER nmosuser
 WORKDIR /nmos
 COPY . /nmos
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
