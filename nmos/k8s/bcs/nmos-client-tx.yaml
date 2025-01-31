@@ -1,0 +1,157 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+#
+# SPDX-License-Identifier: BSD-3-Clause
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nmos-node-config-tx
+  namespace: default
+data:
+  node.json: |
+    {
+      "logging_level": 0,
+      "http_port": 90,
+      "label": "intel-broadcast-suite",
+      "senders": ["v"],
+      "senders_count": [1],
+      "receivers": ["v"],
+      "receivers_count": [0],
+      "device_tags": {
+        "pipeline": ["tx-sender"]
+      },
+      "function": "tx-sender",
+      "gpu_hw_acceleration": "none",
+      "domain": "default.svc.cluster.local",
+      "ffmpeg_grpc_server_address": "tiber-broadcast-suite-rx.default.svc.cluster.local",
+      "ffmpeg_grpc_server_port": "50051",
+      "sender_payload_type": 112,
+      "sender": [{
+        "stream_payload": {
+          "video": {
+            "frame_width": 1960,
+            "frame_height": 1080,
+            "frame_rate": { "numerator": 60, "denominator": 1 },
+            "pixel_format": "yuv422p10le",
+            "video_type": "rawvideo"
+          },
+          "audio": {
+            "channels": 2,
+            "sample_rate": 48000,
+            "format": "pcm_s24be",
+            "packet_time": "1ms"
+          }
+        },
+        "stream_type": {
+          "mcm": {
+            "conn_type": "st2110",
+            "transport": "st2110-20",
+            "urn": "NULL",
+            "transport_pixel_format": "yuv422p10le"
+          }
+        }
+      }],
+      "receiver": [{
+        "stream_payload": {
+          "video": {
+            "frame_width": 1920,
+            "frame_height": 1080,
+            "frame_rate": { "numerator": 60, "denominator": 1 },
+            "pixel_format": "yuv422p10le",
+            "video_type": "rawvideo"
+          },
+          "audio": {
+            "channels": 2,
+            "sample_rate": 48000,
+            "format": "pcm_s24be",
+            "packet_time": "1ms"
+          }
+        },
+        "stream_type": {
+          "file": {
+            "path": "/root",
+            "filename": "1920x1080p10le_1.yuv"
+          }
+        }
+      }]
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nmos-client-tx
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nmos-client-tx
+  template:
+    metadata:
+      labels:
+        app: nmos-client-tx
+    spec:
+      containers:
+      - name: nmos-client-tx
+        image: nmos-cpp-node:1.2A-f549712
+        ports:
+        - containerPort: 1084
+        env:
+        - name: RUN_NODE
+          value: "TRUE"
+        - name: VFIO_PORT_TX
+          value: "${VFIO_PORT_TX}"
+        - name: VFIO_PORT_RX
+          value: "${VFIO_PORT_RX}"
+        volumeMounts:
+        - name: nmos-node-config-tx
+          mountPath: /home/node.json
+          subPath: node.json
+        resources:
+          requests:
+            cpu: 1
+            memory: 500Mi
+          limits:
+            cpu: 1
+            memory: 500Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 50051
+            host: tiber-broadcast-suite-tx.default.svc.cluster.local
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: nmos-node-config-tx
+        configMap:
+          name: nmos-node-config-tx
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nmos-client-tx
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: nmos-client-tx
+  ports:
+  - protocol: TCP
+    port: 1084
+    targetPort: 1084
+    name: nmos-client-tx-node-port-http
+    nodePort: 30084
+  - protocol: TCP
+    port: 50051
+    targetPort: 50051
+    name: grpc-client-to-ffmpeg
+    nodePort: 30051
