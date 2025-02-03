@@ -15,7 +15,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MCM, conn_type, transport, transport_pixel_fo
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Payload, type, video, audio)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(StreamType, type, file, st2110, mcm)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Stream, payload, stream_type)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, senders, receivers, function, gpu_hw_acceleration, logging_level)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, senders, receivers, function, multiviewer_columns, gpu_hw_acceleration, gpu_hw_acceleration_device, logging_level)
 
 //TODO: move serialize_config_json and deserialize_config_json to a separate file
 
