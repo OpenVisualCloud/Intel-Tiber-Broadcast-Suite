@@ -13,7 +13,7 @@ WORKDIR_CMD_LIST = list(filter(lambda s: s["instruction"] == "WORKDIR", dp.struc
 RUN_CMD_LIST = list(filter(lambda s: s["instruction"] == "RUN", dp.structure))
 for workdir in WORKDIR_CMD_LIST:
     for cmd in RUN_CMD_LIST:
-        # find nearest next RUN command
+        # find first RUN command after WORKDIR
         if cmd["startline"] > workdir["endline"] and cmd["startline"] < (
             workdir["endline"] + CMD_OFFSET
         ):
