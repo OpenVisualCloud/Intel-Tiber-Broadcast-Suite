@@ -8,7 +8,7 @@ source ${ROOT_DIR}/.github/coverity/enviroment.sh
 
 function coverity_build(){
   local NAME=${1/.sh/}
-  cov-build --dir "cov/${NAME}" "$1" | tee  ${NAME}.log
+  ${COV_BUILD} --dir "cov/${NAME}" "$1" | tee  ${NAME}.log
 }
 
 
