@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -xe
 
 
 
@@ -9,7 +9,7 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 function coverity_build(){
   local NAME=${1}
   local SCRIPT=${2}
-  ${COV_BUILD} "--dir cov/${NAME}" "${SCRIPT}" | tee  ${NAME}.log
+  ${COV_BUILD} "--dir cov" "${SCRIPT}" | tee  ${NAME}.log
 }
 
 
@@ -37,7 +37,9 @@ function build_grpc(){
 function build_launcher(){
   echo "building launcher"
   cd ${ROOT_DIR}/launcher
-  coverity_build launcher "go build -a -o manager cmd/main.go"
+  echo "go build -a -o manager cmd/main.go" > build.sh
+  chmod +x build.sh
+  coverity_build launcher build.sh
 }
 
 if [ $# -ne 1 ]; then
