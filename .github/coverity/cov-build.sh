@@ -9,7 +9,8 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 function coverity_build(){
   local FOLDER=${1}
   local SCRIPT=${2}
-  ${COV_BUILD} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" | tee  ${NAME}.log
+  ${COV_BUILD} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
+  echo "cov build ${FOLDER} done"
 }
 
 
@@ -31,6 +32,7 @@ function build_nmos_cpp(){
 function build_grpc(){
   echo "building gRPC"
   cd ${ROOT_DIR}/gRPC
+  sed -i s'/make -C \"${COMPILE_DIR}/build\/make -B -C \"${COMPILE_DIR}/build\"' compile.sh 
   coverity_build gRPC compile.sh
 }
 
