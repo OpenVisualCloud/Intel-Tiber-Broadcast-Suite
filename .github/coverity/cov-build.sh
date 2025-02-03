@@ -3,7 +3,7 @@
 
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
-source ${ROOT_DIR}/.github/coverity/enviroment.sh
+. ${ROOT_DIR}/.github/coverity/enviroment.sh
 
 
 function coverity_build(){
@@ -24,19 +24,19 @@ function build_nmos(){
 function build_nmos_cpp(){
   echo "building nmos-cpp"
   cd ${ROOT_DIR}/nmos
-  cov-build prepare-nmos-cpp.sh
+  ${COV_BUILD} prepare-nmos-cpp.sh
 }
 
 function build_grpc(){
   echo "building gRPC"
   cd ${ROOT_DIR}/gRPC
-  cov-build compile.sh
+  ${COV_BUILD} compile.sh
 }
 
 function build_launcher(){
   echo "building launcher"
   cd ${ROOT_DIR}/launcher
-  cov-build "go build -a -o manager cmd/main.go"
+  ${COV_BUILD} "go build -a -o manager cmd/main.go"
 }
 
 if [ $# -ne 1 ]; then
