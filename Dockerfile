@@ -261,7 +261,6 @@ RUN \
   curl -Lf \
     https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz | \
   tar -zx --strip-components=1 -C "/tmp/vsr" && \
-  patch -d "/tmp/vsr" -p1 -i <(cat "/tmp/patches/vsr/"*.patch) && \
   echo "Fix for clang 18 bug that breaks compilation. Force compiler to GCC." && \
   sed -i 's/clan//g' build.sh && \
   . "/opt/intel/oneapi/ipp/latest/env/vars.sh" && \

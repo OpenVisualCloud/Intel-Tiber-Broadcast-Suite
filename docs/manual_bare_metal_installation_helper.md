@@ -334,20 +334,14 @@ First, add the CUDA APT repository to your system.
     . versions.env && curl -Lf https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz | tar -zx --strip-components=1 -C vsr
     ```
 
-1. Apply Patches to VSR:
+1. Build and Install VSR:
     ```bash
     # Navigate to the VSR Directory:
     cd vsr
 
-    # Apply the missing header fix patch:
-    git apply ../patches/vsr/0003-missing-header-fix.patch
-
     # Remove 'clan' from the build script:
     sed -i 's/clan//g' build.sh
-    ```
 
-1. Build and Install VSR:
-    ```bash
     # Source the IPP environment:
     . /opt/intel/oneapi/ipp/latest/env/vars.sh
 
