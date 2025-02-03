@@ -1958,7 +1958,7 @@ index f12cca1..77ecf08 100644
 +                }
 +                gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
 +            }
-+            int multiviewer_columns = 1;
++            int multiviewer_columns = 3;
 +            if (configIntel.function == "multiviewer") {
 +                multiviewer_columns = configIntel.multiviewer_columns;
 +            }
@@ -2058,7 +2058,7 @@ index f12cca1..77ecf08 100644
 +                }
 +                gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
 +            }
-+            int multiviewer_columns = 1;
++            int multiviewer_columns = 3;
 +            if (configIntel.function == "multiviewer") {
 +                multiviewer_columns = configIntel.multiviewer_columns;
 +            }
