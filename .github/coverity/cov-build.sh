@@ -32,7 +32,7 @@ function build_nmos_cpp(){
 function build_grpc(){
   echo "building gRPC"
   cd ${ROOT_DIR}/gRPC
-  sed -i s'/make -C \"${COMPILE_DIR}/build\/make -B -C \"${COMPILE_DIR}/build\"' compile.sh 
+  sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' compile.sh
   coverity_build gRPC compile.sh
 }
 
@@ -42,6 +42,16 @@ function build_launcher(){
   echo "go build -a -o manager cmd/main.go" > build.sh
   chmod +x build.sh
   coverity_build launcher build.sh
+}
+
+function build_all(){
+  build_nmos &
+  build_nmos_cpp &
+  build_grpc &
+  build_launcher &
+  echo "waiting for all builds to complete"
+  wait
+  echo "All builds have completed"
 }
 
 if [ $# -ne 1 ]; then
@@ -61,6 +71,9 @@ case $1 in
     ;;
   launcher)
     build_launcher
+    ;;
+  all)
+    build_all
     ;;
   *)
     usage
