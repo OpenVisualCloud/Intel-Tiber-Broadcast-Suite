@@ -9,7 +9,7 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 function coverity_build(){
   local FOLDER=${1}
   local SCRIPT=${2}
-  ${COV_BUILD} "--dir cov" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" | tee  ${NAME}.log
+  ${COV_BUILD} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" | tee  ${NAME}.log
 }
 
 
