@@ -7,9 +7,9 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 
 function coverity_build(){
-  local NAME=${1}
+  local FOLDER=${1}
   local SCRIPT=${2}
-  ${COV_BUILD} "--dir cov" "${SCRIPT}" | tee  ${NAME}.log
+  ${COV_BUILD} "--dir cov" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" | tee  ${NAME}.log
 }
 
 
@@ -25,13 +25,13 @@ function build_nmos(){
 function build_nmos_cpp(){
   echo "building nmos-cpp"
   cd ${ROOT_DIR}/nmos
-  coverity_build nmos-cpp prepare-nmos-cpp.sh
+  coverity_build nmos prepare-nmos-cpp.sh
 }
 
 function build_grpc(){
   echo "building gRPC"
   cd ${ROOT_DIR}/gRPC
-  coverity_build grpc compile.sh
+  coverity_build gRPC compile.sh
 }
 
 function build_launcher(){
