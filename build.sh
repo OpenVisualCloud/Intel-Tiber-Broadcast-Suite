@@ -537,15 +537,8 @@ function vsr_download_build {
     fi
 
     if ! (cd "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr" &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr" apply "${SCRIPT_DIR}/patches"/vsr/0003-missing-header-fix.patch &&
-          sed -i 's/clan//g' "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/build.sh" &&
-          cd -) >>$log_file 2>&1; then
-        echo
-        echo -e ${RED}[ERROR] VSR patching failed ${NC}
-    fi
-
-    if ! (cd "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr" &&
           . /opt/intel/oneapi/ipp/latest/env/vars.sh &&
+          sed -i 's/clan//g' "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/build.sh" &&
           "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/build.sh" \
           -DCMAKE_INSTALL_PREFIX="${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/install" \
           -DENABLE_RAISR_OPENCL=ON) >>$log_file 2>&1; then
