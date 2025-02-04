@@ -10,7 +10,13 @@ function coverity_cpp_build(){
   local PATH=${1}
   local SCRIPT=${2}
   ${COVERITY_CPP_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
-  ${COVERITY_CPP_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
+  echo "cov build ${FOLDER} done"
+}
+
+function coverity_other_build(){
+  local PATH=${1}
+  local SCRIPT=${2}
+  ${COVERITY_OTHER_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
   echo "cov build ${FOLDER} done"
 }
 
@@ -27,14 +33,14 @@ function build_nmos(){
 function build_nmos_cpp(){
   echo "building nmos-cpp"
   cd ${ROOT_DIR}/nmos
-  coverity_build nmos prepare-nmos-cpp.sh
+  coverity_cpp_build nmos prepare-nmos-cpp.sh
 }
 
 function build_grpc(){
   echo "building gRPC"
   cd ${ROOT_DIR}/gRPC
   sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' compile.sh
-  coverity_build gRPC compile.sh
+  coverity_cpp_build gRPC compile.sh
 }
 
 function build_launcher(){
@@ -42,7 +48,7 @@ function build_launcher(){
   cd ${ROOT_DIR}/launcher
   echo "go build -a -o manager cmd/main.go" > build.sh
   chmod +x build.sh
-  coverity_build launcher build.sh
+  coverity_other_build launcher build.sh
 }
 
 function build_all(){
@@ -50,7 +56,7 @@ function build_all(){
   build_nmos_cpp &
   build_grpc &
   build_launcher &
-  echo "waiting for all builds to complete"
+  echo "waiting for all builds to complete..."
   wait
   echo "All builds have completed"
 }

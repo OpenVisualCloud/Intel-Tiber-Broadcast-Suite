@@ -2,9 +2,9 @@
 REPO=Intel-Tiber-Broadcast-Suite
 
 COV_CPP_VER="$(ls /opt/coverity/cxx)"
-COVERITY_CPP_BIN_DIR="/opt/coverity/cxx/$COV_VER/bin"
-COVERITY_OTHER_BIN_DIR="/opt/coverity/other/$COV_VER/bin"
-export COV_BUILD="${COVERITY_BIN_DIR}/cov-build"
+COV_OTHER_VER="$(ls /opt/coverity/other)"
+COVERITY_CPP_BIN_DIR="/opt/coverity/cxx/$COV_CPP_VER/bin"
+COVERITY_OTHER_BIN_DIR="/opt/coverity/other/$COV_OTHER_VER/bin"
 COV_CPP_JAVA_HOM="${COVERITY_CPP_BIN_DIR}/jre/bin/java"
 COV_OTHER_JAVA_HOM="${COVERITY_OTHER_BIN_DIR}/jre/bin/java"
 
