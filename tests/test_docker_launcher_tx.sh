@@ -17,4 +17,4 @@ docker run -it \
    --ip=192.168.2.4 \
    --expose=20000-20170 \
    --ipc=host -v /dev/shm:/dev/shm \
-      video_production_image 192.168.2.4 50051
+      tiber-broadcast-suite 192.168.2.4 50051
