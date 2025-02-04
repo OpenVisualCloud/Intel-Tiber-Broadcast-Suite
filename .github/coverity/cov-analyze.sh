@@ -5,15 +5,12 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 cd ${ROOT_DIR}
 
-COV_BUILD_OUT=($(find . -name cov))
-MERGE_DIR="cov-all"
-mkdir -p ${MERGE_DIR}
+MERGE_CPP_DIR="cov-cpp-all"
+mkdir -p ${MERGE_CPP_DIR}
+${COVERITY_CPP_BIN_DIR}/cov-manage-emit --dir ${ROOT_DIR}/${MERGE_CPP_DIR} add ${ROOT_DIR}/gRPC/cov
+${COVERITY_CPP_BIN_DIR}/cov-manage-emit --dir ${ROOT_DIR}/${MERGE_CPP_DIR} add ${ROOT_DIR}/nmos/cov
 
-
-for OUT in "${COV_BUILD_OUT[@]}"; do
-   log_info "Merging ${OUT} to ${MERGE_DIR}"
-   ${COVERITY_OTHER_BIN_DIR}/cov-manage-emit --dir ${ROOT_DIR}/${MERGE_DIR} add ${ROOT_DIR}/${OUT}
-
-done
-
+MERGE_OTHER_DIR="cov-other-all"
+mkdir -p ${MERGE_OTHER_DIR}
+${COVERITY_OTHER_BIN_DIR}/cov-manage-emit --dir ${ROOT_DIR}/${MERGE_OTHER_DIR} add ${ROOT_DIR}/launcher/cov
 
