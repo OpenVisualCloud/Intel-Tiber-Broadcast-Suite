@@ -7,18 +7,24 @@
 #
 # build stage
 
-FROM ubuntu:jammy AS build-stage
+FROM ubuntu:22.04 AS build-stage
 
 USER root
 
-ARG nproc
-
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 
+ARG nproc
+
+# Commit f5497129 corresponds to Conan package nmos-cpp/cci.20240223
 ENV \
   TZ="Europe/Warsaw" \
   DEBIAN_FRONTEND="noninteractive" \
-  APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
+  APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn \
+  nproc=${nproc:-$(nproc)} \
+  NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
+
+COPY patches/ /home/patches
+COPY gRPC/ /home/gRPC
 
 RUN \
     apt-get update --fix-missing && \
@@ -52,20 +58,16 @@ RUN \
     git clone --branch "v1.58.0" --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc-source && \
     mkdir -p "/tmp/grpc-source/cmake/build" && \
     cmake -S "/tmp/grpc-source" -B "/tmp/grpc-source/cmake/build" -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON && \
-    make -C "/tmp/grpc-source/cmake/build" -j${nproc} && \
+    make -C "/tmp/grpc-source/cmake/build" -j$(nproc) && \
     make -C "/tmp/grpc-source/cmake/build" install && \
     rm -rf /tmp/grpc-source
 
 ## Get source for Sony nmos-cpp
-## Commit f5497129 corresponds to Conan package nmos-cpp/cci.20240223
-ENV NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
 WORKDIR /home
 RUN \
     curl --output - -s -k https://codeload.github.com/sony/nmos-cpp/tar.gz/$NMOS_CPP_VERSION | tar zxvf - -C . && \
     mv ./nmos-cpp-${NMOS_CPP_VERSION} ./nmos-cpp
 
-COPY \
-    "patches/" "/home/patches"
 
 RUN \
     patch -d /home/nmos-cpp -p1 -i /home/patches/nmos-cpp.patch
@@ -90,12 +92,10 @@ RUN \
     conan profile detect && \
     conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy --build=missing
 
-COPY gRPC/ /home/gRPC
-
 WORKDIR /home/gRPC
 RUN \
     cmake -B build && \
-    make -j${nproc} -C build
+    make -j$(nproc) -C build
 
 RUN \
     mkdir /home/nmos-cpp/Development/build && \
@@ -119,7 +119,7 @@ RUN \
     -DCXXFLAGS:STRING="-Os" \
     -DNMOS_CPP_USE_AVAHI:BOOL="0" \
     /home/nmos-cpp/Development/build .. && \
-    make -j${nproc} && \
+    make -j$(nproc) && \
     cp ./nmos-cpp-node /home
 
 ## Move executables, libraries and clean up container as much as possible
@@ -128,7 +128,7 @@ RUN \
     rm -rf .git nmos-cpp
 
 ## Re-build container for optimised runtime environment using clean Ubuntu Bionic release
-FROM ubuntu:jammy
+FROM ubuntu:22.04 AS final-stage
 
 ENV \
   DEBIAN_FRONTEND="noninteractive"
