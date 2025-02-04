@@ -6,10 +6,11 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 . ${ROOT_DIR}/.github/coverity/enviroment.sh
 
 
-function coverity_build(){
-  local FOLDER=${1}
+function coverity_cpp_build(){
+  local PATH=${1}
   local SCRIPT=${2}
-  ${COV_BUILD} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
+  ${COVERITY_CPP_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
+  ${COVERITY_CPP_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
   echo "cov build ${FOLDER} done"
 }
 
