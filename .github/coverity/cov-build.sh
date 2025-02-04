@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -e
 
 
 
@@ -7,19 +7,19 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 
 function coverity_cpp_build(){
-  local PATH=${1}
+  local FOLDER=${1}
   local SCRIPT=${2}
-  ${COVERITY_CPP_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
-  echo "cov build ${FOLDER} done"
+  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  log_info "cov-build ${FOLDER} done"
 }
 
 function coverity_other_build(){
-  local PATH=${1}
+  local FOLDER=${1}
   local SCRIPT=${2}
-  ${COVERITY_OTHER_BIN_DIR} "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${NAME}.log
-  echo "cov build ${FOLDER} done"
+  rm -rf cov/*
+  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  log_info "cov-build ${FOLDER} done"
 }
-
 
 function usage(){
   echo " Usage : $0 <BUILD_TYPE>"
@@ -27,24 +27,36 @@ function usage(){
 }
 
 function build_nmos(){
-  echo "building nmos"
+  log_info "building nmos"
 }
 
-function build_nmos_cpp(){
-  echo "building nmos-cpp"
+function build_nmos(){
+  log_info "building nmos-cpp"
   cd ${ROOT_DIR}/nmos
-  coverity_cpp_build nmos prepare-nmos-cpp.sh
+  # ./prepare-nmos-cpp.sh
+  # echo " cd docker \
+  #  ./run.sh\ 
+  #  --source-dir <source_dir> \
+  #  --build-dir <build_dir> \
+  #  --patch-dir <patch_dir> \
+  #  --run-dir <RUN_DIR> \
+  #  --update-submodules \
+  #  --apply-patches \
+  #  --build-images \
+  #  --prepare-only
+
+  # coverity_cpp_build nmos prepare-nmos-cpp.sh
 }
 
 function build_grpc(){
-  echo "building gRPC"
+  log_info "building gRPC"
   cd ${ROOT_DIR}/gRPC
   sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' compile.sh
   coverity_cpp_build gRPC compile.sh
 }
 
 function build_launcher(){
-  echo "building launcher"
+  log_info "building launcher"
   cd ${ROOT_DIR}/launcher
   echo "go build -a -o manager cmd/main.go" > build.sh
   chmod +x build.sh
@@ -52,13 +64,12 @@ function build_launcher(){
 }
 
 function build_all(){
-  build_nmos &
-  build_nmos_cpp &
+  log_info "starting cov-build"
   build_grpc &
   build_launcher &
-  echo "waiting for all builds to complete..."
   wait
-  echo "All builds have completed"
+  build_nmos 
+  log_info "All builds have completed"
 }
 
 if [ $# -ne 1 ]; then
