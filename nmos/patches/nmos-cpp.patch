@@ -2034,8 +2034,8 @@ index f12cca1..00722e7 100644
 +            std::thread ffmpegThread1;
 +            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "this is "<< id_type << "---> sends json for sender";
 +            auto data = connection_resource.data;
-+            auto sender_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
-+            auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
++            auto sender_source_ip = "192.168.2.4";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
++            auto receiver_destination_ip = "192.168.2.5";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
 +            auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
 +
 +            // this data are necessary to send via grpc to ffmpeg
@@ -2054,7 +2054,7 @@ index f12cca1..00722e7 100644
 +                s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
 +                s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
 +                s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-+                s.stream_type.mcm.ip=sender_source_ip.as_string();
++                s.stream_type.mcm.ip=sender_source_ip; //.as_string();
 +                s.stream_type.mcm.port=receiver_destination_port.as_integer();
 +                s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
 +            }
@@ -2062,8 +2062,8 @@ index f12cca1..00722e7 100644
 +            {
 +                s.stream_type.type = stream_type::st2110;
 +                s.stream_type.st2110.network_interface = vfio_port_value_tx;
-+                s.stream_type.st2110.local_ip = sender_source_ip.as_string();
-+                s.stream_type.st2110.remote_ip = receiver_destination_ip.as_string();
++                s.stream_type.st2110.local_ip = sender_source_ip;//.as_string();
++                s.stream_type.st2110.remote_ip = receiver_destination_ip;//.as_string();
 +                s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
 +                s.stream_type.st2110.remote_port = receiver_destination_port.as_integer();
 +                s.stream_type.st2110.payload_type = impl::fields::sender_payload_type(model.settings);
@@ -2115,9 +2115,9 @@ index f12cca1..00722e7 100644
 +                return;
 +            }
 +            auto data = connection_resource.data;
-+            auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
++            auto receiver_source_ip = "192.168.2.5";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
 +            auto sender_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
-+            auto sender_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
++            auto sender_destination_ip = "192.168.2.4";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
 +            auto trasportfile_sdp = data[nmos::fields::endpoint_active][nmos::fields::transport_file][nmos::fields::data];
 +            std::cout<<utility::us2s(trasportfile_sdp.as_string());
 +            auto session_description = sdp::parse_session_description(utility::us2s(trasportfile_sdp.as_string()));
@@ -2166,7 +2166,7 @@ index f12cca1..00722e7 100644
 +                s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
 +                s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
 +                s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-+                s.stream_type.mcm.ip=receiver_source_ip.as_string();
++                s.stream_type.mcm.ip=receiver_source_ip;//.as_string();
 +                s.stream_type.mcm.port=sender_destination_port.as_integer();
 +                s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
 +            }
@@ -2174,8 +2174,8 @@ index f12cca1..00722e7 100644
 +            {
 +                s.stream_type.type = stream_type::st2110;
 +                s.stream_type.st2110.network_interface = vfio_port_value_rx;
-+                s.stream_type.st2110.local_ip = receiver_source_ip.as_string();
-+                s.stream_type.st2110.remote_ip = destination_addr;
++                s.stream_type.st2110.local_ip = receiver_source_ip;//.as_string();
++                s.stream_type.st2110.remote_ip = sender_destination_ip;//destination_addr;
 +                s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
 +                s.stream_type.st2110.remote_port = sender_destination_port.as_integer();
 +                s.stream_type.st2110.payload_type = payload_type_sdp;
