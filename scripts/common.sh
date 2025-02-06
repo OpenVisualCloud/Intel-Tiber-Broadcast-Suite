@@ -355,7 +355,7 @@ function git_download_strip_unpack()
 {
     # Version can be commit sha or tag, examples:
     # version=d2515b90cc0ef651f6d0a6661d5a644490bfc3f3
-    # version=refs/tags/v${JPEG_XS_VER}
+    # version=refs/tags/v${BPF_VER}
     name="${1}"
     version="${2}"
     dest_dir="${3}"

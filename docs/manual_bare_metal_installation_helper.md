@@ -278,7 +278,7 @@ First, add the CUDA APT repository to your system.
 
 1. Download and Extract JPEG-XS:
     ```bash
-    . versions.env && curl -Lf https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz | tar -zx --strip-components=1 -C jpegxs
+    . versions.env && curl -Lf https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/${JPEG_XS_COMMIT_ID}.tar.gz | tar -zx --strip-components=1 -C jpegxs
     ```
 
 1. Build and Install JPEG-XS:
@@ -476,7 +476,8 @@ First, add the CUDA APT repository to your system.
     git apply ../Media-Transport-Library/ecosystem/ffmpeg_plugin/7.0/*.patch
 
     # Apply JPEG-XS patches:
-    git apply --whitespace=fix ../patches/jpegxs/*.patch
+    cp ../jpegxs/ffmpeg-plugin/libsvtjpegxs* libavcodec/
+    git apply --whitespace=fix ../jpegxs/ffmpeg-plugin/7.0/*.patch
 
     # Apply additional FFmpeg patches:
     git apply ../patches/ffmpeg/001-hwupload_async.diff
