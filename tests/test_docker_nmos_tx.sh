@@ -1,3 +1,5 @@
+#!/bin/bash
+
 docker run -it \
    --user root\
    --privileged \

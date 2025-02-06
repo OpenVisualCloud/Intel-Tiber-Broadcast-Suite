@@ -29,26 +29,13 @@ COPY gRPC/ /home/gRPC
 RUN \
     apt-get update --fix-missing && \
     apt-get install -y --no-install-recommends \
-    g++ \
     build-essential \
-    autoconf \
-    libtool \
-    pkg-config \
-    clang \
-    libc++-dev \
-    openssl \
-    libssl-dev \
+    g++ \
     git \
-    wget \
-    gnupg \
     curl \
-    ca-certificates \
-    nano \
     python3 \
     python3-pip \
-    python3-setuptools \
-    rdma-core \
-    unzip && \
+    python3-setuptools && \
     pip install --upgrade \
     cmake \
     conan~=2.4
@@ -67,7 +54,6 @@ WORKDIR /home
 RUN \
     curl --output - -s -k https://codeload.github.com/sony/nmos-cpp/tar.gz/$NMOS_CPP_VERSION | tar zxvf - -C . && \
     mv ./nmos-cpp-${NMOS_CPP_VERSION} ./nmos-cpp
-
 
 RUN \
     patch -d /home/nmos-cpp -p1 -i /home/patches/nmos-cpp.patch
@@ -139,13 +125,9 @@ COPY --from=build-stage /home /home
 ##Update container with latest patches and needed packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    openssl \
     make \
-    nano \
     curl \
-    jq \
-    gnupg \
-    rdma-core
+    gnupg
 
 WORKDIR /home/mDNSResponder/mDNSPosix
 RUN \
@@ -172,7 +154,7 @@ COPY entrypoint.sh /home/
 RUN chmod +x /home/entrypoint.sh
 
 ##Expose correct default ports to allow quick publishing
-EXPOSE 8010 8011 11000 11001 1883 5353/udp
+#EXPOSE 8010 8011 11000 11001 1883 5353/udp
 
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "nmos-cpp-node" || exit 1
 
