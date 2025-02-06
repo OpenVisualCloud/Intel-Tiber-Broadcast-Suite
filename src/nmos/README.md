@@ -13,121 +13,131 @@
 The key change is in configuration of senders and receivers for BCS pipeline.
 
 BCS Pipeline is a NMOS client that is treated as one node that has 1 device and has x senders and y receivers that are provided from the level of JSON config `node.json`.
-Here is sample config `node.json`:
+Here is sample config `node.json` (treated as transmitter node with 1 device and 1 sender):
 
 ```json
 {
-    "logging_level": 0,
-    "http_port": 90,
-    "activate_senders": true,
-    "label": "intel-broadcast-suite",
-    "senders": ["v"],
-    "senders_count": [1],
-    "receivers": ["v"],
-    "receivers_count": [0],
-    "device_tags": {
-        "pipeline": ["tx-sender"]
+  "logging_level": 10,
+  "http_port": 90,
+  "label": "intel-broadcast-suite",
+  "senders": ["v"],
+  "senders_count": [1],
+  "receivers": ["v"],
+  "receivers_count": [0],
+  "device_tags": {
+    "pipeline": ["tx"]
+  },
+  "color_sampling": "YCbCr-4:2:2",
+  "function": "tx",
+  "gpu_hw_acceleration": "none",
+  "domain": "local",
+  "ffmpeg_grpc_server_address": "localhost",
+  "ffmpeg_grpc_server_port": "50051",
+  "sender_payload_type":112,
+  "frame_rate": { "numerator": 60000, "denominator": 1001 },
+  "sender": [{
+    "stream_payload": {
+      "video": {
+        "frame_width": 1920,
+        "frame_height": 1080,
+        "frame_rate": { "numerator": 60, "denominator": 1 },
+        "pixel_format": "yuv422p10le",
+        "video_type": "rawvideo"
+      },
+      "audio": {
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "pcm_s24be",
+        "packetTime": "1ms"
+      }
     },
-    "frame_rate": { "numerator": 60, "denominator": 1 },
-    "frame_width": 1920,
-    "frame_height": 1080,
-    "video_type": "video/jxsv",
-    "domain": "local",
-    "function" : "tx",
-    "gpu_hw_acceleration": "none",
-    "sender_ffmpeg_video_type": "rawvideo",
-    "sender_payload_type": 96,
-    "sender_pixel_format": "yuv422p10le",
-    "sender_transportFormat": "mcm",
-    "sender_conn_type": "st2110",
-    "sender_transport": "st2110-20",
-    "sender_input_path": "/root",
-    "sender_input_path_name": "1920x1080p10le_1.yuv",
-    "receiver_transportFormat": "mcm",
-    "receiver_conn_type": "st2110",
-    "receiver_transport": "st2110-20",
-    "ffmpeg_grpc_server_address": "localhost",
-    "ffmpeg_grpc_server_port": "50051"
+    "stream_type": {
+      "st2110": {
+        "transport": "st2110-20",
+        "payloadType" : 112
+      }
+    }
+  }],
+  "receiver": [{
+    "stream_payload": {
+      "video": {
+        "frame_width": 1920,
+        "frame_height": 1080,
+        "frame_rate": { "numerator": 60, "denominator": 1 },
+        "pixel_format": "yuv422p10le",
+        "video_type": "rawvideo"
+      },
+      "audio": {
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "pcm_s24be",
+        "packetTime": "1ms"
+      }
+    },
+    "stream_type": {
+      "file": {
+        "path": "/root",
+        "filename": "1920x1080p10le_1.yuv"
+      }
+    }
+  }]
 }
 ```
 
-The crucial params are:  
+Curretly only video mode is supported. The audio support is under development and will be relesed too.
+- `logging_level`: The level of logging detail.
+- `http_port`: The port number for HTTP communication (90 in this case).
+- `label`: A label or identifier for the configuration ("intel-broadcast-suite").
+- `senders`: A list of sender identifiers (["v"]).
+- `senders_count`: A list indicating the count of each sender ([1]).
+- `receivers`: A list of receiver identifiers (["v"]).
+- `receivers_count`: A list indicating the count of each receiver ([0]).
+- `color_sampling`: The color sampling format ("YCbCr-4:2:2").
+- `function`: The function of the device, here indicating the pipeline type ("tx" for transmit).
+- `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none").
+- `domain`: The domain of the device ("local").
+- `ffmpeg_grpc_server_address`: The address of the FFmpeg gRPC server ("localhost").
+- `ffmpeg_grpc_server_port`: The port of the FFmpeg gRPC server (50051).
+- `sender_payload_type`: The payload type for the sender (112).
+- `frame_rate`: The frame rate for the video, given as a fraction ({"numerator": 60000, "denominator": 1001}).
+- `sender`: An array of sender configurations:
+  - `stream_payload`: Contains details about the video and audio streams:
+    - `video`: Details about the video stream
+      - `frame_width`: Width of the video frame (1920).
+      - `frame_height`: Height of the video frame (1080).
+      - `frame_rate`: Frame rate of the video ({"numerator": 60, "denominator": 1}).
+      - `pixel_format`: Pixel format of the video ("yuv422p10le").
+      - `video_type`: Type of video ("rawvideo").
+    - `audio`: Details about the audio stream:
+      - `channels`: Number of audio channels (2).
+      - `sampleRate`: Sample rate of the audio (48000).
+      - `format`: Audio format ("pcm_s24be").
+      - `packetTime`: Packet time for the audio ("1ms").
+    - `stream_type`: Type of stream:
+      - `st2110`: Details for ST 2110 transport:
+        - `transport`: Transport type ("st2110-20").
+        - `payloadType`: Payload type (112).
+- `receiver`: An array of receiver configurations:
+  - `stream_payload`: Contains details about the video stream that acts as ffmpeg receiver. Just to indicate the ffmpeg pipeline the source of the video.
+  - `stream_type`: Type of stream:
+    - `file`: Details for file-based stream:
+      - `path`: Path to the file ("/root").
+      - `filename`: Filename ("1920x1080p10le_1.yuv").
 
-```json
-"senders": ["v","d"],
-"senders_count": [2, 1],
-"receivers": ["v"],
-"receivers_count": [4],
-```
-
-> `senders` and `receivers` are arrays that specifies the kind of ports. The possible options are video "v", audio "a", data "d", and mux "m"
-
-> `senders_count` and `receivers_count` are corresponding arrays to senders and receivers arrays that provide count by kind of port. For example, for `senders`: `["v", "a", "d"]`, the `senders_count`: `[3, 1, 1]` should be defined. It means that there are 3 senders of type video, 1 sender of type audio and 1 sender of type data.
-
-From point of view POC, only `http_port` has the relevant role. It must be provided in further configurations for example for building process of nmos client node image.
-
-NMOS in BCS is provided in the form of NMOS client node single container that is about to 'stick' to the appropriate BCS pipeline container (within 1 pod).
-For testing purposes there is also NMOS registry pod and NMOS testing tool for validation of features.
+For testing purposes there are also NMOS sample cotroller, NMOS registry pod and NMOS testing tool for validation of features.
 
 ## Installation
 
 ### Docker option
 
-- using docker compose and customized network (bridge)
-  
-```bash
-cd <repo>/nmos/docker
-./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images --run-docker-compose 
-```
-
-- ...or using docker command and running using host network
+Go to root directory and run:
 
 ```bash
-cd <repo>/nmos/docker
-./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images
+./build.sh
+./first_run.sh
 ```
 
-#### Usage and description of options
-
-```text
-Pattern: ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> [--prepare-only] [--apply-patches] [--build-images] [--run-docker-compose] [--update-submodules]
-  --source-dir <source_dir>  : Absolute path to directory with source code of repository nmos-cpp 3rd party submodule
-  --build-dir <build_dir>    : Absolute path to directory with dockerfile and other build files in build-nmos-cpp 3rd party submodule
-  --patch-dir <patch_dir>    : Absolute path to directory with patches for both 3rd party submodules
-  --run-dir <run_dir>        : Absolute path to directory with run.sh and docker-compose.yaml
-  --prepare-only             : Run steps in script that prepares images for nmos but option with runninng docker containers is not applicable
-  --build-images             : Build docker images for nmos-client and nmos-registry
-  --update-submodules        : Update git submodules
-  --apply-patches            : Apply patches for 3rd party submodules
-  --run-docker-compose       : Run Docker Compose (nmos-client + nmos-registry + nmos-testing)
-                               in customized network of bridge type.
-                               Else, by default the <docker run> command will run:
-                               (nmos-client + nmos-registry without nmos-testing tool container)
-                               in host network
-```
-
-### Kubernetes option
-
-Run script that prepares images dor NMOS client node and NMOS registry:
-
-```bash
-cd <repo>/nmos/docker
-./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images --prepare-only
-```
-
-```bash
-cd <repo>/nmos/k8s
-# Install minikube https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
-minikube start
-# Build iamges. Refer to 4. Build images
-# Adjust ConfigMaps in <repo>/nmos/k8s/nmos-client.yaml, <repo>/nmos/k8s/nmos-registry.yaml and <repo>/nmos/k8s/nmos-testing.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-client.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-registry.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-testing.yaml
-# Useful for accessing testing tool browser: https://minikube.sigs.k8s.io/docs/handbook/accessing/
-```
-
-### From terminal
+### For development purposes
 
 #### 1. Git
 
@@ -138,10 +148,7 @@ git submodule update --init --recursive
 #### 2. Patch
 
 ```bash
-cd <repo>/nmos
-cd build-nmos-cpp
-git apply ../patches/build-nmos-cpp.patch
-cd ../nmos-cpp
+cd <repo>/nmos/nmos-cpp
 git apply ../patches/nmos-cpp.patch
 ```
 
@@ -154,45 +161,6 @@ conan profile detect
 conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy --build=missing
 cd <repo>/nmos/
 ./prepare-nmos-cpp.sh
-```
-
-#### 4. Build images
-
-```bash
-cd <repo>/
-cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/node_implementation.h <repo>/nmos/build-nmos-cpp/
-cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/node_implementation.cpp <repo>/nmos/build-nmos-cpp/
-cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/main.cpp <repo>/nmos/build-nmos-cpp/
-
-
-cd <repo>/nmos/build-nmos-cpp/
-make build # build NMOS registry and controller
-make buildnode # build NMOS client node
-
-# NMOS testing: https://github.com/AMWA-TV/nmos-testing/blob/master/docs/1.2.%20Installation%20-%20Docker.md
-
-```
-
-#### 5. Docker-compose for running NMOS registry and controller, client and testing tool [OPTION #1]
-
-```bash
-cd <repo>/nmos/docker
-# Adjust configs: <repo>/nmos/docker/node.json and registry <repo>/nmos/docker/registry.json and <repo>/nmos/docker/docker-compose.yaml
-docker compose up
-```
-
-#### 6. Kubernetes for running NMOS registry and controller, client and testing tool [OPTION #2]
-
-```bash
-cd <repo>/nmos/k8s
-# Install minikube https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
-minikube start
-# Build iamges. Refer to 4. Build images
-# Adjust ConfigMaps in <repo>/nmos/k8s/nmos-client.yaml, <repo>/nmos/k8s/nmos-registry.yaml and <repo>/nmos/k8s/nmos-testing.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-client.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-registry.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-testing.yaml
-# Useful for accessing testing tool browser: https://minikube.sigs.k8s.io/docs/handbook/accessing/
 ```
 
 ### License
