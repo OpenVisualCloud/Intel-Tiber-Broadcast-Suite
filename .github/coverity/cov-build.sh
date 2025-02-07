@@ -9,7 +9,7 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 function coverity_cpp_build(){
   local FOLDER=${1}
   local SCRIPT=${2}
-  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir""${ROOT_DIR}/cov-int/"  "--append-log" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
   log_info "cov-build ${FOLDER} done"
 }
 
@@ -17,7 +17,7 @@ function coverity_other_build(){
   local FOLDER=${1}
   local SCRIPT=${2}
   rm -rf cov/*
-  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "cov/" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
   log_info "cov-build ${FOLDER} done"
 }
 
@@ -65,9 +65,8 @@ function build_launcher(){
 
 function build_all(){
   log_info "starting cov-build"
-  build_grpc &
-  build_launcher &
-  wait
+  build_grpc 
+  build_launcher 
   build_nmos 
   log_info "All builds have completed"
 }
