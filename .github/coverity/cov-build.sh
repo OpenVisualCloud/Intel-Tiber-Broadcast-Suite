@@ -9,7 +9,7 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 function coverity_cpp_build(){
   local FOLDER=${1}
   local SCRIPT=${2}
-  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir""${ROOT_DIR}/cov-int/"  "--append-log" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/"  "--append-log" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
   log_info "cov-build ${FOLDER} done"
 }
 
