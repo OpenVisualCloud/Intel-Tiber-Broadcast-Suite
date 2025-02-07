@@ -1,21 +1,26 @@
 diff --git a/Development/cmake/NmosCppNode.cmake b/Development/cmake/NmosCppNode.cmake
-index df1ab1c..4bf706f 100644
+index df1ab1c..ab18c67 100644
 --- a/Development/cmake/NmosCppNode.cmake
 +++ b/Development/cmake/NmosCppNode.cmake
-@@ -7,13 +7,27 @@ set(NMOS_CPP_NODE_SOURCES
+@@ -1,19 +1,31 @@
+ # nmos-cpp-node executable
+-
+ set(NMOS_CPP_NODE_SOURCES
+     nmos-cpp-node/main.cpp
+     nmos-cpp-node/node_implementation.cpp
++    nmos-cpp-node/intel_config_parser.cpp
+     )
  set(NMOS_CPP_NODE_HEADERS
      nmos-cpp-node/node_implementation.h
++    nmos-cpp-node/intel_config_parser.h
      )
 +# Find gRPC installation
 +# Looks for gRPCConfig.cmake file installed by gRPC's cmake installation.
-+
 +set(protobuf_MODULE_COMPATIBLE TRUE)
 +find_package(Protobuf CONFIG REQUIRED)
 +message(STATUS "Using protobuf ${Protobuf_VERSION}")
-+
 +set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
 +set(_REFLECTION gRPC::grpc++_reflection)
-+
 +find_package(gRPC CONFIG REQUIRED)
 +message(STATUS "Using gRPC ${gRPC_VERSION}")
  
@@ -31,7 +36,7 @@ index df1ab1c..4bf706f 100644
  
  source_group("Source Files" FILES ${NMOS_CPP_NODE_SOURCES})
  source_group("Header Files" FILES ${NMOS_CPP_NODE_HEADERS})
-@@ -22,6 +36,10 @@ target_link_libraries(
+@@ -22,6 +34,10 @@ target_link_libraries(
      nmos-cpp-node
      nmos-cpp::compile-settings
      nmos-cpp::nmos-cpp
@@ -54,44 +59,380 @@ index aa55298..fdc9ace 100644
  
  [generators]
  CMakeDeps
-diff --git a/Development/nmos-cpp-node/config.json b/Development/nmos-cpp-node/config.json
-index f7e5216..bb9b6b8 100644
---- a/Development/nmos-cpp-node/config.json
-+++ b/Development/nmos-cpp-node/config.json
-@@ -14,9 +14,6 @@
-     //"node_tags": {},
-     //"device_tags": {},
- 
--    // how_many: provides for very basic testing of a node with many sub-resources of each type
--    //"how_many": 4,
--
-     // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
-     //"activate_senders": false,
- 
-@@ -26,6 +23,18 @@
-     //"senders": ["v", "a"],
-     //"receivers": [],
- 
-+    // senders_count, receivers_count: coresponding arrays for senders, receivers that provide count by type of port.
-+    // example: for senders: ["v", "a", "d"], the senders_count: [3, 1, 1] should be defined.
-+    // it means that there are 3 senders of type video, 1 sender of type audio and 1 sender of type data
-+    //"senders_count": ["v", "a"],
-+    //"receivers_count": [],
+diff --git a/Development/nmos-cpp-node/intel-node-rx.json b/Development/nmos-cpp-node/intel-node-rx.json
+new file mode 100644
+index 0000000..c887ccb
+--- /dev/null
++++ b/Development/nmos-cpp-node/intel-node-rx.json
+@@ -0,0 +1,66 @@
++{
++  "logging_level": 0,
++  "http_port": 95,
++  "label": "intel-broadcast-suite",
++  "senders": ["v"],
++  "senders_count": [0],
++  "receivers": ["v"],
++  "receivers_count": [1],
++  "device_tags": {
++    "pipeline": ["rx-sender"]
++  },
++  "function": "rx-sender",
++  "gpu_hw_acceleration": "none",
++  "domain": "local",
++  "ffmpeg_grpc_server_address": "localhost",
++  "ffmpeg_grpc_server_port": "50052",
++  "receiver_payload_type":112,
++  "sender": [{
++    "stream_payload": {
++      "video": {
++        "frame_width": 1920,
++        "frame_height": 1080,
++        "frame_rate": { "numerator": 60, "denominator": 1 },
++        "pixel_format": "yuv422p10le",
++        "video_type": "rawvideo"
++      },
++      "audio": {
++        "channels": 2,
++        "sampleRate": 48000,
++        "format": "pcm_s24be",
++        "packetTime": "1ms"
++      }
++    },
++    "stream_type": {
++      "file": {
++        "path": "/root/recv",
++        "filename": "1920x1080p10le_2.yuv"
++      }
++    }
++  }],
++  "receiver": [{
++    "stream_payload": {
++      "video": {
++        "frame_width": 960,
++        "frame_height": 1080,
++        "frame_rate": { "numerator": 60, "denominator": 1 },
++        "pixel_format": "yuv422p10le",
++        "video_type": "rawvideo"
++      },
++      "audio": {
++        "channels": 2,
++        "sampleRate": 48000,
++        "format": "pcm_s24be",
++        "packetTime": "1ms"
++      }
++    },
++    "stream_type": {
++      "mcm": {
++        "conn_type": "st2110",
++        "transport": "st2110-20",
++        "urn": "NULL",
++        "transportPixelFormat": "yuv422p10le"
++      }
++    }
++  }]
++}
+\ No newline at end of file
+diff --git a/Development/nmos-cpp-node/intel-node-tx.json b/Development/nmos-cpp-node/intel-node-tx.json
+new file mode 100644
+index 0000000..866532b
+--- /dev/null
++++ b/Development/nmos-cpp-node/intel-node-tx.json
+@@ -0,0 +1,66 @@
++{
++  "logging_level": 0,
++  "http_port": 90,
++  "label": "intel-broadcast-suite",
++  "senders": ["v"],
++  "senders_count": [1],
++  "receivers": ["v"],
++  "receivers_count": [0],
++  "device_tags": {
++    "pipeline": ["tx-sender"]
++  },
++  "function": "tx-sender",
++  "gpu_hw_acceleration": "none",
++  "domain": "local",
++  "ffmpeg_grpc_server_address": "localhost",
++  "ffmpeg_grpc_server_port": "50051",
++  "sender_payload_type":112,
++  "sender": [{
++    "stream_payload": {
++      "video": {
++        "frame_width": 960,
++        "frame_height": 1080,
++        "frame_rate": { "numerator": 60, "denominator": 1 },
++        "pixel_format": "yuv422p10le",
++        "video_type": "rawvideo"
++      },
++      "audio": {
++        "channels": 2,
++        "sampleRate": 48000,
++        "format": "pcm_s24be",
++        "packetTime": "1ms"
++      }
++    },
++    "stream_type": {
++      "mcm": {
++        "conn_type": "st2110",
++        "transport": "st2110-20",
++        "urn": "NULL",
++        "transportPixelFormat": "yuv422p10le"
++      }
++    }
++  }],
++  "receiver": [{
++    "stream_payload": {
++      "video": {
++        "frame_width": 1920,
++        "frame_height": 1080,
++        "frame_rate": { "numerator": 60, "denominator": 1 },
++        "pixel_format": "yuv422p10le",
++        "video_type": "rawvideo"
++      },
++      "audio": {
++        "channels": 2,
++        "sampleRate": 48000,
++        "format": "pcm_s24be",
++        "packetTime": "1ms"
++      }
++    },
++    "stream_type": {
++      "file": {
++        "path": "/root",
++        "filename": "1920x1080p10le_1.yuv"
++      }
++    }
++  }]
++}
+\ No newline at end of file
+diff --git a/Development/nmos-cpp-node/intel_config_parser.cpp b/Development/nmos-cpp-node/intel_config_parser.cpp
+new file mode 100644
+index 0000000..45cd068
+--- /dev/null
++++ b/Development/nmos-cpp-node/intel_config_parser.cpp
+@@ -0,0 +1,147 @@
++#include "intel_config_parser.h"
++#include <cpprest/filestream.h>
++#include <iostream>
++#include <fstream>
 +
-+    // IP address and port to connect to ffmpeg grpc service in order to pass properties when another NMOS node
-+    // is connected to this NMOS node for BCS pipeline
-+    //"ffmpeg_grpc_server_address": "<ip_of_ffmpeg_grpc_server>",
-+    //"ffmpeg_grpc_server_port": "50051",
 +
 +
-     // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
-     // and the equivalent parameter constraint on video receivers
-     // the value must be an object like { "numerator": 25, "denominator": 1 }
++const Config& ConfigManager::get_config() const {
++    return config;
++}
++
++std::pair<int, int> ConfigManager::get_framerate(const Stream& stream) const {
++    return {stream.payload.video.frame_rate.numerator, stream.payload.video.frame_rate.denominator};
++}
++
++void ConfigManager::parse_json_file(const std::string& file_path) {
++    try {
++        // Open the file stream
++        std::ifstream file(file_path);
++        if (!file.is_open()) {
++            throw std::runtime_error("Could not open file");
++        }
++
++        // Read the file into a string
++        std::string json_str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
++
++        // Parse the JSON string
++        web::json::value json_value = web::json::value::parse(json_str);
++
++        // Fill the Config struct
++        config.logging_level = json_value.at(U("logging_level")).as_integer();
++        config.function = json_value.at(U("function")).as_string();
++        config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();
++
++        for (const auto& sender : json_value.at(U("sender")).as_array()) {
++            std::cout<<"Sender: "<<std::endl;
++            config.senders.push_back(parse_stream(sender));
++        }
++
++        for (const auto& receiver : json_value.at(U("receiver")).as_array()) {
++            config.receivers.push_back(parse_stream(receiver));
++        }
++
++    } catch (const std::exception& e) {
++        std::cerr << "Error parsing JSON file: " << e.what() << std::endl;
++    }
++}
++
++void ConfigManager::print_config() const {
++    std::cout << "Logging Level: " << config.logging_level << std::endl;
++    std::cout << "Function: " << config.function << std::endl;
++    std::cout << "GPU HW Acceleration: " << config.gpu_hw_acceleration << std::endl;
++
++    for (const auto& sender : config.senders) {
++        std::cout << "Sender Video Frame Width: " << sender.payload.video.frame_width << std::endl;
++        std::cout << "Sender Video Frame Height: " << sender.payload.video.frame_height << std::endl;
++        std::cout << "Sender Video Frame Rate: " << sender.payload.video.frame_rate.numerator << "/" << sender.payload.video.frame_rate.denominator << std::endl;
++        std::cout << "Sender Video Pixel Format: " << sender.payload.video.pixel_format << std::endl;
++        std::cout << "Sender Video Type: " << sender.payload.video.video_type << std::endl;
++        if (sender.stream_type.type == stream_type::file) {
++            std::cout<<"Sender Stream type: File"<<std::endl;
++            std::cout << "|_ File Path: " << sender.stream_type.file.path << std::endl;
++            std::cout << "|_ File Name: " << sender.stream_type.file.filename << std::endl;
++        } else if (sender.stream_type.type == stream_type::st2110) {
++            std::cout<<"Sender Stream type: st2110"<<std::endl;
++            std::cout << "|_ Transport: " << sender.stream_type.st2110.transport << std::endl;
++            std::cout << "|_ Payload Type: " << sender.stream_type.st2110.payload_type << std::endl;
++        } else if (sender.stream_type.type == stream_type::mcm) {
++            std::cout<<"Sender Stream type: mcm"<<std::endl;
++            std::cout << "|_ Connection Type: " << sender.stream_type.mcm.conn_type << std::endl;
++            std::cout << "|_ Transport: " << sender.stream_type.mcm.transport << std::endl;
++            std::cout << "|_ URN: " << sender.stream_type.mcm.urn << std::endl;
++            std::cout << "|_ Transport Pixel Format: " << sender.stream_type.mcm.transport_pixel_format << std::endl;
++        }
++    }
++
++    for (const auto& receiver : config.receivers) {
++        std::cout << "Receiver Video Frame Width: " << receiver.payload.video.frame_width << std::endl;
++        std::cout << "Receiver Video Frame Height: " << receiver.payload.video.frame_height << std::endl;
++        std::cout << "Receiver Video Frame Rate: " << receiver.payload.video.frame_rate.numerator << "/" << receiver.payload.video.frame_rate.denominator << std::endl;
++        std::cout << "Receiver Video Pixel Format: " << receiver.payload.video.pixel_format << std::endl;
++        std::cout << "Receiver Video Type: " << receiver.payload.video.video_type << std::endl;
++        if (receiver.stream_type.type == stream_type::file) {
++            std::cout<<"Receiver Stream type: File"<<std::endl;
++            std::cout << "|_ File Path: " << receiver.stream_type.file.path << std::endl;
++            std::cout << "|_ File Name: " << receiver.stream_type.file.filename << std::endl;
++        } else if (receiver.stream_type.type == stream_type::st2110) {
++            std::cout<<"Receiver Stream type: st2110"<<std::endl;
++            std::cout << "|_ Transport: " << receiver.stream_type.st2110.transport << std::endl;
++            std::cout << "|_ Payload Type: " << receiver.stream_type.st2110.payload_type << std::endl;
++        } else if (receiver.stream_type.type == stream_type::mcm) {
++            std::cout<<"Receiver Stream type: mcm"<<std::endl;
++            std::cout << "|_ Connection Type: " << receiver.stream_type.mcm.conn_type << std::endl;
++            std::cout << "|_ Transport: " << receiver.stream_type.mcm.transport << std::endl;
++            std::cout << "|_ URN: " << receiver.stream_type.mcm.urn << std::endl;
++            std::cout << "|_ Transport Pixel Format: " << receiver.stream_type.mcm.transport_pixel_format << std::endl;
++        }
++    }
++}
++
++Video ConfigManager::parse_video(const web::json::value& video_data) const {
++    Video video;
++    video.frame_width = video_data.at(U("frame_width")).as_integer();
++    video.frame_height = video_data.at(U("frame_height")).as_integer();
++    video.frame_rate.numerator = video_data.at(U("frame_rate")).at(U("numerator")).as_integer();
++    video.frame_rate.denominator = video_data.at(U("frame_rate")).at(U("denominator")).as_integer();
++    video.pixel_format = video_data.at(U("pixel_format")).as_string();
++    video.video_type = video_data.at(U("video_type")).as_string();
++    return video;
++}
++
++Audio ConfigManager::parse_audio(const web::json::value& audio_data) const {
++    Audio audio;
++    audio.channels = audio_data.at(U("channels")).as_integer();
++    audio.sample_rate = audio_data.at(U("sampleRate")).as_integer();
++    audio.format = audio_data.at(U("format")).as_string();
++    audio.packet_time = audio_data.at(U("packetTime")).as_string();
++    return audio;
++}
++
++StreamType ConfigManager::parse_stream_type(const web::json::value& stream_type_data) const {
++    StreamType stream_type;
++    if (stream_type_data.has_field(U("file"))) {
++        stream_type.type = stream_type::file;
++        stream_type.file.path = stream_type_data.at(U("file")).at(U("path")).as_string();
++        stream_type.file.filename = stream_type_data.at(U("file")).at(U("filename")).as_string();
++    } else if (stream_type_data.has_field(U("st2110"))) {
++        stream_type.type = stream_type::st2110;
++        stream_type.st2110.transport = stream_type_data.at(U("st2110")).at(U("transport")).as_string();
++        stream_type.st2110.payload_type = stream_type_data.at(U("st2110")).at(U("payloadType")).as_integer();
++    } else if (stream_type_data.has_field(U("mcm"))) {
++        stream_type.type = stream_type::mcm;
++        stream_type.mcm.conn_type = stream_type_data.at(U("mcm")).at(U("conn_type")).as_string();
++        stream_type.mcm.transport = stream_type_data.at(U("mcm")).at(U("transport")).as_string();
++        stream_type.mcm.urn = stream_type_data.at(U("mcm")).at(U("urn")).as_string();
++        stream_type.mcm.transport_pixel_format = stream_type_data.at(U("mcm")).at(U("transportPixelFormat")).as_string();
++    }
++    return stream_type;
++}
++
++Stream ConfigManager::parse_stream(const web::json::value& stream_data) const {
++    Stream stream;
++    stream.payload.video = parse_video(stream_data.at(U("stream_payload")).at(U("video")));
++    stream.payload.audio = parse_audio(stream_data.at(U("stream_payload")).at(U("audio")));
++    stream.stream_type = parse_stream_type(stream_data.at(U("stream_type")));
++    return stream;
++}
+\ No newline at end of file
+diff --git a/Development/nmos-cpp-node/intel_config_parser.h b/Development/nmos-cpp-node/intel_config_parser.h
+new file mode 100644
+index 0000000..c490f38
+--- /dev/null
++++ b/Development/nmos-cpp-node/intel_config_parser.h
+@@ -0,0 +1,23 @@
++#ifndef INTEL_CONFIG_PARSER_H
++#define INTEL_CONFIG_PARSER_H
++
++#include <cpprest/json.h>
++#include "config_params.hpp"
++
++class ConfigManager {
++public:
++    ConfigManager() = default;
++    void parse_json_file(const std::string& file_path);
++    void print_config() const;
++    const Config& get_config() const;
++    std::pair<int, int> get_framerate(const Stream& stream) const;
++
++private:
++    Config config;
++    Video parse_video(const web::json::value& video_data) const;
++    Audio parse_audio(const web::json::value& audio_data) const;
++    StreamType parse_stream_type(const web::json::value& stream_type_data) const;
++    Stream parse_stream(const web::json::value& stream_data) const;
++};
++
++#endif // INTEL_CONFIG_PARSER_H
+\ No newline at end of file
 diff --git a/Development/nmos-cpp-node/main.cpp b/Development/nmos-cpp-node/main.cpp
-index e4b420f..f09cdc0 100644
+index e4b420f..0e905fa 100644
 --- a/Development/nmos-cpp-node/main.cpp
 +++ b/Development/nmos-cpp-node/main.cpp
-@@ -116,28 +116,6 @@ int main(int argc, char* argv[])
+@@ -18,6 +18,10 @@
+ #include "nmos/server.h"
+ #include "nmos/server_utils.h" // for make_http_listener_config
+ #include "node_implementation.h"
++// #include "config_params.hpp"
++
++#include "intel_config_parser.h"
++
+ 
+ int main(int argc, char* argv[])
+ {
+@@ -33,6 +37,8 @@ int main(int argc, char* argv[])
+     std::filebuf access_log_buf;
+     std::ostream access_log(&access_log_buf);
+ 
++    ConfigManager config_manager;
++
+     // Logging should all go through this logging gateway
+     nmos::experimental::log_gate gate(error_log, access_log, log_model);
+ 
+@@ -64,6 +70,9 @@ int main(int argc, char* argv[])
+                 node_model.settings = web::json::value::parse(file);
+                 node_model.settings.as_object();
+             }
++            // Parse json to senders' and receivers' config
++            config_manager.parse_json_file(utility::s2us(argv[1]));
++            config_manager.print_config();
+         }
+ 
+         // Prepare run-time default settings (different than header defaults)
+@@ -103,7 +112,7 @@ int main(int argc, char* argv[])
+ 
+         // Set up the callbacks between the node server and the underlying implementation
+ 
+-        auto node_implementation = make_node_implementation(node_model, gate);
++        auto node_implementation = make_node_implementation(node_model, config_manager, gate);
+ 
+ // only implement communication with OCSP server if http_listener supports OCSP stapling
+ // cf. preprocessor conditions in nmos::make_http_listener_config
+@@ -116,28 +125,6 @@ int main(int argc, char* argv[])
          }
  #endif
  
@@ -120,10 +461,12 @@ index e4b420f..f09cdc0 100644
          nmos::experimental::control_protocol_state control_protocol_state(node_implementation.control_protocol_property_changed);
          if (0 <= nmos::fields::control_protocol_ws_port(node_model.settings))
          {
-@@ -155,68 +133,6 @@ int main(int argc, char* argv[])
+@@ -153,69 +140,7 @@ int main(int argc, char* argv[])
  
-         node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
+         // Add the underlying implementation, which will set up the node resources, etc.
  
+-        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, gate); });
+-
 -// only implement communication with OCSP server if http_listener supports OCSP stapling
 -// cf. preprocessor conditions in nmos::make_http_listener_config
 -#if !defined(_WIN32) || defined(CPPREST_FORCE_HTTP_LISTENER_ASIO)
@@ -185,11 +528,11 @@ index e4b420f..f09cdc0 100644
 -                }
 -            }
 -        }
--
++        node_server.thread_functions.push_back([&] { node_implementation_thread(node_model, control_protocol_state, config_manager, gate); });
+ 
          if (!nmos::experimental::fields::http_trace(node_model.settings))
          {
-             // Disable TRACE method
-@@ -227,29 +143,6 @@ int main(int argc, char* argv[])
+@@ -227,29 +152,6 @@ int main(int argc, char* argv[])
              }
          }
  
@@ -219,101 +562,58 @@ index e4b420f..f09cdc0 100644
          // Open the API ports and start up node operation (including the DNS-SD advertisements)
  
          slog::log<slog::severities::info>(gate, SLOG_FLF) << "Preparing for connections";
-diff --git a/Development/nmos-cpp-node/node1_baremetal.json b/Development/nmos-cpp-node/node1_baremetal.json
-new file mode 100644
-index 0000000..68945cc
---- /dev/null
-+++ b/Development/nmos-cpp-node/node1_baremetal.json
-@@ -0,0 +1,33 @@
-+{
-+    "logging_level": 0,
-+    "http_port": 90,
-+    "activate_senders": true,
-+    "label": "intel-broadcast-suite",
-+    "senders": ["v"],
-+    "senders_count": [1],
-+    "receivers": ["v"],
-+    "receivers_count": [0],
-+    "device_tags": {
-+        "pipeline": ["tx-sender"]
-+    },
-+    "frame_rate": { "numerator": 60, "denominator": 1 },
-+    "frame_width": 1920,
-+    "frame_height": 1080,
-+    "video_type": "video/jxsv",
-+    "domain": "local",
-+    "function" : "tx",
-+    "gpu_hw_acceleration": "none",
-+    "sender_ffmpeg_video_type": "rawvideo",
-+    "sender_payload_type": 96,
-+    "sender_pixel_format": "yuv422p10le",
-+    "sender_transportFormat": "mcm",
-+    "sender_conn_type": "st2110",
-+    "sender_transport": "st2110-20",
-+    "sender_input_path": "/root",
-+    "sender_input_path_name": "1920x1080p10le_1.yuv",
-+    "receiver_transportFormat": "mcm",
-+    "receiver_conn_type": "st2110",
-+    "receiver_transport": "st2110-20",
-+    "ffmpeg_grpc_server_address": "localhost",
-+    "ffmpeg_grpc_server_port": "50051"
-+}
-diff --git a/Development/nmos-cpp-node/node2_baremetal.json b/Development/nmos-cpp-node/node2_baremetal.json
-new file mode 100644
-index 0000000..24cd3b3
---- /dev/null
-+++ b/Development/nmos-cpp-node/node2_baremetal.json
-@@ -0,0 +1,33 @@
-+{
-+    "logging_level": 0,
-+    "http_port": 95,
-+    "activate_senders": true,
-+    "label": "intel-broadcast-suite",
-+    "senders": ["v"],
-+    "senders_count": [0],
-+    "receivers": ["v"],
-+    "receivers_count": [1],
-+    "device_tags": {
-+        "pipeline": ["rx-receiver"]
-+    },
-+    "frame_rate": { "numerator": 60, "denominator": 1 },
-+    "frame_width": 1920,
-+    "frame_height": 1080,
-+    "video_type": "video/jxsv",
-+    "domain": "local",
-+    "function" : "rx",
-+    "gpu_hw_acceleration": "none",
-+    "sender_ffmpeg_video_type": "rawvideo",
-+    "sender_payload_type": 96,
-+    "sender_pixel_format": "yuv422p10le",
-+    "sender_transportFormat": "mcm",
-+    "sender_conn_type": "st2110",
-+    "sender_transport": "st2110-20",
-+    "sender_input_path": "/root/recv",
-+    "sender_input_path_name": "1920x1080p10le_2.yuv",
-+    "receiver_transportFormat": "mcm",
-+    "receiver_conn_type": "st2110",
-+    "receiver_transport": "st2110-20",
-+    "ffmpeg_grpc_server_address": "localhost",
-+    "ffmpeg_grpc_server_port": "50052"
-+}
 diff --git a/Development/nmos-cpp-node/node_implementation.cpp b/Development/nmos-cpp-node/node_implementation.cpp
-index f12cca1..6c58309 100644
+index f12cca1..5affe4d 100644
 --- a/Development/nmos-cpp-node/node_implementation.cpp
 +++ b/Development/nmos-cpp-node/node_implementation.cpp
-@@ -1,3 +1,7 @@
+@@ -1,3 +1,9 @@
 +#include <iostream>
 +#include <cstdlib>
 +#include <thread>
++#include <unordered_map>
++#include <algorithm>
 +
  #include "node_implementation.h"
  
  #include <boost/range/adaptor/filtered.hpp>
-@@ -49,6 +53,17 @@
+@@ -49,7 +55,49 @@
  #include "nmos/video_jxsv.h"
  #include "sdp/sdp.h"
  
+-// example node implementation details
 +#include "FFmpeg_wrapper_client.h"
++
++namespace tracker{
++    std::unordered_map<nmos::id, Stream> resource_stream_map;
++    Stream get_stream_info(const nmos::id& resource_id) {
++        auto it = resource_stream_map.find(resource_id);
++        if (it != resource_stream_map.end()) {
++            return it->second;
++        }
++        throw std::runtime_error("Resource ID not found");
++    }
++    void add_stream_info(const nmos::id& resource_id, const Stream& stream_info) {
++        resource_stream_map.emplace(resource_id, stream_info);
++    }
++
++    std::vector<Stream> get_file_streams_receivers(const Config& config) {
++        std::vector<Stream> file_streams;
++        std::copy_if(config.receivers.begin(), config.receivers.end(), std::back_inserter(file_streams), [](const Stream& stream) {
++            return stream.stream_type.type == stream_type::file;
++        });
++        return file_streams;
++    }
++
++    std::vector<Stream> get_file_streams_senders(const Config& config) {
++        std::vector<Stream> file_streams;
++        std::copy_if(config.senders.begin(), config.senders.end(), std::back_inserter(file_streams), [](const Stream& stream) {
++            return stream.stream_type.type == stream_type::file;
++        });
++        return file_streams;
++    }
++}
++
++
 +
 +namespace grpc {
 +// Function to execute the grpc client logic for ffmpeg
@@ -324,10 +624,10 @@ index f12cca1..6c58309 100644
 +}
 +} // namespace grpc
 +
- // example node implementation details
  namespace impl
  {
-@@ -71,9 +86,6 @@ namespace impl
+     // custom logging category for the example node implementation thread
+@@ -71,9 +119,6 @@ namespace impl
          const web::json::field_as_value_or node_tags{ U("node_tags"), web::json::value::object() };
          const web::json::field_as_value_or device_tags{ U("device_tags"), web::json::value::object() };
  
@@ -337,38 +637,54 @@ index f12cca1..6c58309 100644
          // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
          const web::json::field_as_bool_or activate_senders{ U("activate_senders"), true };
  
-@@ -83,6 +95,30 @@ namespace impl
+@@ -83,19 +128,26 @@ namespace impl
          const web::json::field_as_value_or senders{ U("senders"), {} };
          const web::json::field_as_value_or receivers{ U("receivers"), {} };
  
+-        // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
+-        // and the equivalent parameter constraint on video receivers
+-        // the value must be an object like { "numerator": 25, "denominator": 1 }
+-        // hm, unfortunately can't use nmos::make_rational(nmos::rates::rate25) during static initialization
+-        const web::json::field_as_value_or frame_rate{ U("frame_rate"), web::json::value_of({
+-            { nmos::fields::numerator, 25 },
+-            { nmos::fields::denominator, 1 }
+-        }) };
++        const web::json::field_as_array sender{ U("sender") };
++        const web::json::field_as_array receiver{ U("receiver") };
++
 +        // coresponding arrays for senders, receivers that provide count by type of port.
 +        // example: for senders: ["v", "a", "d"], the senders_count: [3, 1, 1] should be defined.
 +        // it means that there are 3 senders of type video, 1 sender of type audio and 1 sender of type data
 +        const web::json::field_as_value_or senders_count{ U("senders_count"), {} };
 +        const web::json::field_as_value_or receivers_count{ U("receivers_count"), {} };
-+        const web::json::field_as_string_or sender_input_path{ U("sender_input_path"), "" };
-+        const web::json::field_as_string_or sender_input_path_name{ U("sender_input_path_name"), ""};
-+        const web::json::field_as_string_or sender_ffmpeg_video_type{ U("sender_ffmpeg_video_type"), "" };
-+        const web::json::field_as_string_or sender_pixel_format{ U("sender_pixel_format"), "" };
-+        const web::json::field_as_string_or sender_transportFormat{ U("sender_transportFormat"), "" };
-+        const web::json::field_as_string_or sender_conn_type{ U("sender_conn_type"), "" };
-+        const web::json::field_as_string_or sender_transport{ U("sender_transport"), "" };
-+        web::json::field_as_integer_or sender_payload_type{ U("sender_payload_type"), 96 };
-+        const web::json::field_as_string_or receiver_transportFormat{ U("receiver_transportFormat"), "" };
-+        const web::json::field_as_string_or receiver_conn_type{ U("receiver_conn_type"), "" };
-+        const web::json::field_as_string_or receiver_transport{ U("receiver_transport"), "" };
-+
+ 
+-        // frame_width, frame_height: control the frame_width and frame_height of video flows
+-        const web::json::field_as_integer_or frame_width{ U("frame_width"), 1920 };
+-        const web::json::field_as_integer_or frame_height{ U("frame_height"), 1080 };
++        // sender_payload_type, receiver_payload_type: controls the payload_type of senders and receivers
++        // TODO: change the reference to Config by stream sender or receiver
++        const web::json::field_as_integer_or sender_payload_type{ U("sender_payload_type"), 112 };
++        const web::json::field_as_integer_or receiver_payload_type{ U("receiver_payload_type"), 112 };
+ 
 +        // IP address and port to connect to ffmpeg grpc service in order to pass properties when another NMOS node
 +        // is connected to this NMOS node for BCS pipeline
 +        const web::json::field_as_string_or ffmpeg_grpc_server_address{ U("ffmpeg_grpc_server_address"), "localhost"};
 +        const web::json::field_as_string_or ffmpeg_grpc_server_port{ U("ffmpeg_grpc_server_port"), "50051"};
-+        const web::json::field_as_string_or function{ U("function"), "tx"};
-+        const web::json::field_as_string_or gpu_hw_acceleration{ U("gpu_hw_acceleration"), "none"};
 +
-         // frame_rate: controls the grain_rate of video, audio and ancillary data sources and flows
-         // and the equivalent parameter constraint on video receivers
-         // the value must be an object like { "numerator": 25, "denominator": 1 }
-@@ -155,6 +191,7 @@ namespace impl
++        // In curret use case, below params are default values
+         // interlace_mode: controls the interlace_mode of video flows, see nmos::interlace_mode
+         // when omitted, a default of "progressive" or "interlaced_tff" is used based on the frame_rate, etc.
+         const web::json::field_as_string interlace_mode{ U("interlace_mode") };
+@@ -122,7 +174,7 @@ namespace impl
+         const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+     }
+ 
+-    nmos::interlace_mode get_interlace_mode(const nmos::settings& settings);
++    nmos::interlace_mode get_interlace_mode(const nmos::rational& frame_rate, uint32_t frame_height, const nmos::settings& settings);
+ 
+     // the different kinds of 'port' (standing for the format/media type/event type) implemented by the example node
+     // each 'port' of the example node has a source, flow, sender and/or compatible receiver
+@@ -155,6 +207,7 @@ namespace impl
      bool is_rtp_port(const port& port);
      bool is_ws_port(const port& port);
      std::vector<port> parse_ports(const web::json::value& value);
@@ -376,9 +692,12 @@ index f12cca1..6c58309 100644
  
      const std::vector<nmos::channel> channels_repeat{
          { U("Left Channel"), nmos::channel_symbols::L },
-@@ -193,8 +230,8 @@ namespace impl
+@@ -191,23 +244,23 @@ namespace impl
+ }
+ 
  // forward declarations for node_implementation_thread
- void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
+-void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
++void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, ConfigManager& config_manager, slog::base_gate& gate);
  void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
 -nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings);
 -nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings);
@@ -387,23 +706,84 @@ index f12cca1..6c58309 100644
  
  struct node_implementation_init_exception {};
  
-@@ -248,7 +285,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+ // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
+ // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
+ // starts background tasks to emit regular events from the temperature event source, and then waits for shutdown.
+-void node_implementation_thread(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate_)
++void node_implementation_thread(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, ConfigManager& config_manager, slog::base_gate& gate_)
+ {
+     nmos::details::omanip_gate gate{ gate_, nmos::stash_category(impl::categories::node_implementation) };
+ 
+     try
+     {
+-        node_implementation_init(model, control_protocol_state, gate);
++        node_implementation_init(model, control_protocol_state, config_manager, gate);
+         node_implementation_run(model, gate);
+     }
+     catch (const node_implementation_init_exception&)
+@@ -237,7 +290,7 @@ void node_implementation_thread(nmos::node_model& model, nmos::experimental::con
+     }
+ }
+ 
+-void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate)
++void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, ConfigManager& config_manager, slog::base_gate& gate)
+ {
+     using web::json::value;
+     using web::json::value_from_elements;
+@@ -248,29 +301,45 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
      const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
      const auto node_id = impl::make_id(seed_id, nmos::types::node);
      const auto device_id = impl::make_id(seed_id, nmos::types::device);
 -    const auto how_many = impl::fields::how_many(model.settings);
++
 +    const auto ffmpeg_grpc_server_address = impl::fields::ffmpeg_grpc_server_address(model.settings);
 +    const auto ffmpeg_grpc_server_port = impl::fields::ffmpeg_grpc_server_port(model.settings);
-+    const auto sender_input_path = impl::fields::sender_input_path(model.settings);
-+    const auto sender_input_path_name = impl::fields::sender_input_path_name(model.settings);
++    //seder payload is right know global for all senders
++    const auto sender_payload_type = impl::fields::sender_payload_type(model.settings);
++
++    auto configIntel = config_manager.get_config();
++    auto sender_arr_length = configIntel.senders.size();
++    auto sender_arr = configIntel.senders;
++    auto receiver_arr_length = configIntel.receivers.size();
++    auto receiver_arr = configIntel.receivers;
++
++    //change
 +    const auto senders_count = impl::parse_count(impl::fields::senders_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
 +    const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
++    //change
 +    const auto receivers_count = impl::parse_count(impl::fields::receivers_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
 +    const auto receivers_count_total = std::accumulate(receivers_count.begin(), receivers_count.end(), 0);
      const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
      const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
      const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
-@@ -279,6 +323,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+     const auto receiver_ports = impl::parse_ports(impl::fields::receivers(model.settings));
+     const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
+     const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
+-    const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
+-    const auto frame_width = impl::fields::frame_width(model.settings);
+-    const auto frame_height = impl::fields::frame_height(model.settings);
+-    const auto interlace_mode = impl::get_interlace_mode(model.settings);
++
++    //generic values for whole node
++    // const auto interlace_mode = impl::get_interlace_mode(model.settings);
+     const auto colorspace = nmos::colorspace{ impl::fields::colorspace(model.settings) };
+     const auto transfer_characteristic = nmos::transfer_characteristic{ impl::fields::transfer_characteristic(model.settings) };
+     const auto sampling = sdp::sampling{ impl::fields::color_sampling(model.settings) };
+     const auto bit_depth = impl::fields::component_depth(model.settings);
+-    const auto video_type = nmos::media_type{ impl::fields::video_type(model.settings) };
++    // const auto video_type = nmos::media_type{ impl::fields::video_type(model.settings) };
+     const auto channel_count = impl::fields::channel_count(model.settings);
+     const auto smpte2022_7 = impl::fields::smpte2022_7(model.settings);
+ 
+     // for now, some typical values for video/jxsv, based on VSF TR-08:2022
+     // see https://vsf.tv/download/technical_recommendations/VSF_TR-08_2022-04-20.pdf
+     const auto profile = nmos::profiles::High444_12;
+-    const auto level = nmos::get_video_jxsv_level(frame_rate, frame_width, frame_height);
++    // const auto level = nmos::get_video_jxsv_level(frame_rate, frame_width, frame_height);
+     const auto sublevel = nmos::sublevels::Sublev3bpp;
+     const auto max_bits_per_pixel = 4.0; // min coding efficiency
+     const auto bits_per_pixel = 2.0;
+@@ -279,6 +348,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
      // any delay between updates to the model resources is unnecessary unless for debugging purposes
      const unsigned int delay_millis{ 0 };
  
@@ -419,7 +799,7 @@ index f12cca1..6c58309 100644
      // it is important that the model be locked before inserting, updating or deleting a resource
      // and that the the node behaviour thread be notified after doing so
      const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
-@@ -293,42 +346,20 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -293,42 +371,20 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
          else
              slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Model update error: " << id_type;
  
@@ -465,7 +845,7 @@ index f12cca1..6c58309 100644
      {
          auto node = nmos::make_node(node_id, clocks, nmos::make_node_interfaces(interfaces), model.settings);
          node.data[nmos::fields::tags] = impl::fields::node_tags(model.settings);
-@@ -352,7 +383,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -352,7 +408,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
          slog::log<slog::severities::severe>(gate, SLOG_FLF) << "No network interface corresponding to host_address?";
          throw node_implementation_init_exception();
      }
@@ -474,7 +854,7 @@ index f12cca1..6c58309 100644
      // hmm, should probably add a custom setting to control the primary and secondary interfaces for the example node's RTP senders and receivers
      // rather than just picking the one(s) corresponding to the first and last of the specified host addresses
      const auto& primary_address = model.settings.has_field(nmos::fields::host_addresses) ? web::json::front(nmos::fields::host_addresses(model.settings)).as_string() : host_address;
-@@ -369,21 +400,25 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+@@ -369,32 +425,59 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
      const auto interface_names = smpte2022_7
          ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
          : std::vector<utility::string_t>{ primary_interface.name };
@@ -499,20 +879,74 @@ index f12cca1..6c58309 100644
  
 -    // example sources, flows and senders
 -    for (int index = 0; index < how_many; ++index)
-+    int8_t senders_iterator=0;
 +    for (const auto& port : rtp_sender_ports)
      {
 -        for (const auto& port : rtp_sender_ports)
 +        // senders_count[senders_iterator] is the total count of senders by port type - video/audio/data/mux
-+        for (int index = 0; index < senders_count[senders_iterator]; ++index)
++        // Change to length of sender array instaed of sender_count
++        for (int index = 0; index < sender_arr_length; ++index)
          {
              const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
              const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
-@@ -516,13 +551,15 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
-             if (!insert_resource_after(delay_millis, model.node_resources, std::move(sender), gate)) throw node_implementation_init_exception();
-             if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_sender), gate)) throw node_implementation_init_exception();
+             const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
+ 
++            auto senderDefinition = configIntel.senders[index];
++
++            const auto frame_rate_json_format = web::json::value_of({
++                { nmos::fields::numerator, config_manager.get_framerate(senderDefinition).first },
++                { nmos::fields::denominator, config_manager.get_framerate(senderDefinition).first }
++            });
++
++            const auto frame_rate = nmos::parse_rational(frame_rate_json_format);
++            const auto frame_width = senderDefinition.payload.video.frame_width;
++            const auto frame_height = senderDefinition.payload.video.frame_height;
++            const auto level = nmos::get_video_jxsv_level(frame_rate, frame_width, frame_height);
++            const auto interlace_mode = impl::get_interlace_mode(frame_rate, frame_height, model.settings);
++
++            nmos::media_type video_type;
++            if (senderDefinition.payload.video.video_type == "rawvideo") {
++                video_type = nmos::media_types::video_raw;
++            } else if (senderDefinition.payload.video.video_type == "jxsv") {
++                video_type = nmos::media_types::video_jxsv;
++            } else {
++                // https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video_coded.html
++                video_type = nmos::media_type{utility::s2us(senderDefinition.payload.video.video_type)};
++            }
++
+             nmos::resource source;
+             if (impl::ports::video == port)
+             {
+                 source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+             }
+-            else if (impl::ports::audio == port)
++            else if (impl::ports::audio == port) // not yet supported or add to release notes
+             {
+                 const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
+                 {
+@@ -403,11 +486,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+ 
+                 source = nmos::make_audio_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, channels, model.settings);
+             }
+-            else if (impl::ports::data == port)
++            else if (impl::ports::data == port) // not yet supported
+             {
+                 source = nmos::make_data_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+             }
+-            else if (impl::ports::mux == port)
++            else if (impl::ports::mux == port) // not yet supported
+             {
+                 source = nmos::make_mux_source(source_id, device_id, nmos::clock_names::clk0, frame_rate, model.settings);
+             }
+@@ -478,6 +561,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
+ 
+             const auto manifest_href = nmos::experimental::make_manifest_api_manifest(sender_id, model.settings);
+             auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::rtp, device_id, manifest_href.to_string(), interface_names, model.settings);
++            tracker::add_stream_info(sender_id,senderDefinition);
+             // hm, could add nmos::make_video_jxsv_sender to encapsulate this?
+             if (impl::ports::video == port && nmos::media_types::video_jxsv == video_type)
+             {
+@@ -518,17 +602,34 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
          }
-+        senders_iterator++;
      }
  
 -    // example receivers
@@ -520,20 +954,42 @@ index f12cca1..6c58309 100644
 -    {
 -        for (const auto& port : rtp_receiver_ports)
 -        {
-+    int8_t receivers_iterator=0;
 +    for (const auto& port : rtp_receiver_ports) {
-+
-+    // receivers_count[senders_iterator] is the total count of senders by port type - video/audio/data/mux
-+    for (int index = 0; index < receivers_count[receivers_iterator]; ++index){
-+
++        for (int index = 0; index < receiver_arr_length; ++index){
              const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
- 
+-
++            auto configIntel = config_manager.get_config();
++            auto receiverDefinition = configIntel.receivers[index];
++            const auto frame_rate_json_format = web::json::value_of({
++                { nmos::fields::numerator, config_manager.get_framerate(receiverDefinition).first },
++                { nmos::fields::denominator, config_manager.get_framerate(receiverDefinition).first }
++            });
++            const auto frame_rate = nmos::parse_rational(frame_rate_json_format);
++            const auto frame_width = receiverDefinition.payload.video.frame_width;
++            const auto frame_height = receiverDefinition.payload.video.frame_height;
++            const auto level = nmos::get_video_jxsv_level(frame_rate, frame_width, frame_height);
++            const auto interlace_mode = impl::get_interlace_mode(frame_rate, frame_height, model.settings);
++            nmos::media_type video_type;
++            if (receiverDefinition.payload.video.video_type == "rawvideo") {
++                video_type = nmos::media_types::video_raw;
++            } else if (receiverDefinition.payload.video.video_type == "jxsv") {
++                video_type = nmos::media_types::video_jxsv;
++            } else {
++                // https://specs.amwa.tv/is-04/releases/v1.2.0/APIs/schemas/with-refs/flow_video_coded.html
++                video_type = nmos::media_type{utility::s2us(receiverDefinition.payload.video.video_type)};
++            }
              nmos::resource receiver;
-@@ -626,774 +663,12 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
-             if (!insert_resource_after(delay_millis, model.node_resources, std::move(receiver), gate)) throw node_implementation_init_exception();
+             if (impl::ports::video == port)
+             {
+                 receiver = nmos::make_receiver(receiver_id, device_id, nmos::transports::rtp, interface_names, nmos::formats::video, { video_type }, model.settings);
++                tracker::add_stream_info(receiver_id, receiverDefinition);
+                 // add an example constraint set; these should be completed fully!
+                 if (nmos::media_types::video_raw == video_type)
+                 {
+@@ -627,773 +728,10 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
              if (!insert_resource_after(delay_millis, model.connection_resources, std::move(connection_receiver), gate)) throw node_implementation_init_exception();
          }
--    }
+     }
 -
 -    // example event sources, flows and senders
 -    for (int index = 0; 0 <= nmos::fields::events_port(model.settings) && index < how_many; ++index)
@@ -1194,8 +1650,7 @@ index f12cca1..6c58309 100644
 -
 -        // insert control protocol resources to model
 -        insert_root_after(delay_millis, root_block, gate);
-+        receivers_iterator++;
-     }
+-    }
  }
  
  void node_implementation_run(nmos::node_model& model, slog::base_gate& gate)
@@ -1305,7 +1760,7 @@ index f12cca1..6c58309 100644
  }
  
  // Example System API node behaviour callback to perform application-specific operations when the global configuration resource changes
-@@ -1438,14 +713,14 @@ nmos::registration_handler make_node_implementation_registration_handler(slog::b
+@@ -1438,14 +776,14 @@ nmos::registration_handler make_node_implementation_registration_handler(slog::b
  }
  
  // Example Connection API callback to parse "transport_file" during a PATCH /staged request
@@ -1322,7 +1777,7 @@ index f12cca1..6c58309 100644
          {
              if (nmos::media_types::video_jxsv == nmos::get_media_type(sdp_params))
              {
-@@ -1462,7 +737,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
+@@ -1462,7 +800,7 @@ nmos::transport_file_parser make_node_implementation_transport_file_parser()
  }
  
  // Example Connection API callback to perform application-specific validation of the merged /staged endpoint during a PATCH /staged request
@@ -1331,7 +1786,7 @@ index f12cca1..6c58309 100644
  {
      // this example uses an 'empty' std::function because it does not need to do any validation
      // beyond what is expressed by the schemas and /constraints endpoint
-@@ -1470,26 +745,28 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
+@@ -1470,26 +808,28 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
  }
  
  // Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
@@ -1368,7 +1823,7 @@ index f12cca1..6c58309 100644
      {
          const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
          // this code relies on the specific constraints added by node_implementation_thread
-@@ -1528,21 +805,22 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
+@@ -1528,21 +868,23 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
  }
  
  // Example Connection API activation callback to update senders' /transportfile endpoint - captures node_resources by reference!
@@ -1380,6 +1835,7 @@ index f12cca1..6c58309 100644
      const auto seed_id = nmos::experimental::fields::seed_id(settings);
      const auto node_id = impl::make_id(seed_id, nmos::types::node);
 -    const auto how_many = impl::fields::how_many(settings);
++    //change
 +    const auto senders_count = impl::parse_count(impl::fields::senders_count(settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
 +    const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
      const auto sender_ports = impl::parse_ports(impl::fields::senders(settings));
@@ -1394,11 +1850,11 @@ index f12cca1..6c58309 100644
 +    const uint64_t payload_type_video = impl::fields::sender_payload_type(settings);
      // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
 -    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
-+    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids,payload_type_video,  &gate](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
++    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids,payload_type_video,&gate](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
      {
          const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
          if (rtp_sender_ids.end() != found)
-@@ -1576,13 +854,13 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
+@@ -1576,13 +918,13 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
                      const nmos::media_type video_type{ nmos::fields::media_type(flow->data) };
                      if (nmos::media_types::video_raw == video_type)
                      {
@@ -1414,7 +1870,7 @@ index f12cca1..6c58309 100644
                      }
                      else
                      {
-@@ -1621,10 +899,11 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
+@@ -1621,10 +963,11 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
  nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
  {
      const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
@@ -1428,94 +1884,109 @@ index f12cca1..6c58309 100644
  
      // the message handler will be used for all Events WebSocket connections, and each connection may potentially
      // have subscriptions to a number of sources, for multiple receivers, so this example uses a handler adaptor
-@@ -1654,7 +933,7 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
+@@ -1654,8 +997,8 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
      }, gate);
  }
  
 -// Example Connection API activation callback to perform application-specific operations to complete activation
+-nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
 +// Connection API activation callback to perform application-specific operations to complete activation
- nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, slog::base_gate& gate)
++nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate)
  {
      auto handle_load_ca_certificates = nmos::make_load_ca_certificates_handler(model.settings, gate);
-@@ -1666,14 +945,141 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
+     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
+@@ -1666,14 +1009,181 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
      auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
      // this example uses this callback to update IS-12 Receiver-Monitor connection status
      auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
 -
 -    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
-+    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &model, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
++    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &model, &config_manager, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
      {
          const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
 -        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating " << id_type;
--
 +        if(id_type.second == nmos::types::sender)
 +        {
++            const char* vfio_port = "VFIO_PORT_TX";
++            const char* vfio_port_value = std::getenv(vfio_port);
++            //to do add error handling for vfio_port_value -> info about setting up vfio port
++            //add readme about mtl
 +            std::thread ffmpegThread1;
-+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "this is "<< id_type << "---> send json for sender";
++            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "this is "<< id_type << "---> sends json for sender";
 +            auto data = connection_resource.data;
 +            auto sender_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
 +            auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
 +            auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
-+            // slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "|| Send data: " <<
-+            // " source_ip=" << sender_source_ip << "  " <<
-+            // " destination_ip=" << receiver_destination_ip << "  " <<
-+            // " destination_port=" << receiver_destination_port << "  " <<
-+            // " frame_rate="<<nmos::parse_rational(impl::fields::frame_rate(model.settings)) <<
-+            // " frame_width=" << impl::fields::frame_width(model.settings) << "  " <<
-+            // " frame_height=" << impl::fields::frame_height(model.settings) << "  " <<
-+            // " sender_payload_type="<< impl::fields::sender_payload_type(model.settings) << "  " <<
-+            // " sender_ffmpeg_video_type=" <<impl::fields::sender_ffmpeg_video_type(model.settings) << " " <<
-+            // " sender_pixel_format=" <<impl::fields::sender_pixel_format(model.settings) << " " <<
-+            // " sender_transportFormat=" <<impl::fields::sender_transportFormat(model.settings) << " " <<
-+            // " sender_conn_type=" <<impl::fields::sender_conn_type(model.settings) << " " <<
-+            // " sender_transport=" <<impl::fields::sender_transport(model.settings) << " " <<
-+            // " sender_input_path=" << impl::fields::sender_input_path(model.settings) << "  " <<
-+            // " sender_input_path_name=" << impl::fields::sender_input_path_name(model.settings) << "  " <<
-+            // "";
-+            FrameRate framerate;
-+            auto fr = impl::fields::frame_rate(model.settings);
-+            framerate.numerator = nmos::fields::numerator(fr);
-+            framerate.denominator = nmos::fields::denominator(fr);
++
++            // this data are necessary to send via grpc to ffmpeg
++            auto config_by_id = tracker::get_stream_info(id_type.first);
 +            Video v;
-+            v.frame_width=impl::fields::frame_width(model.settings);
-+            v.frame_height=impl::fields::frame_height(model.settings);
-+            v.frame_rate=framerate;
-+            v.pixel_format=impl::fields::sender_pixel_format(model.settings);//default, todo
-+            v.video_type=impl::fields::sender_ffmpeg_video_type(model.settings);
-+            Audio audio = {};
-+            File fileSender;
-+            fileSender.path=impl::fields::sender_input_path(model.settings);
-+            fileSender.filename=impl::fields::sender_input_path_name(model.settings);
++            v.frame_width=config_by_id.payload.video.frame_width;
++            v.frame_height=config_by_id.payload.video.frame_height;
++            v.frame_rate.numerator=config_by_id.payload.video.frame_rate.numerator;
++            v.frame_rate.denominator=config_by_id.payload.video.frame_rate.denominator;
++            v.pixel_format=config_by_id.payload.video.pixel_format;
++            v.video_type=config_by_id.payload.video.video_type;
 +            Stream s;
-+            s.stream_type.type = stream_type::st2110;
-+            s.stream_type.st2110.network_interface = "0000:ca:11.0";
-+            s.stream_type.st2110.local_ip = "192.168.2.1";
-+            s.stream_type.st2110.remote_ip = "192.168.2.2";
-+            s.stream_type.st2110.transport = "st2110-20";
-+            s.stream_type.st2110.remote_port = 20000;
-+            s.stream_type.st2110.payload_type = 112;
-+            Payload payload = {payload_type::video, v, audio};
++            if(config_by_id.stream_type.type==stream_type::mcm)
++            {
++                s.stream_type.type=stream_type::mcm;
++                s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
++                s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
++                s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
++                s.stream_type.mcm.ip=sender_source_ip.as_string();
++                s.stream_type.mcm.port=receiver_destination_port.as_integer();
++                s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
++            }
++            else if(config_by_id.stream_type.type==stream_type::st2110)
++            {
++                s.stream_type.type = stream_type::st2110;
++                s.stream_type.st2110.network_interface = vfio_port_value;
++                s.stream_type.st2110.local_ip = sender_source_ip.as_string();
++                s.stream_type.st2110.remote_ip = receiver_destination_ip.as_string();
++                s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
++                s.stream_type.st2110.remote_port = receiver_destination_port.as_integer();
++                s.stream_type.st2110.payload_type = impl::fields::sender_payload_type(model.settings);
++            }
+ 
+-        connection_events_activation_handler(resource, connection_resource);
++            Payload payload;
++            payload.type = payload_type::video;
++            payload.video = v;
++
 +            s.payload = payload;
-+            StreamType streamTypeSaving;
-+            streamTypeSaving.type=stream_type::file;
-+            streamTypeSaving.file=fileSender;
-+            Stream streamSaving = {payload, streamTypeSaving};
++
 +            //sender=nmos, receiver=ffmpeg
-+            const Config config = {{s}, {streamSaving}, "tx", "none", 0};
++            // to get ffmpeg receivers of stream_type::File
++            auto configIntel = config_manager.get_config();
++            auto ffmpeg_receiver_as_file_vector = tracker::get_file_streams_receivers(configIntel);
++            auto gpu_hw_acceleration_device = "";
++            if (configIntel.gpu_hw_acceleration == "intel") {
++                if (!configIntel.gpu_hw_acceleration_device.empty()) {
++                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "GPU hardware acceleration device is not specified for Intel.";
++                }
++                gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
++            }
++            int multiviewer_columns = 3;
++            if (configIntel.function == "multiviewer") {
++                multiviewer_columns = configIntel.multiviewer_columns;
++            }
++            // construct config for NMOS sender
++            const Config config = {{s}, ffmpeg_receiver_as_file_vector, configIntel.function, multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.logging_level};
++
 +            ffmpegThread1=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
+ 
 +            ffmpegThread1.join();
 +}
 +        if(id_type.second == nmos::types::receiver)
 +        {
 +            std::thread ffmpegThread2;
-+            // Name of the environment variable you want to read
-+            // const char* vfio_port = "VFIO_PORT_T";
-+            // Get the value of the environment variable
-+            // const char* vfio_port_value = std::getenv(vfio_port);
-+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation)<<"send sdp of sender for receiver";
++            const char* vfio_port = "VFIO_PORT_RX";
++            const char* vfio_port_value = std::getenv(vfio_port);
 +            auto data = connection_resource.data;
 +            auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
 +            auto sender_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
++            auto sender_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
 +            auto trasportfile_sdp = data[nmos::fields::endpoint_active][nmos::fields::transport_file][nmos::fields::data];
 +            auto session_description = sdp::parse_session_description(utility::us2s(trasportfile_sdp.as_string()));
 +            auto& media_descriptions = sdp::fields::media_descriptions(session_description);
@@ -1525,66 +1996,112 @@ index f12cca1..6c58309 100644
 +            auto rtpmap = sdp::find_name(attributes, sdp::attributes::rtpmap);
 +            auto& encoding_name = sdp::fields::encoding_name(sdp::fields::value(*rtpmap));
 +            const auto& payload_type = sdp::fields::payload_type(sdp::fields::value(*rtpmap));
++            auto source_filter = sdp::find_name(attributes, sdp::attributes::source_filter);
++            auto& destination_addr=sdp::fields::destination_address(sdp::fields::value(*source_filter));
++
 +            auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
 +            auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
 +            auto width_param = sdp::find_name(params, U("width"));
 +            auto height_param = sdp::find_name(params, U("height"));
 +            auto fps = sdp::find_name(params, U("exactframerate"));
-+            auto sampling = sdp::find_name(params, U("sampling"));
-+            auto depth = sdp::find_name(params, U("depth"));
-+            auto ssn = sdp::find_name(params, U("SSN"));
-+            // slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "|| Send data: " <<
-+            // " source_ip=" << receiver_source_ip << "  " <<
-+            // " destination_port=" << sender_destination_port << "  " <<
-+            // " receiver_transportFormat=" <<impl::fields::receiver_transportFormat(model.settings) << " " <<
-+            // " receiver_conn_type=" <<impl::fields::receiver_conn_type(model.settings) << " " <<
-+            // " receiver_transport=" <<impl::fields::receiver_transport(model.settings) << " " <<
-+            // " trasportfile_sdp:: media_type=" <<sdp::fields::media_type(media) << " " <<
-+            // " trasportfile_sdp:: encoding_name=" <<encoding_name<< " " <<
-+            // " trasportfile_sdp:: payload_type=" <<payload_type<< " " <<
-+            // " trasportfile_sdp:: width=" <<sdp::fields::value(*width_param).as_string()<< " " <<
-+            // " trasportfile_sdp:: height_param=" <<sdp::fields::value(*height_param).as_string()<< " " <<
-+            // " trasportfile_sdp:: fps=" <<sdp::fields::value(*fps).as_string()<< " " <<
-+            // " trasportfile_sdp:: sampling=" <<sdp::fields::value(*sampling).as_string()<< " " <<
-+            // " trasportfile_sdp:: depth=" <<sdp::fields::value(*depth).as_string()<< " " <<
-+            // " trasportfile_sdp:: ssn=" <<sdp::fields::value(*ssn).as_string()<< " " <<
-+            // "";
-+            // frameRate is unsafe ad unstable, only for dev version
-+            FrameRate frameRate = {std::stoi(sdp::fields::value(*fps).as_string()), 1};
-+            // encoding_name
-+            Video video = {std::stoi(sdp::fields::value(*width_param).as_string()), std::stoi(sdp::fields::value(*height_param).as_string()), frameRate,"yuv422p10le", "rawvideo"};
-+            Audio audio = {};
-+            File fileSender;
-+            fileSender.path=impl::fields::sender_input_path(model.settings);
-+            fileSender.filename=impl::fields::sender_input_path_name(model.settings);
-+            auto source_filter = sdp::find_name(attributes, sdp::attributes::source_filter);
-+            auto destination_addr=sdp::fields::destination_address(sdp::fields::value(*source_filter));
++
++            // auto sampling = sdp::find_name(params, U("sampling"));
++            // auto depth = sdp::find_name(params, U("depth"));
++            // auto ssn = sdp::find_name(params, U("SSN"));
++
++            auto fps_numerator = nmos::details::parse_exactframerate(sdp::fields::value(*fps).as_string()).numerator();
++            auto fps_denominator = nmos::details::parse_exactframerate(sdp::fields::value(*fps).as_string()).denominator();
++
++            // this data are necessary to send via grpc to ffmpeg
++            auto config_by_id = tracker::get_stream_info(id_type.first);
++
++            Video v;
++            v.frame_width=std::stoi(sdp::fields::value(*width_param).as_string());
++            v.frame_height=std::stoi(sdp::fields::value(*height_param).as_string());
++            v.frame_rate.numerator=fps_numerator;
++            v.frame_rate.denominator=fps_denominator;
++            v.pixel_format=config_by_id.payload.video.pixel_format;
++            if (encoding_name == U("raw")) {
++                v.video_type = "rawvideo";
++            } else {
++                v.video_type = utility::us2s(encoding_name);
++            }
 +            Stream s;
-+            s.stream_type.type = stream_type::st2110;
-+            s.stream_type.st2110.network_interface = "0000:ca:11.1";
-+            s.stream_type.st2110.local_ip = "192.168.2.2";
-+            s.stream_type.st2110.remote_ip = "192.168.2.1";
-+            s.stream_type.st2110.transport = "st2110-20";
-+            s.stream_type.st2110.remote_port = 20000;
-+            s.stream_type.st2110.payload_type = 112;
-+            Payload payload = {payload_type::video, video, audio};
-+            s.payload=payload;
-+            StreamType streamTypeSaving;
-+            streamTypeSaving.type=stream_type::file;
-+            streamTypeSaving.file=fileSender;
-+            Stream streamSaving = {payload, streamTypeSaving};
-+            //sender=ffmpeg, receiver=nmos
-+            const Config conf = {{streamSaving}, {s}, "rx", "none", 2};
-+            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "~~~~ Sends "<<conf.senders.size()<< " sender(s) and "<<conf.receivers.size()<<" receiver(s) ~~~~";
-+            ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), conf);
++            if(config_by_id.stream_type.type==stream_type::mcm)
++            {
++                s.stream_type.type=stream_type::mcm;
++                s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
++                s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
++                s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
++                s.stream_type.mcm.ip=receiver_source_ip.as_string();
++                s.stream_type.mcm.port=sender_destination_port.as_integer();
++                s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
++                s.stream_type.st2110.payload_type = payload_type;
++            }
++            else if(config_by_id.stream_type.type==stream_type::st2110)
++            {
++                s.stream_type.type = stream_type::st2110;
++                s.stream_type.st2110.network_interface = vfio_port_value;
++                s.stream_type.st2110.local_ip = receiver_source_ip.as_string();
++                s.stream_type.st2110.remote_ip = destination_addr;
++                s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
++                s.stream_type.st2110.remote_port = sender_destination_port.as_integer();
++                s.stream_type.st2110.payload_type = payload_type;
++            }
++
++            Payload payload;
++            payload.type = payload_type::video;
++            payload.video = v;
++
++            s.payload = payload;
++
++            //receiver=nmos, sender=ffmpeg
++            // to get ffmpeg senders of stream_type::File
++            auto configIntel = config_manager.get_config();
++            auto ffmpeg_sender_as_file_vector = tracker::get_file_streams_senders(configIntel);
++
++            auto gpu_hw_acceleration_device = "";
++            if (configIntel.gpu_hw_acceleration == "intel") {
++                if (!configIntel.gpu_hw_acceleration_device.empty()) {
++                    slog::log<slog::severities::error>(gate, SLOG_FLF) << "GPU hardware acceleration device is not specified for Intel.";
++                }
++                gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
++            }
++            int multiviewer_columns = 3;
++            if (configIntel.function == "multiviewer") {
++                multiviewer_columns = configIntel.multiviewer_columns;
++            }
++            // construct config for NMOS sender
++            const Config config = {ffmpeg_sender_as_file_vector,{s},configIntel.function,multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
++
++            ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
 +            ffmpegThread2.join();
 +        }
-         connection_events_activation_handler(resource, connection_resource);
--
++        connection_events_activation_handler(resource, connection_resource);
          receiver_monitor_connection_activation_handler(connection_resource);
      };
  }
-@@ -1752,6 +1158,15 @@ namespace impl
+@@ -1716,7 +1226,7 @@ nmos::control_protocol_property_changed_handler make_node_implementation_control
+ 
+ namespace impl
+ {
+-    nmos::interlace_mode get_interlace_mode(const nmos::settings& settings)
++    nmos::interlace_mode get_interlace_mode(const nmos::rational& frame_rate, uint32_t frame_height, const nmos::settings& settings)
+     {
+         if (settings.has_field(impl::fields::interlace_mode))
+         {
+@@ -1726,8 +1236,8 @@ namespace impl
+         // for 1080i formats, ST 2110-20 says that "the fields of an interlaced image are transmitted in time order,
+         // first field first [and] the sample rows of the temporally second field are displaced vertically 'below' the
+         // like-numbered sample rows of the temporally first field."
+-        const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(settings));
+-        const auto frame_height = impl::fields::frame_height(settings);
++        // const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(settings));
++        // const auto frame_height = impl::fields::frame_height(settings);
+         return (nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate) && 1080 == frame_height
+             ? nmos::interlace_modes::interlaced_tff
+             : nmos::interlace_modes::progressive;
+@@ -1752,6 +1262,15 @@ namespace impl
          }));
      }
  
@@ -1600,7 +2117,16 @@ index f12cca1..6c58309 100644
      // find interface with the specified address
      std::vector<web::hosts::experimental::host_interface>::const_iterator find_interface(const std::vector<web::hosts::experimental::host_interface>& interfaces, const utility::string_t& address)
      {
-@@ -1861,12 +1276,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
+@@ -1853,7 +1372,7 @@ namespace impl
+ 
+ // This constructs all the callbacks used to integrate the example device-specific underlying implementation
+ // into the server instance for the NMOS Node.
+-nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate)
++nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate)
+ {
+     return nmos::experimental::node_implementation()
+         .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
+@@ -1861,12 +1380,11 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
          .on_load_ca_certificates(nmos::make_load_ca_certificates_handler(model.settings, gate))
          .on_system_changed(make_node_implementation_system_global_handler(model, gate)) // may be omitted if not required
          .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
@@ -1608,26 +2134,40 @@ index f12cca1..6c58309 100644
 -        .on_validate_connection_resource_patch(make_node_implementation_patch_validator()) // may be omitted if not required
 -        .on_resolve_auto(make_node_implementation_auto_resolver(model.settings))
 -        .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings))
+-        .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
 +        .on_parse_transport_file(make_node_implementation_transport_file_parser(gate)) // may be omitted if the default is sufficient
 +        .on_validate_connection_resource_patch(make_node_implementation_patch_validator(gate)) // may be omitted if not required
 +        .on_resolve_auto(make_node_implementation_auto_resolver(model.settings, gate))
 +        .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings, gate))
-         .on_connection_activated(make_node_implementation_connection_activation_handler(model, gate))
++        .on_connection_activated(make_node_implementation_connection_activation_handler(model, config_manager, gate))
          .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
 -        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate))
 -        .on_control_protocol_property_changed(make_node_implementation_control_protocol_property_changed_handler(gate)); // may be omitted if IS-12 not required
 +        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
  }
-diff --git a/Documents/Installation-with-Conan.md b/Documents/Installation-with-Conan.md
-index 13c106e..28f6aa6 100644
---- a/Documents/Installation-with-Conan.md
-+++ b/Documents/Installation-with-Conan.md
-@@ -5,7 +5,7 @@ For many platforms, a binary package is available from Conan Center Index so it
+diff --git a/Development/nmos-cpp-node/node_implementation.h b/Development/nmos-cpp-node/node_implementation.h
+index 3c6b295..2979150 100644
+--- a/Development/nmos-cpp-node/node_implementation.h
++++ b/Development/nmos-cpp-node/node_implementation.h
+@@ -1,6 +1,6 @@
+ #ifndef NMOS_CPP_NODE_NODE_IMPLEMENTATION_H
+ #define NMOS_CPP_NODE_NODE_IMPLEMENTATION_H
+-
++#include "intel_config_parser.h"
+ namespace slog
+ {
+     class base_gate;
+@@ -20,10 +20,11 @@ namespace nmos
+ // This is an example of how to integrate the nmos-cpp library with a device-specific underlying implementation.
+ // It constructs and inserts a node resource and some sub-resources into the model, based on the model settings,
+ // starts background tasks to emit regular events from the temperature event source, and then waits for shutdown.
+-void node_implementation_thread(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, slog::base_gate& gate);
++
++void node_implementation_thread(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, ConfigManager& config_manager, slog::base_gate& gate);
  
- 1. Install conan:
-    ```sh
--   pip install --upgrade conan~=2.0.5
-+   pip install --upgrade conan~=2.4
-    ```
+ // This constructs all the callbacks used to integrate the example device-specific underlying implementation
+ // into the server instance for the NMOS Node.
+-nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, slog::base_gate& gate);
++nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate);
  
-    `pip` is the package installer for Python. Install Python 3 if necessary.
+ #endif

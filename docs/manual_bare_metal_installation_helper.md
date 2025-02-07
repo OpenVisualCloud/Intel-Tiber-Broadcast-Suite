@@ -1,4 +1,6 @@
-## Alternative manual build method
+# Alternative manual build method
+
+## 1. Alternative manual build method
 > **Note:** This is not the recommended method of bare metal installation only use as a reference if you encounter erros during the build.sh execution
 
 ### 1.1. Installing dependencies
@@ -150,7 +152,7 @@ First, add the CUDA APT repository to your system.
     rm -drf svt-av1
     ```
 
-### 1.4. Download and Extract Vulkan Headers:
+### 1.4. Download and Extract Vulkan Headers
 1. Download Vulkan Headers:
     ```bash
     . versions.env && curl -Lf https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VULKANSDK}.tar.gz | tar -zx --strip-components=1 -C vulkan-headers
@@ -174,7 +176,7 @@ First, add the CUDA APT repository to your system.
     rm -drf vulkan-headers
     ```
 
-### 1.5. Download and Extract XDP-Tools and libbpf:
+### 1.5. Download and Extract XDP-Tools and libbpf
 
 1. Download XDP-Tools and libbpf:
     ```bash
@@ -206,7 +208,7 @@ First, add the CUDA APT repository to your system.
     ```
 
 ### 1.6. Media Transport Library
-#### 1.6.0. Option #1: Install Media Transport Library using a Debian Package
+#### Option #1: Install Media Transport Library using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -230,7 +232,7 @@ First, add the CUDA APT repository to your system.
     rm -rf mtl mtl.zip
     ```
 
-#### 1.6.1. Option #2: Alternatively Download and Build Media Transport Library (MTL) from source:
+#### Option #2: Alternatively Download and Build Media Transport Library (MTL) from source
 
 1. Download Media Transport Library:
     ```bash
@@ -248,7 +250,7 @@ First, add the CUDA APT repository to your system.
     ./build.sh
     ```
 ### 1.7. JPEG-XS
-#### 1.7.0. Option #1 Installing JPEG-XS Using a Debian Package
+#### Option #1: Installing JPEG-XS Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -272,11 +274,11 @@ First, add the CUDA APT repository to your system.
     rm -rf jpegxs jpegxs.zip
     ```
 
-#### 1.7.1. Option #2 Alternatively Download, Build, and Install JPEG-XS from source code:
+#### Option #2: Alternatively Download, Build, and Install JPEG-XS from source code
 
 1. Download and Extract JPEG-XS:
     ```bash
-    . versions.env && curl -Lf https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz | tar -zx --strip-components=1 -C jpegxs
+    . versions.env && curl -Lf https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/${JPEG_XS_COMMIT_ID}.tar.gz | tar -zx --strip-components=1 -C jpegxs
     ```
 
 1. Build and Install JPEG-XS:
@@ -299,7 +301,7 @@ First, add the CUDA APT repository to your system.
     # Run the build script:
     ./build.sh
     ```
-### 1.8. Download, Install, and Set Up Intel IPP:
+### 1.8. Download, Install, and Set Up Intel IPP
 
 1. Download Intel IPP:
     ```bash
@@ -325,27 +327,21 @@ First, add the CUDA APT repository to your system.
     rm -f l_ipp_oneapi_p_2021.10.1.16_offline.sh
     ```
 
-### 1.9. Download, Patch, Build, and Install Video Super Resolution (VSR):
+### 1.9. Download, Patch, Build, and Install Video Super Resolution (VSR)
 
 1. Download and Extract VSR:
     ```bash
     . versions.env && curl -Lf https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz | tar -zx --strip-components=1 -C vsr
     ```
 
-1. Apply Patches to VSR:
+1. Build and Install VSR:
     ```bash
     # Navigate to the VSR Directory:
     cd vsr
 
-    # Apply the missing header fix patch:
-    git apply ../patches/vsr/0003-missing-header-fix.patch
-
     # Remove 'clan' from the build script:
     sed -i 's/clan//g' build.sh
-    ```
 
-1. Build and Install VSR:
-    ```bash
     # Source the IPP environment:
     . /opt/intel/oneapi/ipp/latest/env/vars.sh
 
@@ -361,7 +357,7 @@ First, add the CUDA APT repository to your system.
 
 ### 1.10. Media Communications Mesh
 
-#### 1.10.0. Option #1 Install Media Communications Mesh (MCM) Using a Debian Package
+#### Option #1: Install Media Communications Mesh Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -385,29 +381,29 @@ First, add the CUDA APT repository to your system.
     rm -rf mcm mcm.zip
     ```
 
-#### 1.10.1. Option #2 Alternatively Download, Build, and Install JPEG-XS froum source code:
-1. Download and Extract MCM:
+#### Option #2: Alternatively Download, Build, and Install JPEG-XS froum source code
+1. Download and Extract Media Communications Mesh:
     ```bash
     . versions.env && curl -Lf https://github.com/OpenVisualCloud/Media-Communications-Mesh/archive/refs/tags/${MCM_VER}.tar.gz | tar -zx --strip-components=1 -C mcm
     ```
 
-2. Build and Install MCM:
+2. Build and Install Media Communications Mesh:
     ```bash
-    # Navigate to the MCM Directory:
+    # Navigate to the Media Communications Mesh Directory:
     cd mcm
 
     # Prepare the build directory:
     cmake -S sdk -B sdk/out
 
-    # Build MCM:
+    # Build Media Communications Mesh:
     cmake --build sdk/out
 
-    # Install MCM:
+    # Install Media Communications Mesh:
     sudo cmake --install sdk/out
     ```
 
 
-### 1.11. Download, Build, and Install FFmpeg NV-Codec-Headers:
+### 1.11. Download, Build, and Install FFmpeg NV-Codec-Headers
 
 1. Download and Extract FFmpeg NV-Codec-Headers:
     ```bash
@@ -433,7 +429,7 @@ First, add the CUDA APT repository to your system.
     ```
 
 ### 1.12. FFmpeg
-#### 1.12.0. Option #1 Install FFmpeg Using a Debian Package
+#### Option #1: Install FFmpeg Using a Debian Package
 
 1. Depending on your distribution, assign the appropriate value:
     ```bash
@@ -452,7 +448,7 @@ First, add the CUDA APT repository to your system.
     sudo dpkg -i ffmpeg/*.deb
     ```
 
-#### 1.12.1. Option #2 Alternatively Download, Patch, Build, and Install FFmpeg:
+#### Option #2: Alternatively Download, Patch, Build, and Install FFmpeg
 
 1. Download and Extract FFmpeg:
     ```bash
@@ -480,7 +476,8 @@ First, add the CUDA APT repository to your system.
     git apply ../Media-Transport-Library/ecosystem/ffmpeg_plugin/7.0/*.patch
 
     # Apply JPEG-XS patches:
-    git apply --whitespace=fix ../patches/jpegxs/*.patch
+    cp ../jpegxs/ffmpeg-plugin/libsvtjpegxs* libavcodec/
+    git apply --whitespace=fix ../jpegxs/ffmpeg-plugin/7.0/*.patch
 
     # Apply additional FFmpeg patches:
     git apply ../patches/ffmpeg/001-hwupload_async.diff
@@ -489,7 +486,7 @@ First, add the CUDA APT repository to your system.
     git apply ../patches/ffmpeg/004-filtergraph_async.diff
     git apply ../patches/ffmpeg/005-ffmpeg_scheduler.diff
 
-    # Apply MCM patches:
+    # Apply Media Communications Mesh patches:
     git apply -v --whitespace=fix --ignore-space-change ../mcm/ffmpeg-plugin/7.0/*.patch
     cp -f ../mcm/ffmpeg-plugin/mcm_* libavdevice/
     ```
@@ -545,5 +542,5 @@ First, add the CUDA APT repository to your system.
     rm -drf ffmpeg cartwheel
     ```
 
-### 2.0. Go to the run.md instruction for more details on how to run the image
+## 2. Go to the run.md instruction for more details on how to run the image
 **[Running Intel® Tiber™ Broadcast Suite Pipelines](./run.md)**

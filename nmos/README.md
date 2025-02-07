@@ -12,7 +12,7 @@
 `nmos-cpp` repository has been simplified to **IS-04** & **IS-05** implementation only.
 The key change is in configuration of senders and receivers for BCS pipeline.
 
-BCS Pipeline is a NMOS client that is treated as one node that has 1 device and has x senders and y receivers that are provided from the level of json config `node.json`.
+BCS Pipeline is a NMOS client that is treated as one node that has 1 device and has x senders and y receivers that are provided from the level of JSON config `node.json`.
 Here is sample config `node.json`:
 
 ```json
@@ -53,13 +53,11 @@ Here is sample config `node.json`:
 
 The crucial params are:  
 
-```
-
+```json
 "senders": ["v","d"],
 "senders_count": [2, 1],
 "receivers": ["v"],
 "receivers_count": [4],
-
 ```
 
 > `senders` and `receivers` are arrays that specifies the kind of ports. The possible options are video "v", audio "a", data "d", and mux "m"
@@ -77,22 +75,21 @@ For testing purposes there is also NMOS registry pod and NMOS testing tool for v
 
 - using docker compose and customized network (bridge)
   
-``` bash
+```bash
 cd <repo>/nmos/docker
 ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images --run-docker-compose 
 ```
 
 - ...or using docker command and running using host network
 
-``` bash
+```bash
 cd <repo>/nmos/docker
 ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images
 ```
 
 #### Usage and description of options
 
-```
-
+```text
 Pattern: ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> [--prepare-only] [--apply-patches] [--build-images] [--run-docker-compose] [--update-submodules]
   --source-dir <source_dir>  : Absolute path to directory with source code of repository nmos-cpp 3rd party submodule
   --build-dir <build_dir>    : Absolute path to directory with dockerfile and other build files in build-nmos-cpp 3rd party submodule
@@ -107,14 +104,13 @@ Pattern: ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir 
                                Else, by default the <docker run> command will run:
                                (nmos-client + nmos-registry without nmos-testing tool container)
                                in host network
-
 ```
 
 ### Kubernetes option
 
 Run script that prepares images dor NMOS client node and NMOS registry:
 
-``` bash
+```bash
 cd <repo>/nmos/docker
 ./run.sh --source-dir <source_dir> --build-dir <build_dir> --patch-dir <patch_dir> --run-dir <RUN_DIR> --update-submodules --apply-patches --build-images --prepare-only
 ```
@@ -135,13 +131,13 @@ kubectl apply -f <repo>/nmos/k8s/nmos-testing.yaml
 
 #### 1. Git
 
-``` bash
+```bash
 git submodule update --init --recursive
 ```
 
 #### 2. Patch
 
-``` bash
+```bash
 cd <repo>/nmos
 cd build-nmos-cpp
 git apply ../patches/build-nmos-cpp.patch
@@ -151,7 +147,7 @@ git apply ../patches/nmos-cpp.patch
 
 #### 3. Build NMOS binaries (client & registry/controller) (optional for user, useful for dev)
 
-``` bash
+```bash
 cd <repo>/nmos/nmos-cpp/Development/
 pip install --upgrade conan~=2.4 
 conan profile detect
@@ -162,7 +158,7 @@ cd <repo>/nmos/
 
 #### 4. Build images
 
-``` bash
+```bash
 cd <repo>/
 cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/node_implementation.h <repo>/nmos/build-nmos-cpp/
 cp <repo>/nmos/nmos-cpp/Development/nmos-cpp-node/node_implementation.cpp <repo>/nmos/build-nmos-cpp/
@@ -179,7 +175,7 @@ make buildnode # build NMOS client node
 
 #### 5. Docker-compose for running NMOS registry and controller, client and testing tool [OPTION #1]
 
-``` bash
+```bash
 cd <repo>/nmos/docker
 # Adjust configs: <repo>/nmos/docker/node.json and registry <repo>/nmos/docker/registry.json and <repo>/nmos/docker/docker-compose.yaml
 docker compose up
@@ -187,7 +183,7 @@ docker compose up
 
 #### 6. Kubernetes for running NMOS registry and controller, client and testing tool [OPTION #2]
 
-``` bash
+```bash
 cd <repo>/nmos/k8s
 # Install minikube https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
 minikube start

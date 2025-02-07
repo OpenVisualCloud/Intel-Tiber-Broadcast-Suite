@@ -45,7 +45,7 @@ RUN \
   $WGET  https://github.com/xdp-project/xdp-tools/archive/${XDP_VER}.tar.gz -O xdp-tools.tar.gz && \
   $WGET  https://github.com/libbpf/libbpf/archive/${BPF_VER}.tar.gz -O libbpf.tar.gz && \
   echo "**** DOWNLOAD JPEG-XS ****" && \
-  $WGET  https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz -O SVT-JPEG-XS.tar.gz&& \
+  $WGET  https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/${JPEG_XS_COMMIT_ID}.tar.gz -O SVT-JPEG-XS.tar.gz&& \
   echo "**** DOWNLOAD FFMPEG ****" && \
   $WGET  https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz -O ffmpeg.tar.gz && \
   echo "**** DOWNLOAD CARTWHEEL PATCHES ****" && \

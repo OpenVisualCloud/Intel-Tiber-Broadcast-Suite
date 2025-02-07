@@ -3,7 +3,7 @@
 What's Changed
 - Support Nvidia GPU (CUDA filters)
 - Uploaded Intel® Tiber™ Broadcast Suite to the Docker Hub
-- Enabled build of Intel® Tiber™ Broadcast Suite from debian packages
+- Enabled build of Intel® Tiber™ Broadcast Suite from Debian packages
 - Updated supported FFmpeg version to 7.0
 - Updated documentation
 - Updated build.sh
@@ -30,7 +30,7 @@ What's Changed
 - DPC++ kernels: Although not supported in this release, the Suite is designed to enable custom effect filters used in video production in future releases. 
 - OpenGL/Vulcan feature integration. 
 - Performance features: The Suite includes several performance features such as memory management optimizations for page-aligned surface allocations, asynchronous execution of video pipeline filters to maximize GPU utilization, and high-throughput GPU-CPU memory data transfers. 
-- Media Communications Mesh Plugin: This plugin allows single or multiple instances of FFmpeg with Media Communications Mesh Plugin to connect to selected Media Proxy instance, enhancing the efficiency of the Suite. 
+- Mesh Plugin: This plugin allows single or multiple instances of FFmpeg with Mesh Plugin to connect to selected Media Proxy instance, enhancing the efficiency of the Suite.
 - Support for PTP Time synchronization: This feature uses Media Transport Library PTP Time synchronization feature, enhancing the synchronization of the Suite. 
 - Support for changing input and output streams Payload ID: This feature adds flexibility to the deployment of the Suite. 
 

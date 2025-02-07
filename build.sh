@@ -464,7 +464,7 @@ function dpdk_download_patch_build {
 
 function jpegxs_download_build {
     if ! (mkdir -p "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/jpegxs" &&
-          curl -Lf https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz | \
+          curl -Lf https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/${JPEG_XS_COMMIT_ID}.tar.gz | \
           tar -zx --strip-components=1 -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/jpegxs") >>$log_file 2>&1; then
         echo
         echo -e ${RED}[ERROR] JPEG download failed ${NC}
@@ -537,15 +537,8 @@ function vsr_download_build {
     fi
 
     if ! (cd "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr" &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr" apply "${SCRIPT_DIR}/patches"/vsr/0003-missing-header-fix.patch &&
-          sed -i 's/clan//g' "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/build.sh" &&
-          cd -) >>$log_file 2>&1; then
-        echo
-        echo -e ${RED}[ERROR] VSR patching failed ${NC}
-    fi
-
-    if ! (cd "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr" &&
           . /opt/intel/oneapi/ipp/latest/env/vars.sh &&
+          sed -i 's/clan//g' "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/build.sh" &&
           "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/build.sh" \
           -DCMAKE_INSTALL_PREFIX="${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/install" \
           -DENABLE_RAISR_OPENCL=ON) >>$log_file 2>&1; then
@@ -615,7 +608,8 @@ function ffmpeg_download_patch_build {
           cp "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.c -rf "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg/libavdevice/ &&
           cp "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_*.h -rf "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg/libavdevice/ &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/Media-Transport-Library/ecosystem/ffmpeg_plugin/7.0/*.patch &&
-          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply --whitespace=fix "${SCRIPT_DIR}/patches"/jpegxs/*.patch &&
+          cp "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/jpegxs/ffmpeg-plugin/libsvtjpegxs* "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg/libavcodec/ &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply --whitespace=fix "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/jpegxs/ffmpeg-plugin/7.0/*.patch &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0001-hwupload_async.diff &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0002-qsv_aligned_malloc.diff &&
           git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}"/ffmpeg apply "${SCRIPT_DIR}/patches"/ffmpeg/0003-qsvvpp_async.diff &&

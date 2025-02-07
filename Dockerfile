@@ -23,7 +23,7 @@ ENV \
 # versions variables are contained in the versions.env
 ARG nproc
 ARG VERSIONS_ENVIRONMENT_FILE="versions.env"
-ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEEL_COMMIT_ID FFMPEG_COMMIT_ID XDP_VER BPF_VER MTL_VER MCM_VER JPEG_XS_VER DPDK_VER FFNVCODED_VER LINK_CUDA_REPO FFMPEG_PLUGIN_VER"
+ARG REQUIRED_ENVIRONMENT_VARIABLES="LIBVMAF ONEVPL SVTAV1 VULKANSDK VSR CARTWHEEL_COMMIT_ID FFMPEG_COMMIT_ID XDP_VER BPF_VER MTL_VER MCM_VER JPEG_XS_COMMIT_ID DPDK_VER FFNVCODED_VER LINK_CUDA_REPO FFMPEG_PLUGIN_VER"
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 
@@ -216,7 +216,7 @@ WORKDIR /tmp/jpegxs/Build/linux
 RUN \
   echo "**** DOWNLOAD JPEG-XS ****" && \
   curl -Lf \
-    https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/refs/tags/v${JPEG_XS_VER}.tar.gz | \
+    https://github.com/OpenVisualCloud/SVT-JPEG-XS/archive/${JPEG_XS_COMMIT_ID}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/jpegxs && \
   chmod +x ./build.sh /tmp/jpegxs/imtl-plugin/build.sh
 
@@ -249,7 +249,8 @@ RUN \
   cp /tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/mtl_* -rf /tmp/ffmpeg/libavdevice/ && \
   patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/Media-Transport-Library/ecosystem/ffmpeg_plugin/${FFMPEG_PLUGIN_VER}/"*.patch) && \
   echo "**** APPLY JPEG-XS PATCHES ****" && \
-  patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/patches/jpegxs/"*.patch) && \
+  cp /tmp/jpegxs/ffmpeg-plugin/libsvtjpegxs* -rf /tmp/ffmpeg/libavcodec/ && \
+  patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/jpegxs/ffmpeg-plugin/7.0/"*.patch) && \
   echo "**** APPLY FFMPEG patches ****" && \
   patch -d "/tmp/ffmpeg" -p1 -i <(cat "/tmp/patches/ffmpeg/"*.diff)
 
@@ -261,7 +262,6 @@ RUN \
   curl -Lf \
     https://github.com/OpenVisualCloud/Video-Super-Resolution-Library/archive/refs/tags/${VSR}.tar.gz | \
   tar -zx --strip-components=1 -C "/tmp/vsr" && \
-  patch -d "/tmp/vsr" -p1 -i <(cat "/tmp/patches/vsr/"*.patch) && \
   echo "Fix for clang 18 bug that breaks compilation. Force compiler to GCC." && \
   sed -i 's/clan//g' build.sh && \
   . "/opt/intel/oneapi/ipp/latest/env/vars.sh" && \

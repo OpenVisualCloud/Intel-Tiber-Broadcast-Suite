@@ -1,19 +1,22 @@
-# Overview
+# gRPC Overview
+
+## FFmpeg_wrapper_service.cc File
+
 The `FFmpeg_wrapper_service.cc` file implements a gRPC server that executes FFmpeg commands received from clients. The server handles requests asynchronously using a completion queue and processes each request in a separate instance of the CallData class.
 
-### Requirements :
+### Requirements
 To be able to build and run the service :
 - Requirement to build grp first: https://grpc.io/docs/protoc-installation/
 - Then run the compilation script `./compile.sh` and using optional argument `--unit_testing` to build and run the unit tests. i.e `./compile.sh --unit_testing`.
 
-### Run the service :
+### Run the service
 
 gRPC service needs two arguments, interface and port. These arguments are passed in command line style.
 
 - When using the wrapper sevice as a command line utility : ./FFmpeg_wrapper_service <interface/ip> <port> i.e `./FFmpeg_wrapper_service 10.10.10.10 5555`
 - When spawning the service as a docker image entry point : docker run <name of the docker image> <interface/ip> <port> i.e `docker run video_production_image 10.10.10.10 5555`
 
-### Key Components : 
+### Key Components
 
 **1. Includes and Using Declarations**:
 - Includes necessary headers for gRPC, standard I/O, and signal handling.
@@ -88,6 +91,8 @@ Constructor:
 - Calls Run to start the server.
 
 --------------------------------------------------------------------------------------------------------------------
+
+## FFmpeg_wrapper_client.cc File
 
 The `FFmpeg_wrapper_client.cc` file implements a gRPC client that sends FFmpeg commands to a gRPC server and handles the responses asynchronously. The client is designed to manage multiple requests concurrently and ensures that all requests are completed before shutting down.
 
