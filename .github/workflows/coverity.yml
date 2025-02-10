@@ -16,8 +16,8 @@ env:
   DESCRIPTION: ${{ github.ref }}
   VERSION: ${{ github.sha }} 
 jobs:
-  grpc:
-      name: 'scan gRPC code'
+  build:
+      name: 'coverity'
       runs-on: ['self-hosted', 'coverity']
       timeout-minutes: 90
       steps:
@@ -32,7 +32,7 @@ jobs:
         - name: 'coverity: server upload'
           run: .github/coverity/cov-analysis.sh 
  
-        - name: 'upload raw build artifacts'
+        - name: 'coverity: upload raw build artifacts'
           uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
           with:
             name: coverity-${{ env.DESCRIPTION }}-${{ env.VERSION }}-raw
