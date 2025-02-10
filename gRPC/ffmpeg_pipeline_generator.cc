@@ -104,7 +104,33 @@ int ffmpeg_append_st2110_transport(std::string &transport, std::string &pipeline
     return 0;
 }
 
-int ffmpeg_append_stream_type(StreamType &s, bool is_rx, int idx, std::string &pipeline_string) {
+int ffmpeg_append_mcm_transport(Payload &p, std::string &pipeline_string) {
+    switch (p.type) {
+    case video:
+        pipeline_string += " -f mcm";
+        break;
+    case audio:
+        if(p.audio.format == "s16be" || p.audio.format == "s16le" || p.audio.format == "u16be" || p.audio.format == "u16le"){
+            pipeline_string += " -f mcm_audio_pcm16";
+            break;
+        }
+        else if(p.audio.format == "s24be" || p.audio.format == "s24le" || p.audio.format == "u24be" || p.audio.format == "u24le"){
+            pipeline_string += " -f mcm_audio_pcm24";
+            break;
+        }
+        else{
+            std::cout << "Error: audio format " << p.audio.format << " not supported yet" << std::endl;
+            return 1;
+        }
+    default: 
+        std::cout << "Error: unknown mcm payload type" << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
+int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipeline_string) {
+    auto s = st.stream_type;
     switch (s.type) {
     case file:
     {
@@ -144,12 +170,27 @@ int ffmpeg_append_stream_type(StreamType &s, bool is_rx, int idx, std::string &p
         else {
             pipeline_string += " -";
         }
-
-
         break;
     case mcm:
-        std::cout << "Error: mcm not supported yet" << std::endl;
-        return 1;
+        if (ffmpeg_append_mcm_transport(st.payload, pipeline_string) != 0) {
+            pipeline_string.clear();
+            std::cout << "Error appending mcm transport" << std::endl;
+            return 1;
+        }
+        pipeline_string += " -conn_type " + s.mcm.conn_type;
+        pipeline_string += " -transport " + s.mcm.transport;
+        if (s.mcm.transport == "st2110-20") {
+            pipeline_string += " -transport_pixel_format " + s.mcm.transport_pixel_format;
+        }
+        pipeline_string += " -ip_addr " + s.mcm.ip;
+        pipeline_string += " -port " + std::to_string(s.mcm.port);
+        if(is_rx) {
+            pipeline_string += " -i \"" + std::to_string(idx) + "\"";
+        }
+        else {
+            pipeline_string += " -";
+        }
+        break;
     default:
         break;
     }
@@ -164,7 +205,7 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
         return 1;
     }
 
-    if (ffmpeg_append_stream_type(rx.stream_type, true/*is_rx*/, idx, pipeline_string) != 0) {
+    if (ffmpeg_append_stream_type(rx, true/*is_rx*/, idx, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending rx stream type" << std::endl;
         return 1;
@@ -178,7 +219,7 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
         }
     }
 
-    if (ffmpeg_append_stream_type(tx.stream_type, false/*is_rx*/, idx, pipeline_string) != 0) {
+    if (ffmpeg_append_stream_type(tx, false/*is_rx*/, idx, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending tx stream type" << std::endl;
         return 1;
@@ -199,7 +240,7 @@ int ffmpeg_append_multiviewer_input(Stream &s, int idx, std::string &pipeline_st
         return 1;
     }
 
-    if(ffmpeg_append_stream_type(s.stream_type, true/*is_rx*/, idx, pipeline_string) != 0){
+    if(ffmpeg_append_stream_type(s, true/*is_rx*/, idx, pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending rx stream type" << std::endl;
         return 1;
@@ -272,7 +313,7 @@ int ffmpeg_append_split_process(std::vector<Stream> &senders, uint32_t intel_gpu
         if(senders[i].payload.video.video_type != "rawvideo") {
             pipeline_string += " -c:v " + senders[i].payload.video.video_type;
         }
-        ffmpeg_append_stream_type(senders[i].stream_type, false /*is_rx*/, i, pipeline_string);
+        ffmpeg_append_stream_type(senders[i], false /*is_rx*/, i, pipeline_string);
     }
     return 0;
 }
@@ -324,7 +365,7 @@ int ffmpeg_append_multiviewer(Config &config, std::string &pipeline_string) {
         std::cout << "Error appending multiviewer process" << std::endl;
         return 1;
     }
-    if (ffmpeg_append_stream_type(config.senders[0].stream_type, false /*is_rx*/, 0, pipeline_string) != 0) {
+    if (ffmpeg_append_stream_type(config.senders[0], false /*is_rx*/, 0, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending multiviewer tx stream" << std::endl;
         return 1;
@@ -350,7 +391,7 @@ int ffmpeg_append_recorder(Config &config, std::string &pipeline_string) {
         std::cout << "Error appending recorder rx payload" << std::endl;
         return 1;
     }
-    if (ffmpeg_append_stream_type(config.receivers[0].stream_type, true /*is_rx*/, 0, pipeline_string) != 0) {
+    if (ffmpeg_append_stream_type(config.receivers[0], true /*is_rx*/, 0, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending recorder rx stream" << std::endl;
         return 1;
@@ -384,13 +425,13 @@ int ffmpeg_append_upscale(Config &config, std::string &pipeline_string) {
         std::cout << "Error appending upscale rx payload" << std::endl;
         return 1;
     }
-    if(ffmpeg_append_stream_type(config.receivers[0].stream_type, true /*is_rx*/, 0, pipeline_string) != 0){
+    if(ffmpeg_append_stream_type(config.receivers[0], true /*is_rx*/, 0, pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending upscale rx stream" << std::endl;
         return 1;
     }
     pipeline_string += " -vf \"format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le\"";
-    if(ffmpeg_append_stream_type(config.senders[0].stream_type, false /*is_rx*/, 0, pipeline_string) != 0){
+    if(ffmpeg_append_stream_type(config.senders[0], false /*is_rx*/, 0, pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending upscale tx stream" << std::endl;
         return 1;
