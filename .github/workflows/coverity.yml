@@ -4,52 +4,36 @@ on:
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
-
+    inputs:
+      branch:
+        description: 'Branch to run scans on'
+        default: 'main'
+        type: string
+env:
+  COVERITY_PROJECT: 'Intel-Tiber-Broadcast-Suite'
+  COVERITY_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+  COVERITY_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+  DESCRIPTION: ${{ github.ref }}
+  VERSION: ${{ github.sha }} 
 jobs:
   grpc:
       name: 'scan gRPC code'
-      runs-on: 'ubuntu-22.04'
+      runs-on: ['self-hosted', 'coverity']
       timeout-minutes: 90
       steps:
         - name: 'setup: checkout repo'
           uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-        - name: 'Run coverity'
-          uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
           with:
-            project: 'Intel-Tiber-Broadcast-Suite'
-            email: ${{ secrets.COVERITY_SCAN_EMAIL }}
-            token: ${{ secrets.COVERITY_SCAN_TOKEN }}
-            build_language: 'cxx'
-            build_platform: 'linux64'
-            command: ${{ github.workspace }}/gRPC/compile.sh
+            ref: ${{ inputs.branch }} 
 
-        - name: 'Upload Coverity reports'
+        - name: 'coverity: build code'
+          run: .github/coverity/cov-build.sh all
+
+        - name: 'coverity: server upload'
+          run: .github/coverity/cov-analysis.sh 
+ 
+        - name: 'upload raw build artifacts'
           uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
           with:
-            name: coverity-grpc-reports
-            path: '${{ github.workspace }}/cov-int'
-  launcher:
-    name: 'scan launcher code'
-    runs-on: 'ubuntu-22.04'
-    timeout-minutes: 90 
-    steps:
-      - name: 'setup: checkout repo'
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: 'Run coverity'
-        uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
-        with:
-          project: 'Intel-Tiber-Broadcast-Suite'
-          email: ${{ secrets.COVERITY_SCAN_EMAIL }}
-          token: ${{ secrets.COVERITY_SCAN_TOKEN }}
-          build_language: 'cxx'
-          build_platform: 'linux64'
-          command: "go build -a -o manager cmd/main.go"
-          working-directory: "${{ github.workspace }}/launcher"
-
-      - name: 'Upload Coverity reports'
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: coverity-launcher-reports
-          path: '${{ github.workspace }}/cov-int'
+            name: coverity-${{ env.DESCRIPTION }}-${{ env.VERSION }}-raw
+            path: '${{ github.workspace }}/${{ env.COVERITY_PROJECT }}.tgz'

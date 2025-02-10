@@ -33,19 +33,7 @@ function build_nmos(){
 function build_nmos(){
   log_info "building nmos-cpp"
   cd ${ROOT_DIR}/nmos
-  # ./prepare-nmos-cpp.sh
-  # echo " cd docker \
-  #  ./run.sh\ 
-  #  --source-dir <source_dir> \
-  #  --build-dir <build_dir> \
-  #  --patch-dir <patch_dir> \
-  #  --run-dir <RUN_DIR> \
-  #  --update-submodules \
-  #  --apply-patches \
-  #  --build-images \
-  #  --prepare-only
-
-  # coverity_cpp_build nmos prepare-nmos-cpp.sh
+  # waiting for nmos build fix
 }
 
 function build_grpc(){
