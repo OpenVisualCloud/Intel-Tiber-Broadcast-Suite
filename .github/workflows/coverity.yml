@@ -1,0 +1,46 @@
+name: Coverity scan
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run scans on'
+        default: 'main'
+        type: string
+env:
+  COVERITY_PROJECT: 'Intel-Tiber-Broadcast-Suite'
+  COVERITY_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+  COVERITY_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+  DESCRIPTION: ${{ github.ref_name }}
+  VERSION: ${{ github.sha }} 
+jobs:
+  build:
+      name: 'coverity'
+      runs-on: ['self-hosted', 'coverity']
+      timeout-minutes: 90
+      steps:
+        - name: 'setup: cleanup worskpace'
+          run: |
+            ls -la ./
+            rm -rf ./* || true
+            rm -rf ./.??* || true
+            ls -la ./
+
+        - name: 'setup: checkout repo'
+          uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+          with:
+            ref: ${{ inputs.branch }} 
+
+        - name: 'coverity: build code'
+          run: .github/coverity/cov-build.sh all
+
+        - name: 'coverity: server upload'
+          run: .github/coverity/cov-analysis.sh 
+ 
+        - name: 'coverity: upload raw build artifacts'
+          uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+          with:
+            name: coverity-${{ env.DESCRIPTION }}-${{ env.VERSION }}-raw
+            path: '${{ github.workspace }}/${{ env.COVERITY_PROJECT }}.tgz' 
