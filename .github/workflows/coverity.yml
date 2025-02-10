@@ -13,7 +13,7 @@ env:
   COVERITY_PROJECT: 'Intel-Tiber-Broadcast-Suite'
   COVERITY_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
   COVERITY_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
-  DESCRIPTION: ${{ github.ref }}
+  DESCRIPTION: ${{ github.ref_name }}
   VERSION: ${{ github.sha }} 
 jobs:
   build:
