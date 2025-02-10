@@ -461,6 +461,7 @@ RUN \
 
 VOLUME ["/var/run/imtl", "/var/run/mcm", "/workspace"]
 COPY --chown=tiber --from=build-stage /buildout/ /
+COPY --chown=tiber --chmod=755 --from=build-stage /usr/lib64/libbpf.so.1 /usr/local/lib
 
 RUN ldconfig
 

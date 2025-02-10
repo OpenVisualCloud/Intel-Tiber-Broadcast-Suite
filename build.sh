@@ -828,7 +828,6 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
-    # "${VERSIONS_ENVIRONMENT_FILE}"
     docker buildx build "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
@@ -844,6 +843,14 @@ function install_in_docker_enviroment {
         -f "${SCRIPT_DIR}/Dockerfile" \
         --target manager-stage \
         "${SCRIPT_DIR}"
+
+    cp -r "${SCRIPT_DIR}/gRPC" "${SCRIPT_DIR}/nmos"
+
+    docker buildx build \
+        -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
+        -f "${SCRIPT_DIR}/nmos/Dockerfile" \
+        --target final-stage \
+        "${SCRIPT_DIR}/nmos"
 
     docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
     docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
