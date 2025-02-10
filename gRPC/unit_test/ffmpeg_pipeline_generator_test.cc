@@ -90,6 +90,70 @@ void fill_conf_receiver(Config &config) {
     }
 }
 
+void fill_conf_sender_mcm(Config &config) {
+    config.function = "tx";
+    config.gpu_hw_acceleration = "none";
+    config.logging_level = 0;
+
+    Payload p = get_video_payload_common();
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/home/test";
+        s.stream_type.file.filename = "1920x1080p10le_1.yuv";
+        config.receivers.push_back(s);
+    }
+
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::mcm;
+        s.stream_type.mcm.conn_type = "st2110";
+        s.stream_type.mcm.transport = "st2110-20";
+        s.stream_type.mcm.transport_pixel_format = "yuv422p10rfc4175";
+        s.stream_type.mcm.ip = "192.168.96.11";
+        s.stream_type.mcm.port = 9002;
+        s.stream_type.mcm.urn = "abc";
+
+        config.senders.push_back(s);
+    }
+}
+
+void fill_conf_receiver_mcm(Config &config) {
+    config.function = "rx";
+    config.gpu_hw_acceleration = "none";
+    config.logging_level = 0;
+
+    Payload p = get_video_payload_common();
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/home/test/recv";
+        s.stream_type.file.filename = "1920x1080p10le_1.yuv";
+        config.senders.push_back(s);
+    }
+
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::mcm;
+        s.stream_type.mcm.conn_type = "st2110";
+        s.stream_type.mcm.transport = "st2110-20";
+        s.stream_type.mcm.transport_pixel_format = "yuv422p10rfc4175";
+        s.stream_type.mcm.ip = "192.168.96.10";
+        s.stream_type.mcm.port = 9002;
+        s.stream_type.mcm.urn = "abc";
+
+        config.receivers.push_back(s);
+    }
+}
+
 void fill_conf_multiviewer(Config &config) {
     config.function = "multiviewer";
     config.gpu_hw_acceleration = "intel";
@@ -338,6 +402,32 @@ TEST(FFmpegPipelineGeneratorTest, test_upscale) {
             ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
     }
     std::string expected_string = " -y -init_hw_device vaapi=va -init_hw_device opencl@va -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -vf \"format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le\" /videos/recv/3840x2160p10le_1.yuv";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_mcm_sender) {
+    Config conf;
+    fill_conf_sender_mcm(conf);
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating sender pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_1.yuv -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.11 -port 9002 -";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_mcm_receiver) {
+    Config conf;
+    fill_conf_receiver_mcm(conf);
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating receiver pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.10 -port 9002 -i \"0\" /home/test/recv/1920x1080p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
