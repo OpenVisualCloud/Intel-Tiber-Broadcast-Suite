@@ -14,3 +14,5 @@ curl \
   --form version="${VERSION}" \
   --form description="${DESCRIPTION}" \
   "https://scan.coverity.com/builds?project=${COVERITY_PROJECT}"
+  
+#TODO: print branch/version in stdout/ upload artifacts with coverity description and version + date

@@ -11,6 +11,7 @@ def get_snapshot(config, description, version):
   raw = get_snapshots_list(config)
   ids = list(map(lambda s: s['id'],raw["snapshotsForStream"]))
   snapshot = None
+
   for id in ids:
     res = requests.get(f"{search_querry_url}/{id}",
         auth=HTTPBasicAuth(config["user"],config["password"]))
@@ -42,7 +43,7 @@ def get_snapshot_issues(config):
       "rowCount": 10000,
       "sortOrder": "asc"
   }
-  filters= filters=[
+  filters=[
       {
         "columnKey": "project",
         "matchMode": "oneOrMoreMatch",
@@ -85,21 +86,3 @@ def get_snapshot_issues(config):
         auth=HTTPBasicAuth(config["user"],config["password"]))
   response.raise_for_status()
   return  json.loads(response.text)
-
-
-def update_issues_triage(config):
-  put_triage_attribute_querry_url = f"{config['base_url']}/issues/triage"
-  put_triage_attribute_querry_params = {
-    "triageStoreName": "Default Triage Store", # buil-in store
-    "locale": "en_us",
-  }
-  put_triage_attribute_querry_data = {
-    "cids": config["cids"],
-    "attributeValuesList": config["attributeValuesList"]
-  }
-
-  response = requests.put(put_triage_attribute_querry_url, 
-    params=put_triage_attribute_querry_params,
-    json=put_triage_attribute_querry_data, 
-    auth=HTTPBasicAuth(config["user"],config["password"]))
-  response.raise_for_status()
