@@ -81,7 +81,7 @@ def get_snapshot(config: dict, description: str, version: str) -> int:
     search_querry_url = f"{config['base_url']}/api/v2/snapshots"
     raw = get_snapshots_list(config)
     ids = list(map(lambda s: s["id"], raw["snapshotsForStream"]))
-    snapshot = None
+    snapshot_id = 0
 
     for id in ids:
         res = requests.get(
@@ -94,9 +94,9 @@ def get_snapshot(config: dict, description: str, version: str) -> int:
             json_res["description"] == description
             and json_res["sourceVersion"] == version
         ):
-            snapshot = json_res["snapshotId"]
+            snapshot_id = json_res["snapshotId"]
             break
-    return snapshot if snapshot else 0
+    return snapshot_id
 
 
 def get_snapshots_list(config: dict) -> dict:
