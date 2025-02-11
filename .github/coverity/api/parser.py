@@ -13,15 +13,11 @@ def issues_to_pandas(raw_response_data: dict) -> pd.DataFrame:
       pd.DataFrame: A pandas DataFrame containing the converted response data,
               sorted by the "displayImpact" column with a categorical order of ["High", "Medium", "Low"].
     """
-
-    df = pd.DataFrame()
     converted_response = []
-
     for row in raw_response_data["rows"]:
         converted_dict = {item["key"]: item["value"] for item in row}
         converted_response.append(converted_dict)
-    df_stream = pd.DataFrame(converted_response)
-    df = pd.concat([df, df_stream], ignore_index=True)
+    df = pd.DataFrame(converted_response)
 
     impact_order = ["High", "Medium", "Low"]
     df["displayImpact"] = pd.Categorical(df["displayImpact"], categories=impact_order)
