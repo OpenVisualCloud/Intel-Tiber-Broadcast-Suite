@@ -23,13 +23,13 @@ jobs:
         run: pip3 install pandas
 
       - name: 'coverity: generate_reports'
-        working-directory: .github/coverity
+        working-directory: ${{ github.workspace }}/.github/coverity
         run: python3 report.py  ${{ inputs.branch }} ${{ inputs.commit }}
         env:
-          COVERITY_BASE_URL: ${{ secrets.COVERITY_BASE_URL }}
-          COVERITY_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          COVERITY_BASE_URL: ${{ secrets.COVERITY_REPORTS_BASE_URL }}
+          COVERITY_TOKEN: ${{ secrets.COVERITY_REPORTS_TOKEN }}
           COVERITY_PROJECT_NAME: 'Intel-Tiber-Broadcast-Suite'
-          COVERITY_USER: ${{ secrets.COVERITY_SCAN_EMAIL }}
+          COVERITY_USER: ${{ secrets.COVERITY_REPORTS_USER }}
 
       - name: prepare artifacts
         if: success()
