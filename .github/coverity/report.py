@@ -23,10 +23,12 @@ def main():
     log.info(f"fetching snapshot for branch {branch} and commit {commit}")
     querry["snapshot"] = api.get_snapshot(querry, branch, commit)
     if querry["snapshot"] == 0:
-        log.error("No snapshot found, for the branch:{branch} and commit:{commit}")
+        log.error(
+            "No snapshot found, for the branch:{branch} and commit:{commit}, the analysis might not be done yet"
+        )
         sys.exit(1)
 
-    log.info("spapshot found")
+    log.info("snapshot found")
     log.info(f"fetching issues for snapshot from {branch}/{commit}")
 
     issues = api.get_snapshot_issues(querry)
