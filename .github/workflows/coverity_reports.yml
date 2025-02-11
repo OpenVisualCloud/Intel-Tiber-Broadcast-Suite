@@ -1,6 +1,7 @@
 name: Coverity reports
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       branch:
