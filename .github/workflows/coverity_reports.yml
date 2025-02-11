@@ -1,7 +1,6 @@
 name: Coverity reports
 
 on:
-
   workflow_dispatch:
     inputs:
       branch:
@@ -26,14 +25,23 @@ jobs:
         run: pip3 install pandas
 
       - name: 'coverity: generate_reports'
-        run: python3 .github/coverity/reports.py ${{ inputs.branch }} ${{ inputs.commit }}
+        run: python3 reports.py ${{ inputs.branch }} ${{ inputs.commit }}
+        with:
+          working-directory: .github/coverity
+        env:
+          COVERITY_BASE_URL: ${{ secrets.COVERITY_SCAN_URL }}
+          COVERITY_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          COVERITY_PROJECT_NAME: 'Intel-Tiber-Broadcast-Suite'
+          COVERITY_USER: ${{ secrets.COVERITY_SCAN_EMAIL }}
+
       - name: prepare artifacts
+        if: success()
         run: |
-          mkdir cov-reports
-          mv *.csv cov-reports/
-          cd cov-reports
+          mkdir ${{ github.workspace }}/cov-reports && ${{ github.workspace }}/cd cov-reports
+          mv ${{ github.workspace }}/.github/coverity/*.csv .
           echo "Coverity reports for ${{ inputs.branch }} ${{ inputs.commit }}" > details.txt
       - name: 'coverity: upload reports'
+        if: success()
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: coverity-reports
