@@ -27,18 +27,11 @@ def prepare_querry() -> dict:
     """
 
     log = logging.getLogger(__name__)
-    is_env_set = lambda x: x in os.environ
 
-    BASE_URL = (
-        os.environ["COVERITY_BASE_URL"] if is_env_set("COVERITY_BASE_URL") else None
-    )
-    TOKEN = os.environ["COVERITY_TOKEN"] if is_env_set("COVERITY_TOKEN") else None
-    PROJECT_NAME = (
-        os.environ["COVERITY_PROJECT_NAME"]
-        if is_env_set("COVERITY_PROJECT_NAME")
-        else None
-    )
-    USER = os.environ["COVERITY_USER"] if is_env_set("COVERITY_USER") else None
+    BASE_URL = os.getenv("COVERITY_BASE_URL", default=None)
+    TOKEN = os.getenv("COVERITY_TOKEN", default=None)
+    PROJECT_NAME = os.getenv("COVERITY_PROJECT_NAME", default=None)
+    USER = os.getenv("COVERITY_USER", default=None)
 
     if None in [BASE_URL, TOKEN, PROJECT_NAME, USER]:
         log.error("Environment variables not set")
