@@ -36,6 +36,8 @@ include_directories(${googletest_SOURCE_DIR}/googletest/include)
 include_directories(${googletest_SOURCE_DIR}/googlemock/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../build)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../app)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../common)
 
 # Source files
 set(SOURCE_FILES
@@ -43,12 +45,12 @@ set(SOURCE_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/../../build/ffmpeg_cmd_wrap.pb.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../CmdPassImpl.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../../FFmpeg_wrapper_client.cc
-    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../../../app/ffmpeg_pipeline_generator.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../FFmpeg_wrapper_service_UT.cc
 )
 
 set(SOURCE_FILES_PIPELINE_GENERATOR
-    ${CMAKE_CURRENT_BINARY_DIR}/../../ffmpeg_pipeline_generator.cc
+    ${CMAKE_CURRENT_BINARY_DIR}/../../../app/ffmpeg_pipeline_generator.cc
     ${CMAKE_CURRENT_BINARY_DIR}/../ffmpeg_pipeline_generator_test.cc
 )
 

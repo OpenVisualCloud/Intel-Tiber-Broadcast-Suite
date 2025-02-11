@@ -16,14 +16,14 @@
 #include <utility>
 #include <vector>
 #include <atomic>
-#include "build/ffmpeg_cmd_wrap.pb.h"
+#include "ffmpeg_cmd_wrap.pb.h"
 
 #include <grpc/grpc.h>
 #include <grpcpp/channel.h>
 #include <grpcpp/client_context.h>
 #include <grpcpp/create_channel.h>
 #include <grpcpp/security/credentials.h>
-#include "build/ffmpeg_cmd_wrap.grpc.pb.h"
+#include "ffmpeg_cmd_wrap.grpc.pb.h"
 #include "config_params.hpp"
 
 using grpc::Channel;
