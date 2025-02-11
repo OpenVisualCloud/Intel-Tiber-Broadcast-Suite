@@ -34,7 +34,7 @@ jobs:
       - name: prepare artifacts
         if: success()
         run: |
-          mkdir ${{ github.workspace }}/cov-reports && ${{ github.workspace }}/cd cov-reports
+          mkdir ${{ github.workspace }}/cov-reports && cd ${{ github.workspace }}/cov-reports
           mv ${{ github.workspace }}/.github/coverity/*.csv .
           echo "Coverity reports for ${{ inputs.branch }} ${{ inputs.commit }}" > details.txt
       - name: 'coverity: upload reports'
