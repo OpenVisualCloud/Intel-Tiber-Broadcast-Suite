@@ -26,8 +26,8 @@ jobs:
         run: pip3 install pandas
 
       - name: 'coverity: generate_reports'
-        working-directory: ${{ github.workspace }}/.github/coverity
-        run: python3 report.py ${{ inputs.branch }} ${{ inputs.commit }}
+        working-directory: .github/coverity
+        run: python3 report.py main 44337356b9ff1fa2c76ecad6d3e5a50c20a0642f # {{ inputs.branch }} {{ inputs.commit }}
         env:
           COVERITY_BASE_URL: ${{ secrets.COVERITY_SCAN_URL }}
           COVERITY_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
