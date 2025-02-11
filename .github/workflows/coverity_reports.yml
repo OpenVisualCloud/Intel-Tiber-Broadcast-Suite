@@ -1,0 +1,40 @@
+name: Coverity reports
+
+on:
+
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'scanned branch name'
+        required: true
+        type: string
+      commit:
+        description: 'scanned commit hash'
+        type: string
+        required: true
+
+jobs:
+  generate_reports:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'setup: checkout repo'
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: ${{ inputs.branch }} 
+
+      - name: 'coverity: setup python'
+        run: pip3 install pandas
+
+      - name: 'coverity: generate_reports'
+        run: python3 .github/coverity/reports.py ${{ inputs.branch }} ${{ inputs.commit }}
+      - name: prepare artifacts
+        run: |
+          mkdir cov-reports
+          mv *.csv cov-reports/
+          cd cov-reports
+          echo "Coverity reports for ${{ inputs.branch }} ${{ inputs.commit }}" > details.txt
+      - name: 'coverity: upload reports'
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: coverity-reports
+          path: '${{ github.workspace }}/cov-reports'

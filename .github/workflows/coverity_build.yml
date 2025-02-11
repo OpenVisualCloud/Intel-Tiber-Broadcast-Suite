@@ -42,5 +42,5 @@ jobs:
         - name: 'coverity: upload raw build artifacts'
           uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
           with:
-            name: coverity-${{ env.DESCRIPTION }}-${{ env.VERSION }}-raw
-            path: '${{ github.workspace }}/${{ env.COVERITY_PROJECT }}.tgz' 
+            name: coverity-scan--details
+            path: '${{ github.workspace }}/analysis-details.txt '
