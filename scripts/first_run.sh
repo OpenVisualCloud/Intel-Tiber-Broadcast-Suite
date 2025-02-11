@@ -9,7 +9,7 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-. "${SCRIPT_DIR}/scripts/common.sh"
+. "${SCRIPT_DIR}/common.sh"
 
 TIBER_STACK_DEBUG="${TIBER_STACK_DEBUG:-1}" # (future) Force where possible instead of try to configure
 rm -f /tmp/kahawai_lcore.lock               # Remove MtlManager legacy indicator/switch if exists

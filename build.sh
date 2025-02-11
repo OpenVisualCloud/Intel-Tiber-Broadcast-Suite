@@ -832,7 +832,7 @@ function install_in_docker_enviroment {
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/Dockerfile" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}"
 
@@ -840,7 +840,7 @@ function install_in_docker_enviroment {
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/Dockerfile" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
         --target manager-stage \
         "${SCRIPT_DIR}"
 
@@ -848,7 +848,7 @@ function install_in_docker_enviroment {
 
     docker buildx build \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/nmos/Dockerfile" \
+        -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}/nmos"
 
