@@ -8,7 +8,7 @@ import logging
 # https://documentation.blackduck.com/bundle/coverity-docs/page/cim-api-docs/openapi/cim-openapi.html
 
 
-def prepare_querry() -> dict:
+def prepare_query() -> dict:
     """
     Prepares a query dictionary for Coverity API based on environment variables.
     This function retrieves the necessary environment variables to construct a query
@@ -71,14 +71,14 @@ def get_snapshot(config: dict, description: str, version: str) -> int:
     Returns:
         str: The snapshot ID if found, otherwise None.
     """
-    search_querry_url = f"{config['base_url']}/api/v2/snapshots"
+    search_query_url = f"{config['base_url']}/api/v2/snapshots"
     raw = get_snapshots_list(config)
     ids = list(map(lambda s: s["id"], raw["snapshotsForStream"]))
     snapshot_id = 0
-
+    #TODO: replace with threads
     for id in ids:
         res = requests.get(
-            f"{search_querry_url}/{id}",
+            f"{search_query_url}/{id}",
             auth=HTTPBasicAuth(config["user"], config["password"]),
         )
         res.raise_for_status()
@@ -102,10 +102,10 @@ def get_snapshots_list(config: dict) -> dict:
     Returns:
         dict: A dictionary containing the list of snapshots for the stream.
     """
-    search_querry_url = f"{config['base_url']}/api/v2/streams/stream/snapshots"
+    search_query_url = f"{config['base_url']}/api/v2/streams/stream/snapshots"
     # Get snapshots in stream
     response = requests.get(
-        search_querry_url,
+        search_query_url,
         params={"idType": "byName", "name": config["stream"]},
         auth=HTTPBasicAuth(config["user"], config["password"]),
     )
@@ -124,9 +124,9 @@ def get_snapshot_issues(config: dict) -> dict:
     Returns:
         dict: A dictionary containing the list of issues for the snapshot.
     """
-    search_querry_url = f"{config['base_url']}/api/v2/issues/search"
+    search_query_url = f"{config['base_url']}/api/v2/issues/search"
 
-    search_querry_params = {
+    search_query_params = {
         "includeColumnLabels": "true",
         "locale": "en_us",
         "offset": 0,
@@ -157,7 +157,7 @@ def get_snapshot_issues(config: dict) -> dict:
     if "extra_filters" in config.keys():
         filters.extend(config["extra_filters"])
 
-    search_querry_data = {
+    search_query_data = {
         "filters": filters,
         "columns": config["columns"],
         "snapshotScope": {
@@ -166,9 +166,9 @@ def get_snapshot_issues(config: dict) -> dict:
     }
     # Get issues from snapshot
     response = requests.post(
-        search_querry_url,
-        params=search_querry_params,
-        json=search_querry_data,
+        search_query_url,
+        params=search_query_params,
+        json=search_query_data,
         auth=HTTPBasicAuth(config["user"], config["password"]),
     )
     response.raise_for_status()
