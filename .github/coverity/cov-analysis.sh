@@ -14,3 +14,9 @@ curl \
   --form version="${VERSION}" \
   --form description="${DESCRIPTION}" \
   "https://scan.coverity.com/builds?project=${COVERITY_PROJECT}"
+  
+  
+echo " Project URL: https://scan.coverity.com/builds?project=${COVERITY_PROJECT} \n\
+       Analysis branch/description:  ${DESCRIPTION} \n\
+       Analysis commit/version: ${VERSION} \n\
+       submit date: $date \n" > analysis-details.txt 
