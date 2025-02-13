@@ -23,8 +23,8 @@ mkdir -p build || handle_error "Failed to create directory build"
 # Copy files with error checking
 cp ../../../gRPC/build/libFFmpeg_wrapper_client.a build/ || handle_error "Failed to copy libFFmpeg_wrapper_client.a"
 cp ../../../gRPC/build/libhw_grpc_proto.a build/ || handle_error "Failed to copy libhw_grpc_proto.a"
-cp ../../../gRPC/config_params.hpp nmos-cpp-node/ || handle_error "Failed to copy config_params.hpp"
-cp ../../../gRPC/FFmpeg_wrapper_client.h nmos-cpp-node/ || handle_error "Failed to copy FFmpeg_wrapper_client.h"
+#cp ../../../gRPC/config_params.hpp nmos-cpp-node/ || handle_error "Failed to copy config_params.hpp"
+#cp ../../../gRPC/FFmpeg_wrapper_client.h nmos-cpp-node/ || handle_error "Failed to copy FFmpeg_wrapper_client.h"
 cp ../../../gRPC/build/ffmpeg_cmd_wrap.pb.h nmos-cpp-node/build/ || handle_error "Failed to copy ffmpeg_cmd_wrap.pb.h"
 cp ../../../gRPC/build/ffmpeg_cmd_wrap.grpc.pb.h nmos-cpp-node/build/ || handle_error "Failed to copy ffmpeg_cmd_wrap.grpc.pb.h"
 
