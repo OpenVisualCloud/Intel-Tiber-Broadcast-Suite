@@ -2313,9 +2313,9 @@ index 22f693b..c19b15b 100644
 @@ -1572,14 +1572,26 @@ namespace nmos
          {
              using web::json::value;
- 
+
 -            if (!nmos::caps::meta::enabled(constraint_set_)) return false;
-+            if (!nmos::caps::meta::enabled(constraint_set_)) 
++            if (!nmos::caps::meta::enabled(constraint_set_))
 +            return false;
  
              const auto& constraint_set = constraint_set_.as_object();
