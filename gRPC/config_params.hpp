@@ -56,6 +56,10 @@ struct MCM {
     std::string urn;
 };
 
+struct SRT {
+    std::string urn;
+};
+
 enum payload_type {
     video = 0,
     audio
@@ -70,7 +74,8 @@ struct Payload {
 enum stream_type {
     file = 0,
     st2110,
-    mcm
+    mcm,
+    srt
  };
 
 struct StreamType {
@@ -78,6 +83,7 @@ struct StreamType {
     File file;
     ST2110 st2110;
     MCM mcm;
+    SRT srt;
 };
 
 struct Stream {
