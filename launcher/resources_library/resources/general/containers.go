@@ -29,10 +29,11 @@ type Containers struct {
 	Image           string // image + tag
 	ContainerName   string
 	Ip              string
-	ExposedPort     string // "format should be: 80/tcp"
-	BindingHostPort string
-	NetworkMode     NetworkMode
+	ExposedPort     []string // "format should be: 80/tcp"
+	BindingHostPort []string
+	NetworkMode     string
 	Overridden      string
 	Privileged      bool
 	VolumeMount     []string
+	EnviromentVariables []string
 }

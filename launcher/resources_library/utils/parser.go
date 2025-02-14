@@ -31,17 +31,18 @@ type RunOnce struct {
 type MediaProxyAgent struct {
 	ImageAndTag     string   `yaml:"imageAndTag"`
 	Command         string   `yaml:"command"`
-	ExposedPort     string   `yaml:"exposedPort"`
-	BindingHostPort string   `yaml:"bindingHostPort"`
+	ExposedPort     []string   `yaml:"exposedPort"`
+	BindingHostPort []string   `yaml:"bindingHostPort"`
 	IP              string   `yaml:"ip"`
 	Volumes         []string `yaml:"volumes"`
+	Privileged      bool     `yaml:"privileged"`
 }
 
 type MediaProxyMcm struct {
 	ImageAndTag     string   `yaml:"imageAndTag"`
 	Command         string   `yaml:"command"`
-	ExposedPort     string   `yaml:"exposedPort"`
-	BindingHostPort string   `yaml:"bindingHostPort"`
+	ExposedPort     []string   `yaml:"exposedPort"`
+	BindingHostPort []string   `yaml:"bindingHostPort"`
 	IP              string   `yaml:"ip"`
 	Volumes         []string `yaml:"volumes"`
 	Privileged      bool     `yaml:"privileged"`
@@ -56,19 +57,25 @@ type FFmpegPipeline struct {
 	Name            string `yaml:"name"`
 	ImageAndTag     string `yaml:"imageAndTag"`
 	Command         string `yaml:"command"`
-	ExposedPort     string `yaml:"exposedPort"`
-	BindingHostPort string `yaml:"bindingHostPort"`
+	ExposedPort     []string `yaml:"exposedPort"`
+	BindingHostPort []string `yaml:"bindingHostPort"`
 	IP              string `yaml:"ip"`
+    Network         string `yaml:"network"`
+    DeviceDri       string `yaml:"deviceDri"`
+    DeviceVfio      string `yaml:"deviceVfio"`
+    Volumes         []string `yaml:"volumes"`
 }
 
 type NmosClient struct {
 	Name            string `yaml:"name"`
 	ImageAndTag     string `yaml:"imageAndTag"`
 	Command         string `yaml:"command"`
-	ExposedPort     string `yaml:"exposedPort"`
-	BindingHostPort string `yaml:"bindingHostPort"`
+	ExposedPort     []string `yaml:"exposedPort"`
+	BindingHostPort []string `yaml:"bindingHostPort"`
 	IP              string `yaml:"ip"`
 	Network         string `yaml:"network"`
+	Volumes         []string `yaml:"volumes"`
+	EnvironmentVariables []string `yaml:"environmentVariables"`
 }
 
 func ParseLauncherMode(filename string) (bool, error) {

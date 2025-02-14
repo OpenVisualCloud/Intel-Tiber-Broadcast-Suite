@@ -16,7 +16,11 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/go-logr/logr"
 )
-
+const (
+	MediaProxyAgentContainerName = "mesh-agent"
+	MediaProxyContainerName      = "media-proxy"
+	BCSPipelineContainerName     = "bcs-ffmpeg-pipeline"
+)
 type ContainerController interface {
 	CreateAndRunContainers(ctx context.Context, log logr.Logger) error
 	IsContainerRunning(containerID string) (bool, error)
@@ -38,7 +42,27 @@ func (d *DockerContainerController) isEmptyStruct(s interface{}) bool {
 	return reflect.DeepEqual(s, reflect.Zero(reflect.TypeOf(s)).Interface())
 }
 
-// use case covers running containers on single host
+// Use case covers running containers on single host
+// CreateAndRunContainers creates and runs Docker containers based on the provided launcher configuration.
+// It parses the launcher configuration file, checks for the presence of specific container configurations,
+// and creates and runs the containers accordingly.
+//
+// Parameters:
+//   - ctx: The context for managing the lifecycle of the container creation process.
+//   - launcherConfigName: The name of the launcher configuration file to be parsed.
+//   - log: The logger for logging errors and information.
+//
+// Returns:
+//   - error: An error if any step in the container creation process fails, otherwise nil.
+//
+// The function performs the following steps:
+//   1. Parses the launcher configuration file.
+//   2. Checks if the configuration is empty and logs an error if it is.
+//   3. Creates and runs the MCM MediaProxy Agent container if its configuration is provided.
+//   4. Creates and runs the MCM MediaProxy container if its configuration is provided.
+//   5. Creates and runs the BCS NMOS client container if its configuration is provided.
+//   6. Creates and runs the BCS FFmpeg pipeline container with predefined settings.
+
 func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, launcherConfigName string, log logr.Logger) error {
 	config, err := utils.ParseLauncherConfiguration(launcherConfigName)
 	if err != nil {
@@ -51,11 +75,12 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	}
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyAgent) {
 		mcmAgentContainer := general.Containers{
-			ContainerName:   "mcm-agent", //the name is predefined because only one instance is required on the machine
+			ContainerName:   MediaProxyAgentContainerName, //the name is predefined because only one instance is required on the machine
 			Ip:              config.RunOnce.MediaProxyAgent.IP,
 			ExposedPort:     config.RunOnce.MediaProxyAgent.ExposedPort, //"80/tcp",
 			BindingHostPort: config.RunOnce.MediaProxyAgent.BindingHostPort,
 			Image:           config.RunOnce.MediaProxyAgent.ImageAndTag,
+			Privileged:      config.RunOnce.MediaProxyAgent.Privileged,
 		}
 		err := utils.CreateAndRunContainer(ctx, d.cli, log, mcmAgentContainer)
 		if err != nil {
@@ -68,7 +93,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyMcm) {
 		mediaProxyContainer := general.Containers{
-			ContainerName:   "media-proxy", //the name is predefined because only one instance is required on the machine
+			ContainerName:   MediaProxyContainerName, //the name is predefined because only one instance is required on the machine
 			Ip:              config.RunOnce.MediaProxyMcm.IP,
 			ExposedPort:     config.RunOnce.MediaProxyMcm.ExposedPort, //"80/tcp",
 			BindingHostPort: config.RunOnce.MediaProxyMcm.BindingHostPort,
@@ -90,8 +115,11 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 			ContainerName:   config.WorkloadToBeRun.NmosClient.Name,
 			Ip:              config.WorkloadToBeRun.NmosClient.IP,
 			ExposedPort:     config.WorkloadToBeRun.NmosClient.ExposedPort,
-			BindingHostPort: "8082",
-			Image:           "nginx:latest",
+			BindingHostPort: config.WorkloadToBeRun.NmosClient.BindingHostPort,
+			Image:           config.WorkloadToBeRun.NmosClient.ImageAndTag,
+			VolumeMount:     config.WorkloadToBeRun.NmosClient.Volumes,
+			EnviromentVariables: config.WorkloadToBeRun.NmosClient.EnvironmentVariables,
+			NetworkMode:    config.WorkloadToBeRun.NmosClient.Network,
 		}
 		err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsNmosContainer)
 		if err != nil {
@@ -104,11 +132,11 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	}
 
 	bcsPipelinesContainer := general.Containers{
-		ContainerName:   "bcs-ffmpeg-pipeline",
-		Ip:              "0.0.0.0",
-		ExposedPort:     "80/tcp",
-		BindingHostPort: "8083",
-		Image:           "nginx:latest",
+		ContainerName:   config.WorkloadToBeRun.FFmpegPipeline.Name,
+		Ip:              config.WorkloadToBeRun.FFmpegPipeline.IP,
+		ExposedPort:     config.WorkloadToBeRun.FFmpegPipeline.ExposedPort,
+		BindingHostPort: config.WorkloadToBeRun.FFmpegPipeline.BindingHostPort,
+		Image:           config.WorkloadToBeRun.FFmpegPipeline.ImageAndTag,
 	}
 
 	err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsPipelinesContainer)
