@@ -10,6 +10,7 @@ data:
   registry.json: |
     {
       "pri": 99,
+      "domain": "default.svc.cluster.local",
       "logging_level": -20,
       "http_trace": false,
       "label": "nmos-registry",

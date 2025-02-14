@@ -11,7 +11,7 @@ metadata:
 data:
   node.json: |
     {
-      "logging_level": 0,
+      "logging_level": 10,
       "http_port": 95,
       "label": "intel-broadcast-suite",
       "senders": ["v"],
@@ -19,14 +19,37 @@ data:
       "receivers": ["v"],
       "receivers_count": [1],
       "device_tags": {
-        "pipeline": ["rx-sender"]
+        "pipeline": ["rx"]
       },
-      "function": "rx-sender",
+      "function": "rx",
       "gpu_hw_acceleration": "none",
       "domain": "default.svc.cluster.local",
-      "ffmpeg_grpc_server_address": "tiber-broadcast-suite-tx.default.svc.cluster.local",
-      "ffmpeg_grpc_server_port": "50052",
-      "receiver_payload_type": 112,
+      "ffmpeg_grpc_server_address": "tiber-broadcast-suite-rx.default.svc.cluster.local",
+      "ffmpeg_grpc_server_port": "<port_of_ffmpeg_grpc_server>",
+      "receiver_payload_type":112,
+      "receiver": [{
+        "stream_payload": {
+          "video": {
+            "frame_width": 1920,
+            "frame_height": 1080,
+            "frame_rate": { "numerator": 60, "denominator": 1 },
+            "pixel_format": "yuv422p10le",
+            "video_type": "rawvideo"
+          },
+          "audio": {
+            "channels": 2,
+            "sampleRate": 48000,
+            "format": "pcm_s24be",
+            "packetTime": "1ms"
+          }
+        },
+        "stream_type": {
+            "st2110" : {
+              "transport" : "st2110-20",
+              "payloadType" :  112
+            }
+          }
+      }],
       "sender": [{
         "stream_payload": {
           "video": {
@@ -45,33 +68,8 @@ data:
         },
         "stream_type": {
           "file": {
-            "path": "/root/recv",
-            "filename": "1920x1080p10le_2.yuv"
-          }
-        }
-      }],
-      "receiver": [{
-        "stream_payload": {
-          "video": {
-            "frame_width": 960,
-            "frame_height": 1080,
-            "frame_rate": { "numerator": 60, "denominator": 1 },
-            "pixel_format": "yuv422p10le",
-            "video_type": "rawvideo"
-          },
-          "audio": {
-            "channels": 2,
-            "sampleRate": 48000,
-            "format": "pcm_s24be",
-            "packetTime": "1ms"
-          }
-        },
-        "stream_type": {
-          "mcm": {
-            "conn_type": "st2110",
-            "transport": "st2110-20",
-            "urn": "NULL",
-            "transportPixelFormat": "yuv422p10le"
+            "path": "/videos/recv",
+            "filename": "1920x1080p10le_3.yuv"
           }
         }
       }]

@@ -10,70 +10,68 @@ metadata:
 data:
   node.json: |
     {
-      "logging_level": 0,
-      "http_port": 90,
-      "label": "intel-broadcast-suite",
-      "senders": ["v"],
-      "senders_count": [1],
-      "receivers": ["v"],
-      "receivers_count": [0],
-      "device_tags": {
-        "pipeline": ["tx-sender"]
+    "logging_level": 10,
+    "http_port": 90,
+    "label": "intel-broadcast-suite",
+    "senders": ["v"],
+    "senders_count": [1],
+    "receivers": ["v"],
+    "receivers_count": [0],
+    "device_tags": {
+      "pipeline": ["tx"]
+    },
+    "function": "tx",
+    "gpu_hw_acceleration": "none",
+    "domain": "default.svc.cluster.local",
+    "ffmpeg_grpc_server_address": "tiber-broadcast-suite-tx.default.svc.cluster.local",
+    "ffmpeg_grpc_server_port": "<port_of_ffmpeg_grpc_server>",
+    "sender_payload_type":112,
+    "sender": [{
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": { "numerator": 60, "denominator": 1 },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
       },
-      "function": "tx-sender",
-      "gpu_hw_acceleration": "none",
-      "domain": "default.svc.cluster.local",
-      "ffmpeg_grpc_server_address": "tiber-broadcast-suite-rx.default.svc.cluster.local",
-      "ffmpeg_grpc_server_port": "50051",
-      "sender_payload_type": 112,
-      "sender": [{
-        "stream_payload": {
-          "video": {
-            "frame_width": 1960,
-            "frame_height": 1080,
-            "frame_rate": { "numerator": 60, "denominator": 1 },
-            "pixel_format": "yuv422p10le",
-            "video_type": "rawvideo"
-          },
-          "audio": {
-            "channels": 2,
-            "sample_rate": 48000,
-            "format": "pcm_s24be",
-            "packet_time": "1ms"
-          }
-        },
-        "stream_type": {
-          "mcm": {
-            "conn_type": "st2110",
-            "transport": "st2110-20",
-            "urn": "NULL",
-            "transport_pixel_format": "yuv422p10le"
-          }
+      "stream_type": {
+        "st2110" : {
+          "transport" : "st2110-20",
+          "payloadType" :  112
         }
-      }],
-      "receiver": [{
-        "stream_payload": {
-          "video": {
-            "frame_width": 1920,
-            "frame_height": 1080,
-            "frame_rate": { "numerator": 60, "denominator": 1 },
-            "pixel_format": "yuv422p10le",
-            "video_type": "rawvideo"
-          },
-          "audio": {
-            "channels": 2,
-            "sample_rate": 48000,
-            "format": "pcm_s24be",
-            "packet_time": "1ms"
-          }
+      }
+    }],
+    "receiver": [{
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": { "numerator": 60, "denominator": 1 },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
         },
-        "stream_type": {
-          "file": {
-            "path": "/root",
-            "filename": "1920x1080p10le_1.yuv"
-          }
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
         }
-      }]
+      },
+      "stream_type": {
+        "file": {
+          "path": "/videos",
+          "filename": "1920x1080p10le_1.yuv"
+        }
+      }
+    }]
     }
 
 ---

@@ -183,6 +183,15 @@ docker compose up
 
 #### 6. Kubernetes for running NMOS registry and controller, client and testing tool [OPTION #2]
 
+In `nmos-client-tx.yaml` and `nmos-client-rx.yaml` edit lines for ConfiMap:
+
+``` yaml
+"domain": "<namespace where nmos node is running>.svc.cluster.local",
+"ffmpeg_grpc_server_address": "<name of bcs pipeline service>.<namespace where bcs pipeline is running>.svc.cluster.local",
+"ffmpeg_grpc_server_port": "<port_of_ffmpeg_grpc_server>",
+```
+
+
 ```bash
 cd <repo>/nmos/k8s
 # Install minikube https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
