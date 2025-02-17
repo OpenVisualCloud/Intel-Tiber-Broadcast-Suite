@@ -58,6 +58,67 @@ def prepare_query() -> dict:
         ],
     }
 
+def get_view_id(config: dict) -> int:
+    """
+    Retrieve the ID of a view based on the provided view name.
+
+    Args:
+        config (dict): Configuration dictionary containing 'base_url', 'view_name', 'user', and 'password'.
+
+    Returns:
+        int: The view ID if found, otherwise None.
+    """
+    endpoint = f"{config['base_url']}/api/view/v1/views"
+
+    try:
+        response = requests.get(endpoint, auth=HTTPBasicAuth(config["user"], config["password"]))
+        response.raise_for_status()
+
+        # Parse the JSON response
+        views = response.json()
+
+        # Find the view with the specified name
+        for view in views:
+            if view["name"] == config["view_name"]:
+                return view["id"]
+
+        logging.error(f'View with name "{config["view_name"]}" not found.')
+        return None
+
+    except requests.exceptions.HTTPError as http_err:
+        logging.error(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        logging.error(f'An error occurred: {err}')
+
+def fetch_view_issues(config: dict, view_id: int) -> dict:
+    """
+    Fetch issues from a specific view based on the provided view ID.
+
+    Args:
+        config (dict): Configuration dictionary containing 'base_url', 'user', and 'password'.
+        view_id (int): The ID of the view to fetch issues from.
+
+    Returns:
+        dict: A dictionary containing the list of issues for the view.
+    """
+    endpoint = f"{config['base_url']}/api/view/v1/views/{view_id}/issues"
+    issues ={}
+    try:
+        response = requests.get(endpoint, auth=HTTPBasicAuth(config["user"], config["password"]))
+        response.raise_for_status()
+        issues = response.json()
+
+    except requests.exceptions.HTTPError as http_err:
+        logging.error(f'HTTP error occurred: {http_err}')
+    except Exception as err:
+        logging.error(f'An error occurred: {err}')
+    finally:
+        return issues
+
+
+
+
+
 
 def get_snapshot(config: dict, description: str, version: str) -> int:
     """

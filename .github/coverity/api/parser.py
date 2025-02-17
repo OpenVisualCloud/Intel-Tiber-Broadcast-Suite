@@ -18,12 +18,12 @@ def issues_to_pandas(raw_response_data: dict) -> pd.DataFrame:
         converted_dict = {item["key"]: item["value"] for item in row}
         converted_response.append(converted_dict)
     df = pd.DataFrame(converted_response)
-
-    impact_order = ["High", "Medium", "Low"]
-    df["displayImpact"] = pd.Categorical(df["displayImpact"], categories=impact_order)
-    df = df.sort_values(by="displayImpact")
-    # remove abs path from displayFile
-    df["displayFile"] = df["displayFile"].str.replace(r".*/_work/", "", regex=True)
+    if "displayImpact" in df.columns:
+      impact_order = ["High", "Medium", "Low"]
+      df["displayImpact"] = pd.Categorical(df["displayImpact"], categories=impact_order)
+      df = df.sort_values(by="displayImpact")
+      # remove abs path from displayFile
+      df["displayFile"] = df["displayFile"].str.replace(r".*/_work/", "", regex=True)
     return df
 
 
