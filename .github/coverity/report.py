@@ -46,6 +46,5 @@ def main():
     df_outstanding.to_csv("outstanding_issues.csv", index=False)
     log.info("Reports generated")
 
-
 if __name__ == "__main__":
     main()
