@@ -9,6 +9,8 @@ on:
         description: 'Branch to run scans on'
         default: 'main'
         type: string
+permissions:
+  contents: read
 env:
   COVERITY_PROJECT: 'Intel-Tiber-Broadcast-Suite'
   COVERITY_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
