@@ -30,6 +30,8 @@ jobs:
           COVERITY_TOKEN: ${{ secrets.COVERITY_REPORTS_TOKEN }}
           COVERITY_PROJECT_NAME: 'Intel-Tiber-Broadcast-Suite'
           COVERITY_USER: ${{ secrets.COVERITY_REPORTS_USER }}
+          COVERITY_OUTSANDING_VIEW_ID: ${{ secrets.COVERITY_OUTSANDING_VIEW_ID }}
+          COVERITY_PROJECT_ID: ${{ secrets.COVERITY_PROJECT_ID }}
 
       - name: prepare artifacts
         if: success()

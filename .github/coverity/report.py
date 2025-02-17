@@ -40,11 +40,12 @@ def main():
     df_grpc.to_csv("grpc_report.csv", index=False)
     df_launcher.to_csv("launcher_report.csv", index=False)
 
-    query["view_id"] = api.get_view_id(query, "Outstanding Issues")
-    outstanding_issues_view = api.get_outstanding_issues_view(query)
-    df_outstanding = api.issues_to_pandas(outstanding_issues_view)
+    log.info("fetching outstanding view issues")
+    outstanding_issues = api.fetch_outstanding_view_issues(query)
+    df_outstanding = api.issues_to_pandas(outstanding_issues)
     df_outstanding.to_csv("outstanding_issues.csv", index=False)
     log.info("Reports generated")
+
 
 if __name__ == "__main__":
     main()
