@@ -39,6 +39,11 @@ def main():
     df_launcher = api.filter_launcher_issues(df)
     df_grpc.to_csv("grpc_report.csv", index=False)
     df_launcher.to_csv("launcher_report.csv", index=False)
+
+    log.info("fetching outstanding view issues")
+    outstanding_issues = api.fetch_outstanding_view_issues(query)
+    df_outstanding = api.issues_to_pandas(outstanding_issues)
+    df_outstanding.to_csv("outstanding_issues.csv", index=False)
     log.info("Reports generated")
 
 

@@ -32,16 +32,20 @@ def prepare_query() -> dict:
     TOKEN = os.getenv("COVERITY_TOKEN", default=None)
     PROJECT_NAME = os.getenv("COVERITY_PROJECT_NAME", default=None)
     USER = os.getenv("COVERITY_USER", default=None)
+    OUTSTANDING_VIEW_ID = os.getenv("COVERITY_OUTSTANDING_VIEW_ID", default=None)
+    PROJECT_ID = os.getenv("COVERITY_PROJECT_ID", default=None)
 
-    if None in [BASE_URL, TOKEN, PROJECT_NAME, USER]:
+    if None in [BASE_URL, TOKEN, PROJECT_NAME, USER, OUTSTANDING_VIEW_ID, PROJECT_ID]:
         log.error("Environment variables not set")
         log.error(
-            "Please set the following environment variables: COVERITY_BASE_URL, COVERITY_TOKEN, COVERITY_PROJECT_NAME, COVERITY_USER"
+            "Please set the following environment variables: COVERITY_BASE_URL, COVERITY_TOKEN, COVERITY_PROJECT_NAME, COVERITY_USER, OUTSTANDING_VIEW_ID, COVERITY_PROJECT_ID"
         )
         return {}
     return {
         "base_url": BASE_URL,
         "project_name": PROJECT_NAME,
+        "project_id": PROJECT_ID,
+        "outstanding_view_id": OUTSTANDING_VIEW_ID,
         "password": TOKEN,
         "user": USER,
         "stream": PROJECT_NAME,
@@ -57,6 +61,38 @@ def prepare_query() -> dict:
             "displayCategory",
         ],
     }
+
+
+def fetch_outstanding_view_issues(config: dict) -> dict:
+    """
+    Fetch issues from a specific view based on the provided view ID.
+
+    Args:
+        config (dict): Configuration dictionary containing 'base_url', 'view_id, 'user', and 'password'.
+        view_id (int): The ID of the view to fetch issues from.
+
+    Returns:
+        dict: A dictionary containing the list of issues for the view.
+    """
+    endpoint = (
+        f"{config['base_url']}/api/v2/views/viewContents/{config['outstanding_view_id']}"
+    )
+    issues = {}
+    try:
+        response = requests.get(
+            endpoint,
+            params={"projectId": config["project_id"]},
+            auth=HTTPBasicAuth(config["user"], config["password"]),
+        )
+        response.raise_for_status()
+        issues = response.json()
+
+    except requests.exceptions.HTTPError as http_err:
+        logging.error(f"HTTP error occurred: {http_err}")
+    except Exception as err:
+        logging.error(f"An error occurred: {err}")
+    finally:
+        return issues
 
 
 def get_snapshot(config: dict, description: str, version: str) -> int:
@@ -75,7 +111,7 @@ def get_snapshot(config: dict, description: str, version: str) -> int:
     raw = get_snapshots_list(config)
     ids = list(map(lambda s: s["id"], raw["snapshotsForStream"]))
     snapshot_id = 0
-    #TODO: replace with threads
+    # TODO: replace with threads
     for id in ids:
         res = requests.get(
             f"{search_query_url}/{id}",
