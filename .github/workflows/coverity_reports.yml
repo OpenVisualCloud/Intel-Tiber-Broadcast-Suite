@@ -11,7 +11,8 @@ on:
         description: 'scanned commit hash'
         type: string
         required: true
-
+permissions:
+  contents: read
 jobs:
   generate_reports:
     runs-on: ubuntu-latest
