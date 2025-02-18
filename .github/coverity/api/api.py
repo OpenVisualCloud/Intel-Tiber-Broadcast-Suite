@@ -45,7 +45,7 @@ def prepare_query() -> dict:
         "base_url": BASE_URL,
         "project_name": PROJECT_NAME,
         "project_id": PROJECT_ID,
-        "outsanding_view_id": OUTSTANDING_VIEW_ID,
+        "outstanding_view_id": OUTSTANDING_VIEW_ID,
         "password": TOKEN,
         "user": USER,
         "stream": PROJECT_NAME,
