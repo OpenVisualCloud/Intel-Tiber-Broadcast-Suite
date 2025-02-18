@@ -32,7 +32,7 @@ def prepare_query() -> dict:
     TOKEN = os.getenv("COVERITY_TOKEN", default=None)
     PROJECT_NAME = os.getenv("COVERITY_PROJECT_NAME", default=None)
     USER = os.getenv("COVERITY_USER", default=None)
-    OUTSTANDING_VIEW_ID = os.getenv("COVERITY_OUTSANDING_VIEW_ID", default=None)
+    OUTSTANDING_VIEW_ID = os.getenv("COVERITY_OUTSTANDING_VIEW_ID", default=None)
     PROJECT_ID = os.getenv("COVERITY_PROJECT_ID", default=None)
 
     if None in [BASE_URL, TOKEN, PROJECT_NAME, USER, OUTSTANDING_VIEW_ID, PROJECT_ID]:
