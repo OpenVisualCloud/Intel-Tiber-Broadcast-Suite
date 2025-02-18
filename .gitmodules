@@ -4,3 +4,12 @@
 [submodule "nmos/nmos-cpp"]
 	path = nmos/nmos-cpp
 	url = https://github.com/sony/nmos-cpp.git
+[submodule "submodules/Video-Super-Resolution-Library"]
+	path = submodules/Video-Super-Resolution-Library
+	url = https://github.com/OpenVisualCloud/Video-Super-Resolution-Library
+[submodule "submodules/SVT-JPEG-XS"]
+	path = submodules/SVT-JPEG-XS
+	url = https://github.com/OpenVisualCloud/SVT-JPEG-XS
+[submodule "submodules/Media-Communications-Mesh"]
+	path = submodules/Media-Communications-Mesh
+	url = https://github.com/OpenVisualCloud/Media-Communications-Mesh

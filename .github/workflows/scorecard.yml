@@ -19,42 +19,51 @@ on:
   push:
     branches: [ "main" ]
 
-permissions: read-all
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   analysis:
     name: Scorecard analysis
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'OpenVisualCloud/Intel-Tiber-Broadcast-Suite' }}
     permissions:
       security-events: write
       id-token: write
-
+      contents: read
+      actions: read
     steps:
-      - name: "Harden Runner"
+      - name: "scorecard: Harden Runner security"
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:
           egress-policy: audit
 
-      - name: "Checkout code"
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: "scorecard: Checkout code"
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           persist-credentials: false
 
-      - name: "Run analysis"
-        uses: ossf/scorecard-action@0864cf19026789058feabb7e87baa5f140aac736 # v2.3.1
+      - name: "scorecard: Run analysis"
+        uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534 # v2.3.3
         with:
-          results_file: results.sarif
+          results_file: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
           results_format: sarif
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           publish_results: true
 
-      - name: "Upload artifact"
-        uses: actions/upload-artifact@97a0fba1372883ab732affbe8f94b823f91727db # v3.pre.node20
+      # Upload the results as artifacts (optional).
+      - name: "scorecard: Upload results artifact"
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
-          name: SARIF file
-          path: results.sarif
-          retention-days: 7
+          name: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}"
+          path: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
+          retention-days: 5
 
-      - name: "Upload to code-scanning"
-        uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+      - name: "scorecard: Upload results to code-scanning"
+        uses: github/codeql-action/upload-sarif@b611370bb5703a7efb587f9d136a52ea24c5c38c # v3.25.11
         with:
-          sarif_file: results.sarif
+          sarif_file: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
