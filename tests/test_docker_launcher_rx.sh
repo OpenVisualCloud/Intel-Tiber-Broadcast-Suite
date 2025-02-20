@@ -15,8 +15,7 @@ docker run -it \
    -v /var/run/imtl:/var/run/imtl \
    -e http_proxy="" \
    -e https_proxy="" \
-   --network=my_net_801f0 \
-   --ip=192.168.2.5 \
-   --expose=20000-20170 \
-   --ipc=host -v /dev/shm:/dev/shm \
-      tiber-broadcast-suite 192.168.2.5 50052
+   --network=host \
+   --ipc=host \
+   -v /dev/shm:/dev/shm \
+      tiber-broadcast-suite localhost 50056
