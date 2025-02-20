@@ -1,43 +1,20 @@
 {
   "logging_level": 10,
-  "http_port": 90,
+  "http_port": 95,
   "label": "intel-broadcast-suite",
   "senders": ["v"],
-  "senders_count": [1],
+  "senders_count": [0],
   "receivers": ["v"],
-  "receivers_count": [0],
+  "receivers_count": [1],
   "device_tags": {
-    "pipeline": ["tx"]
+    "pipeline": ["rx"]
   },
-  "function": "tx",
+  "function": "rx",
   "gpu_hw_acceleration": "none",
   "domain": "local",
   "ffmpeg_grpc_server_address": "localhost",
-  "ffmpeg_grpc_server_port": "50055",
-  "sender_payload_type":112,
-  "sender": [{
-    "stream_payload": {
-      "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
-        "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv422p10le",
-        "video_type": "rawvideo"
-      },
-      "audio": {
-        "channels": 2,
-        "sampleRate": 48000,
-        "format": "pcm_s24be",
-        "packetTime": "1ms"
-      }
-    },
-    "stream_type": {
-      "st2110" : {
-        "transport" : "st2110-20",
-        "payloadType" :  112
-      }
-    }
-  }],
+  "ffmpeg_grpc_server_port": "50058",
+  "receiver_payload_type":112,
   "receiver": [{
     "stream_payload": {
       "video": {
@@ -55,9 +32,34 @@
       }
     },
     "stream_type": {
+      "mcm": {
+        "conn_type": "st2110",
+        "transport": "st2110-20",
+        "urn": "NULL",
+        "transportPixelFormat": "yuv422p10rfc4175"
+        }
+      }
+  }],
+  "sender": [{
+    "stream_payload": {
+      "video": {
+        "frame_width": 1920,
+        "frame_height": 1080,
+        "frame_rate": { "numerator": 60, "denominator": 1 },
+        "pixel_format": "yuv422p10le",
+        "video_type": "rawvideo"
+      },
+      "audio": {
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "pcm_s24be",
+        "packetTime": "1ms"
+      }
+    },
+    "stream_type": {
       "file": {
-        "path": "/videos",
-        "filename": "1920x1080p10le_1.yuv"
+        "path": "/videos/recv",
+        "filename": "1920x1080p10le_3.yuv"
       }
     }
   }]

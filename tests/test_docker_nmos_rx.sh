@@ -15,9 +15,8 @@ docker run -it \
    -v /var/run/imtl:/var/run/imtl \
    -e http_proxy="" \
    -e https_proxy="" \
-   -e VFIO_PORT_RX=0000:31:01.2 \
-   --network=my_net_801f0 \
-   --ip=192.168.2.3 \
-   --expose=20000-20170 \
-   --ipc=host -v /dev/shm:/dev/shm \
+   -e VFIO_PORT_RX=0000:31:01.1 \
+   --network=host \
+   --ipc=host \
+   -v /dev/shm:/dev/shm \
       tiber-broadcast-suite-nmos-node config/intel-node-rx.json

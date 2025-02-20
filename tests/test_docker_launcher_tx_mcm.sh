@@ -12,10 +12,14 @@ docker run -it \
    -v /dev/null:/dev/null \
    -v /tmp/hugepages:/tmp/hugepages \
    -v /hugepages:/hugepages \
+   -v /run/mcm:/var/run/mcm \
    -v /var/run/imtl:/var/run/imtl \
    -e http_proxy="" \
    -e https_proxy="" \
-   --network=host \
-   --ipc=host \
-   -v /dev/shm:/dev/shm \
-      tiber-broadcast-suite localhost 50055
+   -e HTTP_PROXY="" \
+   -e HTTPS_PROXY="" \
+   --expose=5000-20170 \
+   --ipc=host -v /dev/shm:/dev/shm \
+   --net=host \
+   -e MCM_MEDIA_PROXY_PORT=8002 \
+      tiber-broadcast-suite localhost 50057
