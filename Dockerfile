@@ -209,7 +209,6 @@ RUN \
 WORKDIR /tmp/Media-Transport-Library
 RUN \
   echo "**** BUILD MTL ****"  && \
-  git -C /tmp/Media-Transport-Library apply /tmp/patches/imtl/*.patch && \
   ./build.sh
 
 WORKDIR /tmp/jpegxs/Build/linux

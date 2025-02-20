@@ -166,7 +166,7 @@ In case of any issues please follow [Nvidia GPU driver install steps](https://ub
         firmware-version: 4.60 0x8001e8dc 1.3682.0
         ```
 
-    > **Note:** if you encountered any problems, please go to [E810 driver guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/maint-24.09/doc/e810.md).
+    > **Note:** if you encountered any problems, please go to [E810 driver guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/v25.02/doc/e810.md).
 
 
 ### 1.5. <!-- [ --> Configure VFIO (IOMMU) required by PMD-based DPDK <!-- ](../submodules/Media-Communications-Mesh/submodules/Media-Transport-Library/doc/chunks/_iommu_setup.md) -->

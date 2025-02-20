@@ -244,8 +244,6 @@ First, add the CUDA APT repository to your system.
     # Navigate to the Media Transport Library Directory:
     cd Media-Transport-Library
 
-    git apply ../patches/imtl/0001-cartwheel-imtl-y210le-support.patch
-
     # Run the build script:
     ./build.sh
     ```

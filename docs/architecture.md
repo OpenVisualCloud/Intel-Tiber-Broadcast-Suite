@@ -25,7 +25,7 @@ Component               |   Version     |   Source
 ---                     |   ---         |   ---
 FFmpeg                  |   7.0.2       |   [FFmpeg ](https://github.com/FFmpeg/FFmpeg)
 Intel® FFmpeg patches   |   7.0         |   [Intel® FFmpeg patches](https://github.com/intel/cartwheel-ffmpeg)
-Media Transport Library |   24.09       |   [Media Transport Library](https://github.com/OpenVisualCloud/Media-Transport-Library)
+Media Transport Library |   v25.02       |   [Media Transport Library](https://github.com/OpenVisualCloud/Media-Transport-Library)
 Media Communications Mesh|   24.09      |   [Media Communications Mesh](https://github.com/OpenVisualCloud/Media-Communications-Mesh)
 Data Plane Development Kit (DPDK)   |    23.11   |   [DPDK](https://github.com/DPDK/dpdk)
 SVT JPEG XS             |  0.9      |   [SVT JPEG XS](https://github.com/OpenVisualCloud/SVT-JPEG-XS)
