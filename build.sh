@@ -844,7 +844,7 @@ function install_in_docker_enviroment {
         --target manager-stage \
         "${SCRIPT_DIR}"
 
-    cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/docker/nmos"
+    cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
 
     docker buildx build \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
