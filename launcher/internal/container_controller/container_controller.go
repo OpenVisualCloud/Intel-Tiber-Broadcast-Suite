@@ -75,6 +75,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	}
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyAgent) {
 		mcmAgentContainer := general.Containers{
+			Type:            general.MediaProxyAgent,
 			ContainerName:   MediaProxyAgentContainerName, //the name is predefined because only one instance is required on the machine
 			Ip:              config.RunOnce.MediaProxyAgent.IP,
 			ExposedPort:     config.RunOnce.MediaProxyAgent.ExposedPort, //"80/tcp",
@@ -93,6 +94,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyMcm) {
 		mediaProxyContainer := general.Containers{
+			Type: general.MediaProxyMCM,
 			ContainerName:   MediaProxyContainerName, //the name is predefined because only one instance is required on the machine
 			Ip:              config.RunOnce.MediaProxyMcm.IP,
 			ExposedPort:     config.RunOnce.MediaProxyMcm.ExposedPort, //"80/tcp",
@@ -112,6 +114,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 
 	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
 		bcsNmosContainer := general.Containers{
+			Type: 		  general.BcsPipelineNmosClient,
 			ContainerName:   config.WorkloadToBeRun.NmosClient.Name,
 			Ip:              config.WorkloadToBeRun.NmosClient.IP,
 			ExposedPort:     config.WorkloadToBeRun.NmosClient.ExposedPort,
@@ -120,6 +123,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 			VolumeMount:     config.WorkloadToBeRun.NmosClient.Volumes,
 			EnviromentVariables: config.WorkloadToBeRun.NmosClient.EnvironmentVariables,
 			NetworkMode:    config.WorkloadToBeRun.NmosClient.Network,
+			Privileged:    config.WorkloadToBeRun.NmosClient.Privileged,
 		}
 		err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsNmosContainer)
 		if err != nil {
@@ -128,10 +132,10 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		}
 	} else {
 		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
-
 	}
 
 	bcsPipelinesContainer := general.Containers{
+		Type: 		  general.BcsPipelineFfmpeg,
 		ContainerName:   config.WorkloadToBeRun.FFmpegPipeline.Name,
 		Ip:              config.WorkloadToBeRun.FFmpegPipeline.IP,
 		ExposedPort:     config.WorkloadToBeRun.FFmpegPipeline.ExposedPort,

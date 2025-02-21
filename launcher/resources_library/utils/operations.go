@@ -9,6 +9,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -133,6 +135,148 @@ func removeContainer(ctx context.Context, cli *client.Client, containerID string
 	return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 }
 
+
+func constructContainerConfig(containerInfo general.Containers) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
+	var containerConfig *container.Config
+	var hostConfig *container.HostConfig
+	var networkConfig *network.NetworkingConfig
+
+	switch containerInfo.Type {
+	case general.MediaProxyAgent:
+		containerConfig = &container.Config{
+			User: "root",
+			Image: "mcm/mesh-agent:latest",
+			Cmd:   []string{"-c", "8100", "-p", "50051"},
+		}
+	
+		hostConfig = &container.HostConfig{
+			Privileged: true,
+			PortBindings: nat.PortMap{
+				"8100/tcp": []nat.PortBinding{{HostPort: "8100"}},
+				"50051/tcp": []nat.PortBinding{{HostPort: "50051"}},
+			},
+		}
+		isNetwork := true
+	    if isNetwork {
+			networkConfig = &network.NetworkingConfig{
+				EndpointsConfig: map[string]*network.EndpointSettings{
+					"my_net_801f0": {
+						IPAMConfig: &network.EndpointIPAMConfig{
+							IPv4Address: "192.168.2.11",
+						},
+					},
+				},
+			}
+		}else{
+			networkConfig = &network.NetworkingConfig{}
+		}
+	case general.MediaProxyMCM:
+		containerConfig = &container.Config{
+			Image: "mcm/media-proxy:latest",
+			Cmd:   []string{"-d", "kernel:eth0", "-i", "localhost"},
+		}
+	
+		hostConfig = &container.HostConfig{
+			Privileged: true,
+			Binds:      []string{"/dev/vfio:/dev/vfio"},
+		}
+	
+		isNetwork := true
+	    if isNetwork {
+			networkConfig = &network.NetworkingConfig{
+				EndpointsConfig: map[string]*network.EndpointSettings{
+					"my_net_801f0": {
+						IPAMConfig: &network.EndpointIPAMConfig{
+							IPv4Address: "192.168.2.14",
+						},
+					},
+				},
+			}
+		}else{
+			networkConfig = &network.NetworkingConfig{}
+		}
+    case general.BcsPipelineFfmpeg:
+		containerConfig = &container.Config{
+			User:       "root",
+			Image: "tiber-broadcast-suite:latest",
+			Cmd:   []string{"192.168.2.4", "50051"},
+			Env: []string{
+				"http_proxy=",
+				"https_proxy=",
+			},
+			ExposedPorts: nat.PortSet{
+				"20000/tcp": struct{}{},
+				"20170/tcp": struct{}{},
+			},
+		}
+	
+		hostConfig = &container.HostConfig{
+			Privileged: true,
+			CapAdd:     []string{"ALL"},
+			
+			Mounts: []mount.Mount{
+				{Type: mount.TypeBind, Source: "/root", Target: "/videos"}, //customizable
+				{Type: mount.TypeBind, Source: "/usr/lib/x86_64-linux-gnu/dri", Target: "/usr/local/lib/x86_64-linux-gnu/dri/"},
+				{Type: mount.TypeBind, Source: "/tmp/kahawai_lcore.lock", Target: "/tmp/kahawai_lcore.lock"},
+				{Type: mount.TypeBind, Source: "/dev/null", Target: "/dev/null"},
+				{Type: mount.TypeBind, Source: "/tmp/hugepages", Target: "/tmp/hugepages"},
+				{Type: mount.TypeBind, Source: "/hugepages", Target: "/hugepages"},
+				{Type: mount.TypeBind, Source: "/var/run/imtl", Target: "/var/run/imtl"},
+				{Type: mount.TypeBind, Source: "/dev/shm", Target: "/dev/shm"},
+			},
+			IpcMode: "host",
+		}
+		hostConfig.Devices= []container.DeviceMapping{
+			{PathOnHost: "/dev/vfio", PathInContainer: "/dev/vfio"},
+			{PathOnHost: "/dev/dri", PathInContainer: "/dev/dri"},
+		}
+	
+		networkConfig = &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				"my_net_801f0": {
+					IPAMConfig: &network.EndpointIPAMConfig{
+						IPv4Address: "192.168.2.4",
+					},
+				},
+			},
+		}
+	case general.BcsPipelineNmosClient:
+		containerConfig = &container.Config{
+			Image: "tiber-broadcast-suite-nmos-node:latest",
+			Cmd:   []string{"config/node.json"},
+			Env: []string{
+				"http_proxy=",
+				"https_proxy=",
+				"VFIO_PORT_TX=0000:ca:11.0",
+			},
+			User:       "root",
+			// WorkingDir: "/home/config/",
+		}
+	
+		hostConfig = &container.HostConfig{
+			Privileged: true,
+			// CapAdd:     []string{"ALL"},
+			Binds:      []string{fmt.Sprintf("%s:/home/config/", "/root/DEMO_NMOS/move/nmos/build-nmos-cpp/")},
+			// IpcMode:    "host",
+		}
+	
+		networkConfig = &network.NetworkingConfig{
+			EndpointsConfig: map[string]*network.EndpointSettings{
+				"my_net_801f0": {
+					IPAMConfig: &network.EndpointIPAMConfig{
+						IPv4Address: "192.168.2.2",
+					},
+					Aliases: []string{"my_net_801f0"},
+				},
+			},
+		}
+	default:
+		containerConfig, hostConfig, networkConfig = nil, nil, nil
+	}
+
+	return containerConfig, hostConfig, networkConfig
+}
+
 func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo general.Containers) error {
 	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
@@ -147,7 +291,7 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 
 	err, exists := doesContainerExist(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
-		log.Error(err, "Failed to readcontainer status (if it exists)")
+		log.Error(err, "Failed to read container status (if it exists)")
 		return err
 	}
 
@@ -167,30 +311,8 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 		return err
 	}
 	// Define the container configuration
-	containerConfig := &container.Config{
-		// Tty:   true,
-		Image: containerInfo.Image,
-		ExposedPorts: nat.PortSet{
-			nat.Port(containerInfo.ExposedPort): struct{}{},
-		},
-	}
 
-	// Define the host configuration
-	hostConfig := &container.HostConfig{
-		NetworkMode: container.NetworkMode(general.NetworkModeHost),
-		PortBindings: nat.PortMap{
-			nat.Port(containerInfo.ExposedPort): []nat.PortBinding{
-				{
-					HostIP:   containerInfo.Ip,
-					HostPort: containerInfo.BindingHostPort,
-				},
-			},
-		},
-	}
-
-	// Define the network configuration
-	networkConfig := &network.NetworkingConfig{}
-
+	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo)
 	// Create the container
 	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, nil, containerInfo.ContainerName)
 
@@ -204,20 +326,6 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 	if err != nil {
 		log.Error(err, "Error starting container")
 		return err
-	}
-
-	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-	select {
-	case <-ctx.Done():
-		err := errors.New("context is cancelled")
-		log.Error(err, "Context cancelled during container waiting process")
-		return err
-	case err := <-errCh:
-		if err != nil {
-			log.Error(err, "Error with waiting for container start-up")
-			return err
-		}
-	case <-statusCh:
 	}
 
 	log.Info("Container is created and started successfully", "name", containerInfo.ContainerName, "container id: ", resp.ID)

@@ -22,6 +22,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"os"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -61,11 +62,15 @@ func main() {
 		setupLog.Error(err, "File does not exist: ../configuration_files/bcslauncher-static-config.yaml")
 		os.Exit(1)
 	}
+	fmt.Println("Launcher configuration file exists: ../configuration_files/bcslauncher-static-config.yaml")
 	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)
+	fmt.Println("Launcher mode: ", isKubernetesMode)
 	if err != nil {
+		fmt.Println("Launcher mode: ", err)
 		setupLog.Error(err, "Failed to parse launcher mode")
 		os.Exit(1)
 	}
+	
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string

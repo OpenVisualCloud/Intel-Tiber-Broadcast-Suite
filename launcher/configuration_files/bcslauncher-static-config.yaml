@@ -4,23 +4,27 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 
-k8s: true # use in both modes: k8s | docker
+k8s: false # use in both modes: k8s | docker
 configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
-      imageAndTag:  nginx:latest
+      imageAndTag:  mcm/mesh-agent:latest
       command: ""
-      exposedPort: ""
-      bindingHostPort: ""
+      exposedPort: 
+        - ""
+      bindingHostPort: 
+        - ""
       ip: ""
       volumes:
         - /var/run/mcm:/run/mcm
         - /dev/hugepages:/dev/hugepages
     mediaProxyMcm:
-      imageAndTag:  busybox:latest
+      imageAndTag:  mcm/media-proxy:latest
       command: ""
-      exposedPort: ""
-      bindingHostPort: ""
+      exposedPort: 
+        - ""
+      bindingHostPort: 
+        - ""
       ip: ""
       volumes:
         - /var/run/mcm:/run/mcm
@@ -29,16 +33,20 @@ configuration: # Configuration should be used only for docker mode
   workloadToBeRun:
     ffmpegPipeline:
       name: bcs-ffmpeg-pipeline
-      imageAndTag: alpine:latest
+      imageAndTag: tiber-broadcast-suite:latest
       command: ""
-      exposedPort: 100 
-      bindingHostPort: 8881
+      exposedPort: 
+        - "1000" 
+      bindingHostPort: 
+        - "8881"
       ip: ""
     nmosClient:
       name: bcs-ffmpeg-pipeline-nmos-client
-      imageAndTag: nmos-cpp-node:1.2A-f549712 
+      imageAndTag: tiber-broadcast-suite-nmos-node:latest 
       command: ""
-      exposedPort: 101
-      bindingHostPort: 8089
+      exposedPort: 
+        - "1010"
+      bindingHostPort: 
+        - "8089"
       ip: ""
       network: "host"

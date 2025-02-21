@@ -64,6 +64,8 @@ type FFmpegPipeline struct {
     DeviceDri       string `yaml:"deviceDri"`
     DeviceVfio      string `yaml:"deviceVfio"`
     Volumes         []string `yaml:"volumes"`
+	EnvironmentVariables []string `yaml:"environmentVariables"`
+	Privileged      bool     `yaml:"privileged"`
 }
 
 type NmosClient struct {
@@ -76,6 +78,7 @@ type NmosClient struct {
 	Network         string `yaml:"network"`
 	Volumes         []string `yaml:"volumes"`
 	EnvironmentVariables []string `yaml:"environmentVariables"`
+	Privileged      bool     `yaml:"privileged"`
 }
 
 func ParseLauncherMode(filename string) (bool, error) {
