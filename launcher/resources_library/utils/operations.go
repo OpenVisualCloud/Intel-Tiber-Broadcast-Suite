@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func isImagePulled(ctx context.Context, cli *client.Client, imageName string) (error, bool) {
@@ -325,30 +326,76 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 	return nil
 }
 
-// func CreateDeployment(myApp *bcsv1.BcsConfig, name string) appsv1.Deployment {
+func boolPtr(b bool) *bool    { return &b }
+func intstrPtr(i int) intstr.IntOrString {
+    return intstr.IntOrString{IntVal: int32(i)}
+}
+		
 func CreateDeployment(name string) *appsv1.Deployment {
-
-	return &appsv1.Deployment{
+	 // Define Deployment
+	 return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "mesh-agent-deployment",
 			Namespace: "default",
+			Labels: map[string]string{
+				"app": "mesh-agent",
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": name},
+				MatchLabels: map[string]string{
+					"app": "mesh-agent",
+				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": name},
+					Labels: map[string]string{
+						"app": "mesh-agent",
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  "nginx",
-							Image: "nginx:latest",
+							Name:  "mesh-agent",
+							Image: "mcm/mesh-agent:latest",
+							Command: []string{
+								"-c", "8100", "-p", "50051",
+							},
+							Ports: []corev1.ContainerPort{
+								{ContainerPort: 8100},
+								{ContainerPort: 50051},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: boolPtr(true),
+							},
 						},
 					},
+				},
+			},
+		},
+	}
+}
+
+func CreateMeshAgentService(name string) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "mesh-agent-service",
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app": "mesh-agent",
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Protocol:   corev1.ProtocolTCP,
+					Port:       8100,
+					TargetPort: intstrPtr(8100),
+				},
+				{
+					Protocol:   corev1.ProtocolTCP,
+					Port:       50051,
+					TargetPort: intstrPtr(50051),
 				},
 			},
 		},
