@@ -143,26 +143,26 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 
 	switch containerInfo.Type {
 	case general.MediaProxyAgent:
+		fmt.Printf(">> MediaProxyAgentConfig: %+v\n", containerInfo.Configuration.MediaProxyAgentConfig)
 		containerConfig = &container.Config{
 			User: "root",
-			Image: "mcm/mesh-agent:latest",
-			Cmd:   []string{"-c", "8100", "-p", "50051"},
+			Image: containerInfo.Configuration.MediaProxyAgentConfig.ImageAndTag,
+			Cmd:   []string{"-c", containerInfo.Configuration.MediaProxyAgentConfig.RestPort, "-p", containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort},
 		}
 	
 		hostConfig = &container.HostConfig{
 			Privileged: true,
 			PortBindings: nat.PortMap{
-				"8100/tcp": []nat.PortBinding{{HostPort: "8100"}},
-				"50051/tcp": []nat.PortBinding{{HostPort: "50051"}},
+				nat.Port(fmt.Sprintf("%s/tcp", containerInfo.Configuration.MediaProxyAgentConfig.RestPort)): []nat.PortBinding{{HostPort: containerInfo.Configuration.MediaProxyAgentConfig.RestPort}},
+				nat.Port(fmt.Sprintf("%s/tcp", containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort)): []nat.PortBinding{{HostPort: containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort}},
 			},
 		}
-		isNetwork := true
-	    if isNetwork {
+	    if containerInfo.Configuration.MediaProxyAgentConfig.Network.Enable {
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
-					"my_net_801f0": {
+					containerInfo.Configuration.MediaProxyAgentConfig.Network.Name: {
 						IPAMConfig: &network.EndpointIPAMConfig{
-							IPv4Address: "192.168.2.11",
+							IPv4Address: containerInfo.Configuration.MediaProxyAgentConfig.Network.IP,
 						},
 					},
 				},
@@ -171,23 +171,23 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 			networkConfig = &network.NetworkingConfig{}
 		}
 	case general.MediaProxyMCM:
+		fmt.Printf(">> MediaProxyMcmConfig: %+v\n", containerInfo.Configuration.MediaProxyMcmConfig)
 		containerConfig = &container.Config{
-			Image: "mcm/media-proxy:latest",
-			Cmd:   []string{"-d", "kernel:eth0", "-i", "localhost"},
+			Image: containerInfo.Configuration.MediaProxyMcmConfig.ImageAndTag,
+			Cmd:   []string{"-d", fmt.Sprintf("kernel:%s", containerInfo.Configuration.MediaProxyMcmConfig.InterfaceName),"-i", "localhost"},
 		}
 	
 		hostConfig = &container.HostConfig{
 			Privileged: true,
-			Binds:      []string{"/dev/vfio:/dev/vfio"},
+			Binds:      containerInfo.Configuration.MediaProxyMcmConfig.Volumes,
 		}
 	
-		isNetwork := true
-	    if isNetwork {
+	    if containerInfo.Configuration.MediaProxyMcmConfig.Network.Enable {
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
-					"my_net_801f0": {
+					containerInfo.Configuration.MediaProxyMcmConfig.Network.Name: {
 						IPAMConfig: &network.EndpointIPAMConfig{
-							IPv4Address: "192.168.2.14",
+							IPv4Address: containerInfo.Configuration.MediaProxyMcmConfig.Network.IP,
 						},
 					},
 				},
@@ -196,14 +196,13 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 			networkConfig = &network.NetworkingConfig{}
 		}
     case general.BcsPipelineFfmpeg:
+		fmt.Printf(">> BcsPipelineFfmpeg: %+v\n", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline)
+
 		containerConfig = &container.Config{
 			User:       "root",
-			Image: "tiber-broadcast-suite:latest",
-			Cmd:   []string{"192.168.2.4", "50051"},
-			Env: []string{
-				"http_proxy=",
-				"https_proxy=",
-			},
+			Image: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.ImageAndTag,
+			Cmd:   []string{containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP, fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)},
+			Env: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.EnvironmentVariables,
 			ExposedPorts: nat.PortSet{
 				"20000/tcp": struct{}{},
 				"20170/tcp": struct{}{},
@@ -215,58 +214,52 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 			CapAdd:     []string{"ALL"},
 			
 			Mounts: []mount.Mount{
-				{Type: mount.TypeBind, Source: "/root", Target: "/videos"}, //customizable
-				{Type: mount.TypeBind, Source: "/usr/lib/x86_64-linux-gnu/dri", Target: "/usr/local/lib/x86_64-linux-gnu/dri/"},
-				{Type: mount.TypeBind, Source: "/tmp/kahawai_lcore.lock", Target: "/tmp/kahawai_lcore.lock"},
-				{Type: mount.TypeBind, Source: "/dev/null", Target: "/dev/null"},
-				{Type: mount.TypeBind, Source: "/tmp/hugepages", Target: "/tmp/hugepages"},
-				{Type: mount.TypeBind, Source: "/hugepages", Target: "/hugepages"},
-				{Type: mount.TypeBind, Source: "/var/run/imtl", Target: "/var/run/imtl"},
-				{Type: mount.TypeBind, Source: "/dev/shm", Target: "/dev/shm"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Videos, Target: "/videos"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri, Target: "/usr/local/lib/x86_64-linux-gnu/dri/"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Kahawai, Target: "/tmp/kahawai_lcore.lock"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Devnull, Target: "/dev/null"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.TmpHugepages, Target: "/tmp/hugepages"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Hugepages, Target: "/hugepages"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Imtl, Target: "/var/run/imtl"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Shm, Target: "/dev/shm"},
 			},
 			IpcMode: "host",
 		}
 		hostConfig.Devices= []container.DeviceMapping{
-			{PathOnHost: "/dev/vfio", PathInContainer: "/dev/vfio"},
-			{PathOnHost: "/dev/dri", PathInContainer: "/dev/dri"},
+			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio, PathInContainer: "/dev/vfio"},
+			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri, PathInContainer: "/dev/dri"},
 		}
 	
 		networkConfig = &network.NetworkingConfig{
 			EndpointsConfig: map[string]*network.EndpointSettings{
-				"my_net_801f0": {
+				containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name: {
 					IPAMConfig: &network.EndpointIPAMConfig{
-						IPv4Address: "192.168.2.4",
+						IPv4Address: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP,
 					},
 				},
 			},
 		}
 	case general.BcsPipelineNmosClient:
+		fmt.Printf(">> NmosClient: %+v\n", containerInfo.Configuration.WorkloadConfig.NmosClient)
 		containerConfig = &container.Config{
-			Image: "tiber-broadcast-suite-nmos-node:latest",
-			Cmd:   []string{"config/node.json"},
-			Env: []string{
-				"http_proxy=",
-				"https_proxy=",
-				"VFIO_PORT_TX=0000:ca:11.0",
-			},
+			Image: containerInfo.Configuration.WorkloadConfig.NmosClient.ImageAndTag,
+			Cmd: []string{"config/node.json"},
+			Env: containerInfo.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables,
 			User:       "root",
-			// WorkingDir: "/home/config/",
 		}
 	
 		hostConfig = &container.HostConfig{
 			Privileged: true,
-			// CapAdd:     []string{"ALL"},
-			Binds:      []string{fmt.Sprintf("%s:/home/config/", "/root/DEMO_NMOS/move/nmos/build-nmos-cpp/")},
-			// IpcMode:    "host",
+			Binds:      []string{fmt.Sprintf("%s:/home/config/", containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath)},
 		}
 	
 		networkConfig = &network.NetworkingConfig{
 			EndpointsConfig: map[string]*network.EndpointSettings{
-				"my_net_801f0": {
+				containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name: {
 					IPAMConfig: &network.EndpointIPAMConfig{
-						IPv4Address: "192.168.2.2",
+						IPv4Address: containerInfo.Configuration.WorkloadConfig.NmosClient.Network.IP,
 					},
-					Aliases: []string{"my_net_801f0"},
+					Aliases: []string{containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name},
 				},
 			},
 		}

@@ -10,8 +10,10 @@ package utils
 import (
 	"os"
 
+	"bcs.pod.launcher.intel/resources_library/workloads"
 	"gopkg.in/yaml.v2"
 )
+
 
 type Config struct {
 	ModeK8s       bool          `yaml:"k8s"`
@@ -20,66 +22,86 @@ type Config struct {
 
 type Configuration struct {
 	RunOnce         RunOnce         `yaml:"runOnce"`
-	WorkloadToBeRun WorkloadToBeRun `yaml:"workloadToBeRun"`
+	WorkloadToBeRun WorkloadConfig `yaml:"workloadToBeRun"`
 }
 
 type RunOnce struct {
-	MediaProxyAgent MediaProxyAgent `yaml:"mediaProxyAgent"`
-	MediaProxyMcm   MediaProxyMcm   `yaml:"mediaProxyMcm"`
+	MediaProxyAgent workloads.MediaProxyAgentConfig `yaml:"mediaProxyAgent"`
+	MediaProxyMcm   workloads.MediaProxyMcmConfig   `yaml:"mediaProxyMcm"`
 }
 
-type MediaProxyAgent struct {
-	ImageAndTag     string   `yaml:"imageAndTag"`
-	Command         string   `yaml:"command"`
-	ExposedPort     []string   `yaml:"exposedPort"`
-	BindingHostPort []string   `yaml:"bindingHostPort"`
-	IP              string   `yaml:"ip"`
-	Volumes         []string `yaml:"volumes"`
-	Privileged      bool     `yaml:"privileged"`
-}
+  type WorkloadConfig struct {
+	FfmpegPipeline  workloads.FfmpegPipelineConfig `yaml:"ffmpegPipeline"`
+	NmosClient      workloads.NmosClientConfig     `yaml:"nmosClient"`
+  }
 
-type MediaProxyMcm struct {
-	ImageAndTag     string   `yaml:"imageAndTag"`
-	Command         string   `yaml:"command"`
-	ExposedPort     []string   `yaml:"exposedPort"`
-	BindingHostPort []string   `yaml:"bindingHostPort"`
-	IP              string   `yaml:"ip"`
-	Volumes         []string `yaml:"volumes"`
-	Privileged      bool     `yaml:"privileged"`
-}
+// type Config struct {
+// 	ModeK8s       bool          `yaml:"k8s"`
+// 	Configuration Configuration `yaml:"configuration"`
+// }
 
-type WorkloadToBeRun struct {
-	FFmpegPipeline FFmpegPipeline `yaml:"ffmpegPipeline"`
-	NmosClient     NmosClient     `yaml:"nmosClient"`
-}
+// type Configuration struct {
+// 	RunOnce         RunOnce         `yaml:"runOnce"`
+// 	WorkloadToBeRun WorkloadToBeRun `yaml:"workloadToBeRun"`
+// }
 
-type FFmpegPipeline struct {
-	Name            string `yaml:"name"`
-	ImageAndTag     string `yaml:"imageAndTag"`
-	Command         string `yaml:"command"`
-	ExposedPort     []string `yaml:"exposedPort"`
-	BindingHostPort []string `yaml:"bindingHostPort"`
-	IP              string `yaml:"ip"`
-    Network         string `yaml:"network"`
-    DeviceDri       string `yaml:"deviceDri"`
-    DeviceVfio      string `yaml:"deviceVfio"`
-    Volumes         []string `yaml:"volumes"`
-	EnvironmentVariables []string `yaml:"environmentVariables"`
-	Privileged      bool     `yaml:"privileged"`
-}
+// type RunOnce struct {
+// 	MediaProxyAgent MediaProxyAgent `yaml:"mediaProxyAgent"`
+// 	MediaProxyMcm   MediaProxyMcm   `yaml:"mediaProxyMcm"`
+// }
 
-type NmosClient struct {
-	Name            string `yaml:"name"`
-	ImageAndTag     string `yaml:"imageAndTag"`
-	Command         string `yaml:"command"`
-	ExposedPort     []string `yaml:"exposedPort"`
-	BindingHostPort []string `yaml:"bindingHostPort"`
-	IP              string `yaml:"ip"`
-	Network         string `yaml:"network"`
-	Volumes         []string `yaml:"volumes"`
-	EnvironmentVariables []string `yaml:"environmentVariables"`
-	Privileged      bool     `yaml:"privileged"`
-}
+// type MediaProxyAgent struct {
+// 	ImageAndTag     string   `yaml:"imageAndTag"`
+// 	Command         string   `yaml:"command"`
+// 	ExposedPort     []string   `yaml:"exposedPort"`
+// 	BindingHostPort []string   `yaml:"bindingHostPort"`
+// 	IP              string   `yaml:"ip"`
+// 	Volumes         []string `yaml:"volumes"`
+// 	Privileged      bool     `yaml:"privileged"`
+// }
+
+// type MediaProxyMcm struct {
+// 	ImageAndTag     string   `yaml:"imageAndTag"`
+// 	Command         string   `yaml:"command"`
+// 	ExposedPort     []string   `yaml:"exposedPort"`
+// 	BindingHostPort []string   `yaml:"bindingHostPort"`
+// 	IP              string   `yaml:"ip"`
+// 	Volumes         []string `yaml:"volumes"`
+// 	Privileged      bool     `yaml:"privileged"`
+// }
+
+// type WorkloadToBeRun struct {
+// 	FFmpegPipeline FFmpegPipeline `yaml:"ffmpegPipeline"`
+// 	NmosClient     NmosClient     `yaml:"nmosClient"`
+// }
+
+// type FFmpegPipeline struct {
+// 	Name            string `yaml:"name"`
+// 	ImageAndTag     string `yaml:"imageAndTag"`
+// 	Command         string `yaml:"command"`
+// 	ExposedPort     []string `yaml:"exposedPort"`
+// 	BindingHostPort []string `yaml:"bindingHostPort"`
+// 	IP              string `yaml:"ip"`
+//     Network         string `yaml:"network"`
+//     DeviceDri       string `yaml:"deviceDri"`
+//     DeviceVfio      string `yaml:"deviceVfio"`
+//     Volumes         []string `yaml:"volumes"`
+// 	EnvironmentVariables []string `yaml:"environmentVariables"`
+// 	Privileged      bool     `yaml:"privileged"`
+// }
+
+// type NmosClient struct {
+// 	Name            string `yaml:"name"`
+// 	ImageAndTag     string `yaml:"imageAndTag"`
+// 	Command         string `yaml:"command"`
+// 	ExposedPort     []string `yaml:"exposedPort"`
+// 	BindingHostPort []string `yaml:"bindingHostPort"`
+// 	IP              string `yaml:"ip"`
+// 	Network         string `yaml:"network"`
+// 	Volumes         []string `yaml:"volumes"`
+// 	EnvironmentVariables []string `yaml:"environmentVariables"`
+// 	Privileged      bool     `yaml:"privileged"`
+// }
 
 func ParseLauncherMode(filename string) (bool, error) {
 	data, err := os.ReadFile(filename)

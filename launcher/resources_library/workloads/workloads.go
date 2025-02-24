@@ -2,8 +2,8 @@ package workloads
 
 type MediaProxyAgentConfig struct {
 	ImageAndTag string       `yaml:"imageAndTag"`
-	GRPCPort    int          `yaml:"gRPCPort"`
-	RestPort    int          `yaml:"restPort"`
+	GRPCPort    string          `yaml:"gRPCPort"`
+	RestPort    string          `yaml:"restPort"`
 	Network     NetworkConfig `yaml:"network"`
   }
 

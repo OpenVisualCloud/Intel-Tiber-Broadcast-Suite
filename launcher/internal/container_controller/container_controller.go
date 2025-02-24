@@ -13,6 +13,8 @@ import (
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/utils"
+
+	// "bcs.pod.launcher.intel/resources_library/utils"
 	"github.com/docker/docker/client"
 	"github.com/go-logr/logr"
 )
@@ -73,16 +75,20 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		log.Error(err, "Failed to parse launcher configuration file. Configuration is empty")
 		return err
 	}
+	//pass the yaml configuration to the Contaier struct
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyAgent) {
-		mcmAgentContainer := general.Containers{
-			Type:            general.MediaProxyAgent,
-			ContainerName:   MediaProxyAgentContainerName, //the name is predefined because only one instance is required on the machine
-			Ip:              config.RunOnce.MediaProxyAgent.IP,
-			ExposedPort:     config.RunOnce.MediaProxyAgent.ExposedPort, //"80/tcp",
-			BindingHostPort: config.RunOnce.MediaProxyAgent.BindingHostPort,
-			Image:           config.RunOnce.MediaProxyAgent.ImageAndTag,
-			Privileged:      config.RunOnce.MediaProxyAgent.Privileged,
-		}
+
+		mcmAgentContainer := general.Containers{}
+		mcmAgentContainer.Type = general.MediaProxyAgent
+		mcmAgentContainer.ContainerName = MediaProxyAgentContainerName
+		mcmAgentContainer.Image = config.RunOnce.MediaProxyAgent.ImageAndTag
+		mcmAgentContainer.Configuration.MediaProxyAgentConfig.ImageAndTag = config.RunOnce.MediaProxyAgent.ImageAndTag
+		mcmAgentContainer.Configuration.MediaProxyAgentConfig.GRPCPort = config.RunOnce.MediaProxyAgent.GRPCPort
+		mcmAgentContainer.Configuration.MediaProxyAgentConfig.RestPort = config.RunOnce.MediaProxyAgent.RestPort
+		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Enable = config.RunOnce.MediaProxyAgent.Network.Enable
+		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = config.RunOnce.MediaProxyAgent.Network.Name
+		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.IP = config.RunOnce.MediaProxyAgent.Network.IP
+
 		err := utils.CreateAndRunContainer(ctx, d.cli, log, mcmAgentContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer MCM MediaProxy Agent!")
@@ -93,16 +99,17 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	}
 
 	if !d.isEmptyStruct(config.RunOnce.MediaProxyMcm) {
-		mediaProxyContainer := general.Containers{
-			Type: general.MediaProxyMCM,
-			ContainerName:   MediaProxyContainerName, //the name is predefined because only one instance is required on the machine
-			Ip:              config.RunOnce.MediaProxyMcm.IP,
-			ExposedPort:     config.RunOnce.MediaProxyMcm.ExposedPort, //"80/tcp",
-			BindingHostPort: config.RunOnce.MediaProxyMcm.BindingHostPort,
-			Image:           config.RunOnce.MediaProxyMcm.ImageAndTag,
-			VolumeMount:     config.RunOnce.MediaProxyMcm.Volumes,
-			Privileged:      config.RunOnce.MediaProxyMcm.Privileged,
-		}
+		mediaProxyContainer := general.Containers{}
+		mediaProxyContainer.Type = general.MediaProxyMCM
+		mediaProxyContainer.ContainerName = MediaProxyContainerName
+		mediaProxyContainer.Image = config.RunOnce.MediaProxyMcm.ImageAndTag
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.ImageAndTag = config.RunOnce.MediaProxyMcm.ImageAndTag
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.InterfaceName = config.RunOnce.MediaProxyMcm.InterfaceName
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Volumes = config.RunOnce.MediaProxyMcm.Volumes
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Enable = config.RunOnce.MediaProxyMcm.Network.Enable
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Name = config.RunOnce.MediaProxyMcm.Network.Name
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.IP = config.RunOnce.MediaProxyMcm.Network.IP
+		
 		err := utils.CreateAndRunContainer(ctx, d.cli, log, mediaProxyContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer MCM MediaProxy!")
@@ -113,18 +120,17 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	}
 
 	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
-		bcsNmosContainer := general.Containers{
-			Type: 		  general.BcsPipelineNmosClient,
-			ContainerName:   config.WorkloadToBeRun.NmosClient.Name,
-			Ip:              config.WorkloadToBeRun.NmosClient.IP,
-			ExposedPort:     config.WorkloadToBeRun.NmosClient.ExposedPort,
-			BindingHostPort: config.WorkloadToBeRun.NmosClient.BindingHostPort,
-			Image:           config.WorkloadToBeRun.NmosClient.ImageAndTag,
-			VolumeMount:     config.WorkloadToBeRun.NmosClient.Volumes,
-			EnviromentVariables: config.WorkloadToBeRun.NmosClient.EnvironmentVariables,
-			NetworkMode:    config.WorkloadToBeRun.NmosClient.Network,
-			Privileged:    config.WorkloadToBeRun.NmosClient.Privileged,
-		}
+		bcsNmosContainer := general.Containers{}
+		bcsNmosContainer.Type = general.BcsPipelineNmosClient
+		bcsNmosContainer.ContainerName = config.WorkloadToBeRun.NmosClient.Name
+		bcsNmosContainer.Image = config.WorkloadToBeRun.NmosClient.ImageAndTag
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.ImageAndTag = config.WorkloadToBeRun.NmosClient.ImageAndTag
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables = config.WorkloadToBeRun.NmosClient.EnvironmentVariables
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
+		
 		err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsNmosContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer!")
@@ -134,14 +140,28 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
 	}
 
-	bcsPipelinesContainer := general.Containers{
-		Type: 		  general.BcsPipelineFfmpeg,
-		ContainerName:   config.WorkloadToBeRun.FFmpegPipeline.Name,
-		Ip:              config.WorkloadToBeRun.FFmpegPipeline.IP,
-		ExposedPort:     config.WorkloadToBeRun.FFmpegPipeline.ExposedPort,
-		BindingHostPort: config.WorkloadToBeRun.FFmpegPipeline.BindingHostPort,
-		Image:           config.WorkloadToBeRun.FFmpegPipeline.ImageAndTag,
-	}
+	bcsPipelinesContainer := general.Containers{}
+	bcsPipelinesContainer.Type = general.BcsPipelineFfmpeg
+	bcsPipelinesContainer.ContainerName = config.WorkloadToBeRun.FfmpegPipeline.Name
+	bcsPipelinesContainer.Image = config.WorkloadToBeRun.FfmpegPipeline.ImageAndTag
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Name = config.WorkloadToBeRun.FfmpegPipeline.Name
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.ImageAndTag = config.WorkloadToBeRun.FfmpegPipeline.ImageAndTag
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort = config.WorkloadToBeRun.FfmpegPipeline.GRPCPort
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.SourcePort = config.WorkloadToBeRun.FfmpegPipeline.SourcePort
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.EnvironmentVariables = config.WorkloadToBeRun.FfmpegPipeline.EnvironmentVariables
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Devnull = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Devnull
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Dri
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Hugepages = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Hugepages
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Imtl = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Imtl
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Kahawai = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Kahawai
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Shm = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Shm
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.TmpHugepages = config.WorkloadToBeRun.FfmpegPipeline.Volumes.TmpHugepages
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Videos = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Videos
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Dri = config.WorkloadToBeRun.FfmpegPipeline.Devices.Dri
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio = config.WorkloadToBeRun.FfmpegPipeline.Devices.Vfio
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable = config.WorkloadToBeRun.FfmpegPipeline.Network.Enable
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name = config.WorkloadToBeRun.FfmpegPipeline.Network.Name
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
 
 	err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsPipelinesContainer)
 	if err != nil {
