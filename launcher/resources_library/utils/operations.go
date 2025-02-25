@@ -430,6 +430,7 @@ func CreateBcsService(name string) *corev1.Service {
 	return &corev1.Service{
         ObjectMeta: metav1.ObjectMeta{
           Name: "tiber-broadcast-suite",
+		  Namespace: "default",
         },
         Spec: corev1.ServiceSpec{
           Type: corev1.ServiceTypeNodePort,
@@ -439,12 +440,14 @@ func CreateBcsService(name string) *corev1.Service {
           Ports: []corev1.ServicePort{
             {
               Protocol:   corev1.ProtocolTCP,
+			  Name: "a",
               Port:       20000,
               TargetPort: intstr.FromInt(20000),
               NodePort:   32000,
             },
             {
               Protocol:   corev1.ProtocolTCP,
+			  Name: "b",
               Port:       20170,
               TargetPort: intstr.FromInt(20170),
               NodePort:   32001,
@@ -502,7 +505,7 @@ func CreatePersistentVolumeClaim(name string) *corev1.PersistentVolumeClaim {
 func CreateConfigMap(name string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "tiber-broadcast-suite-config",
 			Namespace: "default",
 		},
 		Data: map[string]string{
@@ -534,8 +537,8 @@ func CreateConfigMapFromFile(name, namespace, filePath string) (*corev1.ConfigMa
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:      "tiber-broadcast-suite-config",
+			Namespace: "default",
 		},
 		Data: map[string]string{
 			"config": string(data),
@@ -642,14 +645,14 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                       corev1.ResourceCPU:    resource.MustParse("500m"),
                     },
                   },
-                  VolumeDevices: []corev1.VolumeDevice{
-                    {Name: "vfio", DevicePath: "/dev/vfio"},
-                    {Name: "dri", DevicePath: "/dev/dri"},
-                  },
+                //   VolumeDevices: []corev1.VolumeDevice{
+                //     {Name: "vfio", DevicePath: "/dev/vfio"},
+                //     {Name: "dri", DevicePath: "/dev/dri"},
+                //   },
                 },
               },
               Volumes: []corev1.Volume{
-                {Name: "videos", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "$(pwd)"}}},
+                {Name: "videos", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/root/DEMO_NMOS/move/nmos/nmos-cpp/Development/nmos-cpp-node/"}}},
                 {Name: "dri", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/usr/lib/x86_64-linux-gnu/dri"}}},
                 {Name: "kahawai-lock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/tmp/kahawai_lcore.lock"}}},
                 {Name: "dev-null", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/null"}}},

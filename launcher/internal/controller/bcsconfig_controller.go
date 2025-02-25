@@ -108,7 +108,7 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	err = r.waitForPodsRunning(ctx, "default", "bcs-nmos-ffmpeg-pipeline", 1*time.Minute, log)
+	err = r.waitForPodsRunning(ctx, "default", "tiber-broadcast-suite", 1*time.Minute, log)
 	if err != nil {
 		log.Error(err, "Error waiting for pod to be running.")
 		return ctrl.Result{}, err
@@ -126,17 +126,17 @@ func (r *BcsConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, log logr.Logger) error {
 
 	// Reconcile ConfigMap
-	if err := r.reconcileConfigMap(ctx, "bcs-nmos-ffmpeg-pipeline", "default", log); err != nil {
+	if err := r.reconcileConfigMap(ctx, "tiber-broadcast-suite-config", "default", log); err != nil {
 		return err
 	}
 
 	// Reconcile Deployment
-	if err := r.reconcileDeployment(ctx, "bcs-nmos-ffmpeg-pipeline", "default", log); err != nil {
+	if err := r.reconcileDeployment(ctx, "tiber-broadcast-suite", "default", log); err != nil {
 		return err
 	}
 
 	// Reconcile Service
-	if err := r.reconcileService(ctx, "bcs-nmos-ffmpeg-pipeline", "default", log); err != nil {
+	if err := r.reconcileService(ctx, "tiber-broadcast-suite", "default", log); err != nil {
 		return err
 	}
 
