@@ -60,31 +60,33 @@ type BcsConfigReconciler struct {
 func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 
-	// MCM seamless start up
-	createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
-		err := r.Get(ctx, namespacedName, resource)
-		if err != nil {
-			err = r.Create(ctx, resource)
-			if err != nil {
-				log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
-				return err
-			}
-			log.Info("MCM resource is created", "resource", resource.GetObjectKind(), "name", namespacedName)
-		}
-		return nil
-	}
+	// MCM silent start up
+	// createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
+	// 	err := r.Get(ctx, namespacedName, resource)
+	// 	if err != nil {
+	// 		err = r.Create(ctx, resource)
+	// 		if err != nil {
+	// 			log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+	// 			return err
+	// 		}
+	// 		log.Info("MCM resource is created", "resource", resource.GetObjectKind(), "name", namespacedName)
+	// 	}
+	// 	return nil
+	// }
 
-	mcmNamespace := utils.CreateNamespace("mcm")
-	mcmAgentDeployment := utils.CreateDeployment("mcm-agent")
-	mcmMediaProxyPv := utils.CreatePersistentVolume("media-proxy")
-	mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim("media-proxy")
-	mcmMediaProxyDs := utils.CreateDaemonSet("media-proxy")
+	// mcmNamespace := utils.CreateNamespace("mcm")
+	// mcmAgentDeployment := utils.CreateMeshAgentDeployment("mcm-agent")
+	// mcmAgentService := utils.CreateMeshAgentService("mcm-agent")
+	// mcmMediaProxyPv := utils.CreatePersistentVolume("media-proxy")
+	// mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim("media-proxy")
+	// mcmMediaProxyDs := utils.CreateDaemonSet("media-proxy")
 
-	createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
-	createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: mcmAgentDeployment.Namespace})
-	createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name})
-	createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: mcmMediaProxyPvc.Namespace})
-	createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: mcmMediaProxyDs.Namespace})
+	// createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
+	// createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: "mcm"})
+	// createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace:"mcm"})
+	// createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: "mcm"})
+	// createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: "mcm"})
+	// createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
 
 	// Lookup the BcsConfig instance for this reconcile request
 	bcsConf := &bcsv1.BcsConfig{}
@@ -168,7 +170,7 @@ func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context, name stri
 	bcsDeployment := &appsv1.Deployment{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, bcsDeployment)
 	if errors.IsNotFound(err) {
-		bcsDeployment = utils.CreateDeployment(name)
+		bcsDeployment = utils.CreateBcsDeployment(name)
 		if err := r.Create(ctx, bcsDeployment); err != nil {
 			log.Error(err, "Failed to create Deployment")
 			return err
@@ -191,7 +193,7 @@ func (r *BcsConfigReconciler) reconcileService(ctx context.Context, name string,
 	bcsSevice := &corev1.Service{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, bcsSevice)
 	if errors.IsNotFound(err) {
-		bcsSevice = utils.CreateService(name)
+		bcsSevice = utils.CreateBcsService(name)
 		if err := r.Create(ctx, bcsSevice); err != nil {
 			log.Error(err, "Failed to create Service")
 			return err

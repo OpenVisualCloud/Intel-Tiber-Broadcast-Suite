@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 
-k8s: false # use in both modes: k8s | docker
+k8s: true # use in both modes: k8s | docker
 configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
