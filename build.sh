@@ -844,8 +844,6 @@ function install_in_docker_enviroment {
         --target manager-stage \
         "${SCRIPT_DIR}"
 
-    cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
-
     docker buildx build \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
@@ -854,6 +852,7 @@ function install_in_docker_enviroment {
 
     docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
     docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
+    docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
 }
 ### docker installation end
 

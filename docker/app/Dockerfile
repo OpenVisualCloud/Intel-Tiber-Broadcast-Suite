@@ -331,7 +331,7 @@ RUN \
     --enable-cross-compile && \
   make -j${nproc}
 
-COPY /gRPC /tmp/gRPC
+COPY src/gRPC /tmp/gRPC
 RUN /tmp/gRPC/compile.sh
 
 WORKDIR /tmp/ffmpeg/

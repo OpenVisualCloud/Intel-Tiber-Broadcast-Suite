@@ -7,7 +7,7 @@
 #
 # build stage
 
-FROM ubuntu:22.04 AS build-stage
+FROM ubuntu:24.04 AS build-stage
 
 USER root
 
@@ -19,26 +19,27 @@ ARG nproc
 ENV \
   TZ="Europe/Warsaw" \
   DEBIAN_FRONTEND="noninteractive" \
-  APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn \
   nproc=${nproc:-$(nproc)} \
   NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
-
-COPY patches/ /home/patches
-COPY gRPC/ /home/gRPC
 
 RUN \
     apt-get update --fix-missing && \
     apt-get install -y --no-install-recommends \
+    ca-certificates \
     build-essential \
     g++ \
     git \
     curl \
-    python3 \
-    python3-pip \
-    python3-setuptools && \
-    pip install --upgrade \
     cmake \
-    conan~=2.4
+    libboost-all-dev \
+    libcpprest-dev \
+    libavahi-client-dev \
+    libavahi-compat-libdnssd-dev && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY src /tmp
 
 RUN \
     echo "**** DOWNLOAD AND INSTALL gRPC v1.58 ****" && \
@@ -49,85 +50,68 @@ RUN \
     make -C "/tmp/grpc-source/cmake/build" install && \
     rm -rf /tmp/grpc-source
 
-## Get source for Sony nmos-cpp
-WORKDIR /home
+## Get source for Sony nmos-cpp library
+WORKDIR /tmp
 RUN \
     curl --output - -s -k https://codeload.github.com/sony/nmos-cpp/tar.gz/$NMOS_CPP_VERSION | tar zxvf - -C . && \
     mv ./nmos-cpp-${NMOS_CPP_VERSION} ./nmos-cpp
 
+WORKDIR /tmp/nmos-cpp/Development/build
 RUN \
-    patch -d /home/nmos-cpp -p1 -i /home/patches/nmos-cpp.patch
+    cmake .. -DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR=ON \
+    -DNMOS_CPP_USE_SUPPLIED_JWT_CPP=ON \
+    -DNMOS_CPP_BUILD_EXAMPLES=OFF \
+    -DNMOS_CPP_BUILD_TESTS=OFF && \
+    make -j$(nproc) && \
+    make install
 
 ## mDNSResponder 878.260.1 Build and install
+WORKDIR /home
 RUN \
     curl --output - -s -k https://codeload.github.com/apple-oss-distributions/mDNSResponder/tar.gz/mDNSResponder-878.260.1 | tar zxvf - -C . && \
-    mv ./mDNSResponder-mDNSResponder-878.260.1 ./mDNSResponder && \
-    patch -d mDNSResponder/ -p1 <nmos-cpp/Development/third_party/mDNSResponder/unicast.patch && \
-    patch -d mDNSResponder/ -p1 <nmos-cpp/Development/third_party/mDNSResponder/permit-over-long-service-types.patch && \
-    patch -d mDNSResponder/ -p1 <nmos-cpp/Development/third_party/mDNSResponder/poll-rather-than-select.patch
+    mv ./mDNSResponder-mDNSResponder-878.260.1 /home/mDNSResponder && \
+    patch -d mDNSResponder/ -p1 </tmp/nmos-cpp/Development/third_party/mDNSResponder/unicast.patch && \
+    patch -d mDNSResponder/ -p1 </tmp/nmos-cpp/Development/third_party/mDNSResponder/permit-over-long-service-types.patch && \
+    patch -d mDNSResponder/ -p1 </tmp/nmos-cpp/Development/third_party/mDNSResponder/poll-rather-than-select.patch
 
 WORKDIR /home/mDNSResponder/mDNSPosix
 RUN \
-    make os=linux && make os=linux install
+    make os=linux && \
+    mkdir /tmp/buildout && \
+    cp -a /home/mDNSResponder /tmp/buildout/mDNSResponder
 
-## Build Sony nmos-cpp from sources - with workaround to keep latest packages for nmos
-## Remember to use the same veriosn of nmos and registry
-## First download all packages automatically using conan package manager, than build project
-WORKDIR /home/nmos-cpp/Development
-RUN \
-    conan profile detect && \
-    conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy --build=missing
-
-WORKDIR /home/gRPC
+## Build gRPC
+WORKDIR /tmp/gRPC
 RUN \
     cmake -B build && \
     make -j$(nproc) -C build
 
+## Build NMOS Node
+WORKDIR /tmp/nmos/nmos-node/build
 RUN \
-    mkdir /home/nmos-cpp/Development/build && \
-    mkdir /home/nmos-cpp/Development/nmos-cpp-node/build && \
-    cp /home/gRPC/build/libFFmpeg_wrapper_client.a /home/nmos-cpp/Development/build && \
-    cp /home/gRPC/build/libhw_grpc_proto.a /home/nmos-cpp/Development/build && \
-    cp /home/gRPC/config_params.hpp /home/nmos-cpp/Development/nmos-cpp-node && \
-    cp /home/gRPC/FFmpeg_wrapper_client.h /home/nmos-cpp/Development/nmos-cpp-node && \
-    cp /home/gRPC/build/ffmpeg_cmd_wrap.pb.h /home/nmos-cpp/Development/nmos-cpp-node/build && \
-    cp /home/gRPC/build/ffmpeg_cmd_wrap.grpc.pb.h /home/nmos-cpp/Development/nmos-cpp-node/build
-
-ENV LIBRARY_PATH=/home/nmos-cpp/Development/build
-
-WORKDIR /home/nmos-cpp/Development/build
-RUN \
-    cmake \
-    -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES:STRING="third_party/cmake/conan_provider.cmake" \
-    -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE:STRING="MinSizeRel" \
-    -DCMAKE_CONFIGURATION_TYPES:STRING="MinSizeRel" \
-    -DCXXFLAGS:STRING="-Os" \
-    -DNMOS_CPP_USE_AVAHI:BOOL="0" \
-    /home/nmos-cpp/Development/build .. && \
+    cmake .. && \
     make -j$(nproc) && \
-    cp ./nmos-cpp-node /home
-
-## Move executables, libraries and clean up container as much as possible
-WORKDIR /home
-RUN \
-    rm -rf .git nmos-cpp
+    cp ./bcs-nmos-node /tmp/buildout
 
 ## Re-build container for optimised runtime environment using clean Ubuntu Bionic release
-FROM ubuntu:22.04 AS final-stage
+FROM ubuntu:24.04 AS final-stage
 
 ENV \
   DEBIAN_FRONTEND="noninteractive"
 
 ##Copy required files from build container
-COPY --from=build-stage /home /home
+COPY --from=build-stage /tmp/buildout /home
 
 ##Update container with latest patches and needed packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     make \
     curl \
-    gnupg
+    gnupg \
+    libcpprest-dev && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/mDNSResponder/mDNSPosix
 RUN \
@@ -136,7 +120,7 @@ RUN \
 WORKDIR /home
 RUN \
     curl -sS -k "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x77b7346a59027b33c10cafe35e64e954262c4500" | apt-key add - && \
-    echo "deb http://ppa.launchpad.net/mosquitto-dev/mosquitto-ppa/ubuntu jammy main" | tee /etc/apt/sources.list.d/mosquitto.list && \
+    echo "deb http://ppa.launchpad.net/mosquitto-dev/mosquitto-ppa/ubuntu noble main" | tee /etc/apt/sources.list.d/mosquitto.list && \
     apt-get update && apt-get install -y --no-install-recommends mosquitto libc6 && \
     apt-get remove --purge -y make gnupg && \
     apt-get autoremove -y && \
@@ -147,18 +131,9 @@ RUN \
     rm -rf /usr/local/share/man/* && rm -rf /usr/local/share/.cache/* \
     rm -rf /home/mDNSResponder /etc/nsswitch.conf.pre-mdns
 
-##Copy entrypoint.sh script and master config to image
-COPY entrypoint.sh /home/
-
-##Set script to executable
-RUN chmod +x /home/entrypoint.sh
-
-##Expose correct default ports to allow quick publishing
-#EXPOSE 8010 8011 11000 11001 1883 5353/udp
-
-HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "nmos-cpp-node" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "bcs-nmos-node" || exit 1
 
 USER "nmos"
 
 WORKDIR /home/
-ENTRYPOINT ["/home/entrypoint.sh"]
+ENTRYPOINT ["./bcs-nmos-node"]
