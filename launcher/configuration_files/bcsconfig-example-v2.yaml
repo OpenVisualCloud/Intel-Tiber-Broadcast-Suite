@@ -1,0 +1,129 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+#
+
+apiVersion: bcs.bcs.intel/v1
+kind: BcsConfig
+metadata:
+  labels:
+    app.kubernetes.io/name: bcs-launcher
+    app.kubernetes.io/managed-by: kustomize
+  name: bcsconfig-sample
+spec:
+  name: tiber-broadcast-suite
+  namespace: default
+  app:
+    image: tiber-broadcast-suite:latest
+    grpcPort: 50051
+    environmentVariables:
+      - name: "http_proxy"
+        value: ""
+      - name: "https_proxy"
+        value: ""
+    volumes:
+      videos: /root/DEMO_NMOS/move/nmos/nmos-cpp/Development/nmos-cpp-node/
+      dri: /usr/lib/x86_64-linux-gnu/dri
+      kahawaiLock: /tmp/kahawai_lcore.lock
+      devNull: /dev/null
+      hugepagesTmp: /tmp/hugepages
+      hugepages: /hugepages
+      imtl: /var/run/imtl
+      shm: /dev/shm
+      vfio: /dev/vfio
+      driDev: /dev/dri
+  nmos:
+    image: tiber-broadcast-suite-nmos-node:latest
+    args: ["config/intel-node-tx.json"]
+    environmentVariables:
+      - name: "http_proxy"
+        value: ""
+      - name: "https_proxy"
+        value: ""
+      - name: "VFIO_PORT_TX"
+        value: "0000:ca:11.0"
+    nmosApiPort: 84
+    nmosApiNodePort: 30084
+    nmosAppCommunicationPort: 5004
+    nmosAppCommunicationNodePort: 32054
+    nmosInputFile:
+      logging_level: 0
+      http_port: 90
+      label: intel-broadcast-suite
+      senders:
+        - v
+      senders_count:
+        - 1
+      receivers:
+        - v
+      receivers_count:
+        - 0
+      device_tags:
+        pipeline:
+          - tx-sender
+      function: tx-sender
+      gpu_hw_acceleration: none
+      domain: local
+      ffmpeg_grpc_server_address: localhost
+      ffmpeg_grpc_server_port: "50051"
+      sender_payload_type: 112
+      sender:
+        - stream_payload:
+            video:
+              frame_width: 960
+              frame_height: 1080
+              frame_rate:
+                numerator: 60
+                denominator: 1
+              pixel_format: yuv422p10le
+              video_type: rawvideo
+            audio:
+              channels: 2
+              sampleRate: 48000
+              format: pcm_s24be
+              packetTime: 1ms
+          stream_type:
+            mcm:
+              conn_type: st2110
+              transport: st2110-20
+              urn: NULL
+              transportPixelFormat: yuv422p10le
+      receiver:
+        - stream_payload:
+            video:
+              frame_width: 1920
+              frame_height: 1080
+              frame_rate:
+                numerator: 60
+                denominator: 1
+              pixel_format: yuv422p10le
+              video_type: rawvideo
+            audio:
+              channels: 2
+              sampleRate: 48000
+              format: pcm_s24be
+              packetTime: 1ms
+          stream_type:
+            file:
+              path: /videos
+              filename: 1920x1080p10le_1.yuv
+
+
+meshAgent:
+  image: "bcs-mesh-agent:latest"
+  restPort: 8100
+  grpcPort: 50051
+mediaProxy:
+  image: mcm/media-proxy:latest
+  command: ["media-proxy"]
+  args: ["-d", "kernel:eth0", "-i", "$(POD_IP)"]
+  grpcPort: 8001
+  sdkPort: 8002
+  volumes:
+    memif: /tmp/mcm/memif
+    vfio: /dev/vfio
+  pvHostPath: /var/run/imtl
+  pvStorageClass: manual
+  pvStorage: 1Gi
+  pvcStorage: 1Gi

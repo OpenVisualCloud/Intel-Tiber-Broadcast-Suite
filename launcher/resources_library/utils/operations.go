@@ -440,17 +440,17 @@ func CreateBcsService(name string) *corev1.Service {
           Ports: []corev1.ServicePort{
             {
               Protocol:   corev1.ProtocolTCP,
-			  Name: "a",
-              Port:       20000,
-              TargetPort: intstr.FromInt(20000),
-              NodePort:   32000,
+			  Name: "nmos-node-api",
+              Port:       84,
+              TargetPort: intstr.FromInt(84),
+              NodePort:   30084,
             },
             {
               Protocol:   corev1.ProtocolTCP,
-			  Name: "b",
-              Port:       20170,
-              TargetPort: intstr.FromInt(20170),
-              NodePort:   32001,
+			  Name: "nmos-app-communication",
+              Port:       5004,
+              TargetPort: intstr.FromInt(5004),
+              NodePort:   32054,
             },
           },
         },
@@ -626,6 +626,8 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                     {Name: "hugepages", MountPath: "/hugepages"},
                     {Name: "imtl", MountPath: "/var/run/imtl"},
                     {Name: "shm", MountPath: "/dev/shm"},
+                    {Name: "driDev", MountPath: "/dev/dri"},
+                    {Name: "vfio", MountPath: "/dev/vfio"},
                   },
                   Env: []corev1.EnvVar{
                     {Name: "http_proxy", Value: ""},
@@ -645,10 +647,6 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                       corev1.ResourceCPU:    resource.MustParse("500m"),
                     },
                   },
-                //   VolumeDevices: []corev1.VolumeDevice{
-                //     {Name: "vfio", DevicePath: "/dev/vfio"},
-                //     {Name: "dri", DevicePath: "/dev/dri"},
-                //   },
                 },
               },
               Volumes: []corev1.Volume{
@@ -661,6 +659,7 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                 {Name: "imtl", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/imtl"}}},
                 {Name: "shm", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/shm"}}},
                 {Name: "vfio", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/vfio"}}},
+                {Name: "driDev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/dri"}}},
 				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "tiber-broadcast-suite-config"}}}},
               },
             },
@@ -668,7 +667,6 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
         },
       }
 }
-
 
 func CreateDaemonSet(name string) *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
