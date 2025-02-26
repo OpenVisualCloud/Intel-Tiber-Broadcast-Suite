@@ -31,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	bcsv1 "bcs.pod.launcher.intel/api/v1"
 )
 
 func isImagePulled(ctx context.Context, cli *client.Client, imageName string) (error, bool) {
@@ -333,8 +335,49 @@ func boolPtr(b bool) *bool    { return &b }
 func intstrPtr(i int) intstr.IntOrString {
     return intstr.IntOrString{IntVal: int32(i)}
 }
-		
-func CreateMeshAgentDeployment(name string) *appsv1.Deployment {
+
+type K8sConfig struct {
+	K8s        bool `yaml:"k8s"`
+	Definition struct {
+		MeshAgent struct {
+			Image    string `yaml:"image"`
+			RestPort int    `yaml:"restPort"`
+			GrpcPort int    `yaml:"grpcPort"`
+		} `yaml:"meshAgent"`
+		MediaProxy struct {
+			Image       string   `yaml:"image"`
+			Command     []string `yaml:"command"`
+			Args        []string `yaml:"args"`
+			GrpcPort    int      `yaml:"grpcPort"`
+			SdkPort     int      `yaml:"sdkPort"`
+			Volumes     struct {
+				Memif string `yaml:"memif"`
+				Vfio  string `yaml:"vfio"`
+			} `yaml:"volumes"`
+			PvHostPath     string `yaml:"pvHostPath"`
+			PvStorageClass string `yaml:"pvStorageClass"`
+			PvStorage      string `yaml:"pvStorage"`
+			PvcStorage     string `yaml:"pvcStorage"`
+		} `yaml:"mediaProxy"`
+	} `yaml:"definition"`
+}
+
+func UnmarshalK8sConfig(yamlData []byte) (*K8sConfig, error) {
+	var config K8sConfig
+	err := yaml.Unmarshal(yamlData, &config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
+	}
+	return &config, nil
+}
+
+func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
+	 data, err := UnmarshalK8sConfig([]byte(cm.Data["config.yaml"]))
+	 if err != nil {
+		 fmt.Println("Error unmarshalling K8s config:", err)
+		 return nil
+	 }
+	 fmt.Printf("Data: %+v\n", data)
 	 return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mesh-agent-deployment",
@@ -360,14 +403,14 @@ func CreateMeshAgentDeployment(name string) *appsv1.Deployment {
 					Containers: []corev1.Container{
 						{
 							Name:  "mesh-agent",
-							Image: "mcm/mesh-agent:bcs",
+							Image: data.Definition.MeshAgent.Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Command: []string{
-								"mesh-agent","-c", "8100", "-p", "50051",
+								"mesh-agent", "-c", fmt.Sprintf("%d", data.Definition.MeshAgent.RestPort), "-p", fmt.Sprintf("%d", data.Definition.MeshAgent.GrpcPort),
 							},
 							Ports: []corev1.ContainerPort{
-								{ContainerPort: 8100},
-								{ContainerPort: 50051},
+								{ContainerPort: int32(data.Definition.MeshAgent.RestPort)},
+								{ContainerPort: int32(data.Definition.MeshAgent.GrpcPort)},
 							},
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: boolPtr(true),
@@ -380,7 +423,12 @@ func CreateMeshAgentDeployment(name string) *appsv1.Deployment {
 	}
 }
 
-func CreateMeshAgentService(name string) *corev1.Service {
+func CreateMeshAgentService(cm *corev1.ConfigMap) *corev1.Service {
+	data, err := UnmarshalK8sConfig([]byte(cm.Data["config.yaml"]))
+	 if err != nil {
+		 fmt.Println("Error unmarshalling K8s config:", err)
+		 return nil
+	 }
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "mesh-agent-service",
@@ -394,14 +442,14 @@ func CreateMeshAgentService(name string) *corev1.Service {
 				{
 					Name:       "rest",
 					Protocol:   corev1.ProtocolTCP,
-					Port:       8100,
-					TargetPort: intstrPtr(8100),
+					Port:       int32(data.Definition.MeshAgent.RestPort),
+					TargetPort: intstr.FromInt(data.Definition.MeshAgent.RestPort),
 				},
 				{
 					Name: 	    "grpc",
 					Protocol:   corev1.ProtocolTCP,
-					Port:       50051,
-					TargetPort: intstrPtr(50051),
+					Port:       int32(data.Definition.MeshAgent.GrpcPort),
+					TargetPort: intstr.FromInt(data.Definition.MeshAgent.GrpcPort),
 				},
 			},
 		},
@@ -426,62 +474,72 @@ func CreateService(name string) *corev1.Service {
 	}
 }
 
-func CreateBcsService(name string) *corev1.Service {
+func CreateBcsService(bcs * bcsv1.BcsConfig) *corev1.Service {
 	return &corev1.Service{
         ObjectMeta: metav1.ObjectMeta{
-          Name: "tiber-broadcast-suite",
-		  Namespace: "default",
+          Name: bcs.Spec.Name,
+		  Namespace: bcs.Spec.Namespace,
         },
         Spec: corev1.ServiceSpec{
           Type: corev1.ServiceTypeNodePort,
           Selector: map[string]string{
-            "app": "tiber-broadcast-suite",
+            "app": bcs.Spec.Name,
           },
           Ports: []corev1.ServicePort{
             {
               Protocol:   corev1.ProtocolTCP,
 			  Name: "nmos-node-api",
-              Port:       84,
-              TargetPort: intstr.FromInt(84),
-              NodePort:   30084,
+              Port:       int32(bcs.Spec.Nmos.NmosApiPort),
+			  TargetPort: intstr.FromInt(int(bcs.Spec.Nmos.NmosApiPort)),
+			  NodePort:   int32(bcs.Spec.Nmos.NmosApiNodePort),
             },
             {
               Protocol:   corev1.ProtocolTCP,
 			  Name: "nmos-app-communication",
-              Port:       5004,
-              TargetPort: intstr.FromInt(5004),
-              NodePort:   32054,
+              Port:       int32(bcs.Spec.Nmos.NmosAppCommunicationPort),
+			  TargetPort: intstr.FromInt(int(bcs.Spec.Nmos.NmosAppCommunicationPort)),
+			  NodePort:   int32(bcs.Spec.Nmos.NmosAppCommunicationNodePort),
             },
           },
         },
       }
 }
 
-func CreatePersistentVolume(name string) *corev1.PersistentVolume {
+func CreatePersistentVolume(cm *corev1.ConfigMap) *corev1.PersistentVolume {
+	data, err := UnmarshalK8sConfig([]byte(cm.Data["config.yaml"]))
+	 if err != nil {
+		 fmt.Println("Error unmarshalling K8s config:", err)
+		 return nil
+	 }
 	return &corev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "mtl-pv",
 		},
 		Spec: corev1.PersistentVolumeSpec{
 			Capacity: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse("1Gi"),
+				corev1.ResourceStorage: resource.MustParse(data.Definition.MediaProxy.PvStorage),
 			},
 			VolumeMode: func() *corev1.PersistentVolumeMode { mode := corev1.PersistentVolumeFilesystem; return &mode }(),
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteOnce,
 			},
 			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimRetain,
-            StorageClassName:              "manual",
+            StorageClassName:              data.Definition.MediaProxy.PvStorageClass,
 			PersistentVolumeSource: corev1.PersistentVolumeSource{
 				HostPath: &v1.HostPathVolumeSource{
-					Path: "/var/run/imtl",
+					Path: data.Definition.MediaProxy.PvHostPath,
 				},
 			},
 		},
 	}
 }
 
-func CreatePersistentVolumeClaim(name string) *corev1.PersistentVolumeClaim {
+func CreatePersistentVolumeClaim(cm *corev1.ConfigMap) *corev1.PersistentVolumeClaim {
+    data, err := UnmarshalK8sConfig([]byte(cm.Data["config.yaml"]))
+	 if err != nil {
+		 fmt.Println("Error unmarshalling K8s config:", err)
+		 return nil
+	 }
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mtl-pvc",
@@ -493,85 +551,60 @@ func CreatePersistentVolumeClaim(name string) *corev1.PersistentVolumeClaim {
 			},
 			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: resource.MustParse("1Gi"),
+					corev1.ResourceStorage: resource.MustParse(data.Definition.MediaProxy.PvcStorage),
 				},
 			},
-			StorageClassName: func() *string { s := "manual"; return &s }(),
+			StorageClassName: func() *string { s := data.Definition.MediaProxy.PvStorageClass; return &s }(),
 			VolumeName:       "mtl-pv",
 		},
 	}
 }
 
-func CreateConfigMap(name string) *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tiber-broadcast-suite-config",
-			Namespace: "default",
-		},
-		Data: map[string]string{
-			"data": "bcsdata",
-		},
-	}
-}
-
-func ConvertYAMLToJSON(yamlData []byte) ([]byte, error) {
-	var jsonData map[string]interface{}
-	err := yaml.Unmarshal(yamlData, &jsonData)
+func CreateConfigMap(bcs *bcsv1.BcsConfig) *corev1.ConfigMap {
+	
+	data, err := json.Marshal(bcs.Spec.Nmos.NmosInputFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
-	}
-
-	jsonBytes, err := json.Marshal(jsonData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal JSON: %w", err)
-	}
-	return jsonBytes, nil
-}
-
-
-func CreateConfigMapFromFile(name, namespace, filePath string) (*corev1.ConfigMap, error) {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		fmt.Println("Error marshalling NMOS input file:", err)
+		return nil
 	}
 
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "tiber-broadcast-suite-config",
-			Namespace: "default",
+			Name:      bcs.Spec.Name + "-config",
+			Namespace: bcs.Spec.Namespace,
 		},
 		Data: map[string]string{
 			"config": string(data),
 		},
-	}, nil
+	}
 }
 
-func CreateBcsDeployment(name string) *appsv1.Deployment {
+func CreateBcsDeployment(bcs *bcsv1.BcsConfig) *appsv1.Deployment {
 	return &appsv1.Deployment{
         ObjectMeta: metav1.ObjectMeta{
-          Name:      "tiber-broadcast-suite",
-          Namespace: "default",
+          Name:      bcs.Spec.Name,
+          Namespace: bcs.Spec.Namespace,
         },
         Spec: appsv1.DeploymentSpec{
           Replicas: int32Ptr(1),
           Selector: &metav1.LabelSelector{
             MatchLabels: map[string]string{
-              "app": "tiber-broadcast-suite",
+              "app": bcs.Spec.Name,
             },
           },
           Template: corev1.PodTemplateSpec{
             ObjectMeta: metav1.ObjectMeta{
               Labels: map[string]string{
-                "app": "tiber-broadcast-suite",
+                "app": bcs.Spec.Name,
               },
             },
             Spec: corev1.PodSpec{
               Containers: []corev1.Container{
                 {
                   Name:  "tiber-broadcast-suite-nmos-node",
-                  Image: "tiber-broadcast-suite-nmos-node:latest",
+                  Image: bcs.Spec.Nmos.Image,
 				  ImagePullPolicy: corev1.PullIfNotPresent,
-                  Args:  []string{"config/intel-node-tx.json"},
+                  Args:  bcs.Spec.Nmos.Args,
                   SecurityContext: &corev1.SecurityContext{
                     RunAsUser:  int64Ptr(0),
                     Privileged: boolPtr(true),
@@ -585,11 +618,7 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                       MountPath: "/home/config",
                     },
                   },
-                  Env: []corev1.EnvVar{
-                    {Name: "http_proxy", Value: ""},
-                    {Name: "https_proxy", Value: ""},
-                    {Name: "VFIO_PORT_TX", Value: "0000:ca:11.0"},
-                  },
+				  Env: convertEnvVars(bcs.Spec.Nmos.EnvironmentVariables),
                   Ports: []corev1.ContainerPort{
                     {ContainerPort: 20000},
                     {ContainerPort: 20170},
@@ -607,9 +636,9 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                 },
                 {
                   Name:  "tiber-broadcast-suite",
-                  Image: "tiber-broadcast-suite:latest",
+                  Image: bcs.Spec.App.Image,
 				  ImagePullPolicy: corev1.PullIfNotPresent,
-                  Args:  []string{"192.168.2.4", "50051"},
+				  Args:  []string{"localhost", fmt.Sprintf("%d", bcs.Spec.App.GrpcPort)},
                   SecurityContext: &corev1.SecurityContext{
                     RunAsUser:  int64Ptr(0),
                     Privileged: boolPtr(true),
@@ -629,10 +658,7 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                     {Name: "driDev", MountPath: "/dev/dri"},
                     {Name: "vfio", MountPath: "/dev/vfio"},
                   },
-                  Env: []corev1.EnvVar{
-                    {Name: "http_proxy", Value: ""},
-                    {Name: "https_proxy", Value: ""},
-                  },
+                  Env: convertEnvVars(bcs.Spec.App.EnvironmentVariables),
                   Ports: []corev1.ContainerPort{
                     {ContainerPort: 20000},
                     {ContainerPort: 20170},
@@ -650,17 +676,17 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
                 },
               },
               Volumes: []corev1.Volume{
-                {Name: "videos", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/root/DEMO_NMOS/move/nmos/nmos-cpp/Development/nmos-cpp-node/"}}},
-                {Name: "dri", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/usr/lib/x86_64-linux-gnu/dri"}}},
-                {Name: "kahawai-lock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/tmp/kahawai_lcore.lock"}}},
-                {Name: "dev-null", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/null"}}},
-                {Name: "hugepages-tmp", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/tmp/hugepages"}}},
-                {Name: "hugepages", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/hugepages"}}},
-                {Name: "imtl", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/var/run/imtl"}}},
-                {Name: "shm", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/shm"}}},
-                {Name: "vfio", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/vfio"}}},
-                {Name: "driDev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: "/dev/dri"}}},
-				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: "tiber-broadcast-suite-config"}}}},
+                {Name: "videos", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["videos"]}}},
+                {Name: "dri", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["dri"]}}},
+                {Name: "kahawai-lock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["kahawaiLock"]}}},
+                {Name: "dev-null", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["devNull"]}}},
+                {Name: "hugepages-tmp", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["hugepagesTmp"]}}},
+                {Name: "hugepages", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["hugepages"]}}},
+                {Name: "imtl", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["imtl"]}}},
+                {Name: "shm", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["shm"]}}},
+                {Name: "vfio", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["vfio"]}}},
+                {Name: "driDev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["driDev"]}}},
+				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: bcs.Spec.Name+"-config"}}}},
               },
             },
           },
@@ -668,7 +694,12 @@ func CreateBcsDeployment(name string) *appsv1.Deployment {
       }
 }
 
-func CreateDaemonSet(name string) *appsv1.DaemonSet {
+func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
+    data, err := UnmarshalK8sConfig([]byte(cm.Data["config.yaml"]))
+	 if err != nil {
+		 fmt.Println("Error unmarshalling K8s config:", err)
+		 return nil
+	 }
 	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "media-proxy",
@@ -693,10 +724,10 @@ func CreateDaemonSet(name string) *appsv1.DaemonSet {
 					Containers: []corev1.Container{
 						{
 							Name:    "media-proxy",
-							Image:   "mcm/media-proxy:latest",
+							Image:   data.Definition.MediaProxy.Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command: []string{"media_proxy"},
-							Args:    []string{"-d", "kernel:eth0", "-i", "$(POD_IP)"},
+							Command: data.Definition.MediaProxy.Command,
+							Args:    data.Definition.MediaProxy.Args,
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:              resource.MustParse("2"),
@@ -718,14 +749,14 @@ func CreateDaemonSet(name string) *appsv1.DaemonSet {
 							},
 							Ports: []corev1.ContainerPort{
 								{
-									ContainerPort: 8001,
-									HostPort:      8001,
+									ContainerPort: int32(data.Definition.MediaProxy.GrpcPort),
+									HostPort:      int32(data.Definition.MediaProxy.GrpcPort),
 									Protocol:      corev1.ProtocolTCP,
 									Name:          "grpc-port",
 								},
 								{
-									ContainerPort: 8002,
-									HostPort:      8002,
+									ContainerPort: int32(data.Definition.MediaProxy.SdkPort),
+									HostPort:      int32(data.Definition.MediaProxy.SdkPort),
 									Protocol:      corev1.ProtocolTCP,
 									Name:          "sdk-port",
 								},
@@ -789,7 +820,7 @@ func CreateDaemonSet(name string) *appsv1.DaemonSet {
 							Name: "memif-dir",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/tmp/mcm/memif",
+									Path: data.Definition.MediaProxy.Volumes.Memif,
 								},
 							},
 						},
@@ -797,7 +828,7 @@ func CreateDaemonSet(name string) *appsv1.DaemonSet {
 							Name: "dev-vfio",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
-									Path: "/dev/vfio",
+									Path: data.Definition.MediaProxy.Volumes.Vfio,
 								},
 							},
 						},
@@ -839,6 +870,17 @@ func CreateDaemonSet(name string) *appsv1.DaemonSet {
 			},
 		},
 	}
+}
+
+func convertEnvVars(envVars []bcsv1.EnvVar) []corev1.EnvVar {
+	var coreEnvVars []corev1.EnvVar
+	for _, envVar := range envVars {
+		coreEnvVars = append(coreEnvVars, corev1.EnvVar{
+			Name:  envVar.Name,
+			Value: envVar.Value,
+		})
+	}
+	return coreEnvVars
 }
 
 func int64Ptr(i int64) *int64 {

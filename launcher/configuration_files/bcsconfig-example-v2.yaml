@@ -108,22 +108,3 @@ spec:
             file:
               path: /videos
               filename: 1920x1080p10le_1.yuv
-
-
-meshAgent:
-  image: "bcs-mesh-agent:latest"
-  restPort: 8100
-  grpcPort: 50051
-mediaProxy:
-  image: mcm/media-proxy:latest
-  command: ["media-proxy"]
-  args: ["-d", "kernel:eth0", "-i", "$(POD_IP)"]
-  grpcPort: 8001
-  sdkPort: 8002
-  volumes:
-    memif: /tmp/mcm/memif
-    vfio: /dev/vfio
-  pvHostPath: /var/run/imtl
-  pvStorageClass: manual
-  pvStorage: 1Gi
-  pvcStorage: 1Gi
