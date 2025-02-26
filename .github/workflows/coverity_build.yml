@@ -20,7 +20,7 @@ env:
 jobs:
   build:
       name: 'coverity'
-      runs-on: ['self-hosted', 'coverity']
+      runs-on: ubuntu-latest
       timeout-minutes: 90
       steps:
         - name: 'setup: cleanup worskpace'
@@ -34,7 +34,13 @@ jobs:
           uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
           with:
             ref: ${{ inputs.branch }} 
-
+        - name: install coverity tools for cpp and golang
+          run: |
+            export LANGUAGE=cxx
+            .github/coverity/install_coverity.sh
+            export LANGUAGE=golang
+            .github/coverity/install_coverity.sh
+          
         - name: 'coverity: build code'
           run: .github/coverity/cov-build.sh all
 
