@@ -332,7 +332,13 @@ RUN \
   make -j${nproc}
 
 COPY src/gRPC /tmp/gRPC
-RUN /tmp/gRPC/compile.sh
+COPY src/app /tmp/app
+COPY src/common /tmp/common
+
+WORKDIR /tmp/gRPC
+RUN \
+    cmake -B build && \
+    make -j$(nproc) -C build
 
 WORKDIR /tmp/ffmpeg/
 
