@@ -43,7 +43,7 @@ jobs:
     - name: 'scan: ./Dockerfile hadolint scan tty output'
       uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: "Dockerfile"
+        dockerfile: docker/app/Dockerfile
         config: .github/configs/hadolint.yaml
         format: tty
         no-fail: false
@@ -52,7 +52,7 @@ jobs:
     - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
       uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
       with:
-        dockerfile: "Dockerfile"
+        dockerfile: docker/app/Dockerfile
         config: .github/configs/hadolint.yaml
         format: sarif
         output-file: "main-${{ env.HADOLINT_RESULTS_FILE }}"
