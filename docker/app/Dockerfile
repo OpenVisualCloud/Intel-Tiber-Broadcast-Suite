@@ -98,7 +98,8 @@ RUN \
     ubuntu-drivers-common \
     xxd \
     zip \
-    zlib1g-dev && \
+    zlib1g-dev \
+    libx264-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/cuda-keyring_1.1-1_all.deb
 
@@ -347,6 +348,8 @@ RUN \
   echo "**** BUILD FFMPEG ****" && \
   . /opt/intel/oneapi/ipp/latest/env/vars.sh && \
   ./configure \
+    --enable-gpl \
+    --enable-libx264 \
     --disable-debug \
     --disable-doc \
     --disable-shared \
