@@ -56,7 +56,7 @@ configuration: # Configuration should be used only for docker mode
         - "http_proxy="
         - "https_proxy=" 
         - "VFIO_PORT_TX=0000:ca:11.0"
-      nmosConfigPath: /root/DEMO_NMOS/move/nmos/build-nmos-cpp/
+      nmosConfigPath: /root/demo
       network: 
         enable: true
         name: my_net_801f0
