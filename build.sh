@@ -828,7 +828,7 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
-    docker buildx build "${ENV_PROXY_ARGS[@]}" \
+    docker buildx build --load "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
@@ -836,7 +836,7 @@ function install_in_docker_enviroment {
         --target final-stage \
         "${SCRIPT_DIR}"
 
-    docker buildx build "${ENV_PROXY_ARGS[@]}" \
+    docker buildx build --load "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
@@ -844,7 +844,9 @@ function install_in_docker_enviroment {
         --target manager-stage \
         "${SCRIPT_DIR}"
 
-    docker buildx build \
+    cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
+
+    docker buildx build --load \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage \
