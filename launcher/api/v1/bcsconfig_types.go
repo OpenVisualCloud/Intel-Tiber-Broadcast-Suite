@@ -26,12 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BcsConfigSpec defines the desired state of BcsConfig
-// type BcsConfigSpec struct {
-// 	AppParams   AppParams   `json:"appParams"`
-// 	Connections Connections `json:"connections"`
-// }
-
 type BcsConfigSpec struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
@@ -142,30 +136,6 @@ type BcsConfigSpec struct {
 	Path     string `json:"path"`
 	Filename string `json:"filename"`
   }
-
-// type AppParams struct {
-// 	UniqueName  string `json:"uniqueName"`
-// 	Codec       string `json:"codec"`
-// 	PixelFormat string `json:"pixelFormat"`
-// 	Height      int    `json:"height"`
-// 	Width       int    `json:"width"`
-// }
-
-// type Connections struct {
-// 	DataConnection    DataConnection    `json:"dataConnection"`
-// 	ControlConnection ControlConnection `json:"controlConnection"`
-// }
-
-// type DataConnection struct {
-// 	ConnType            string `json:"connType"`
-// 	MediaProxyIpAddress string `json:"mediaProxyIpAddress"`
-// 	Port                int    `json:"port"`
-// }
-
-// type ControlConnection struct {
-// 	IpAddress string `json:"ipAddress"`
-// 	Port      int    `json:"port"`
-// }
 
 // BcsConfigStatus defines the observed state of BcsConfig
 type BcsConfigStatus struct {
