@@ -279,60 +279,6 @@ spec:
                                       type: string
                                     transportPixelFormat:
                                       type: string
-            # description: BcsConfigSpec defines the desired state of BcsConfig
-            # properties:
-            #   appParams:
-            #     properties:
-            #       codec:
-            #         type: string
-            #       height:
-            #         type: integer
-            #       pixelFormat:
-            #         type: string
-            #       uniqueName:
-            #         type: string
-            #       width:
-            #         type: integer
-            #     required:
-            #     - codec
-            #     - height
-            #     - pixelFormat
-            #     - uniqueName
-            #     - width
-            #     type: object
-            #   connections:
-            #     properties:
-            #       controlConnection:
-            #         properties:
-            #           ipAddress:
-            #             type: string
-            #           port:
-            #             type: integer
-            #         required:
-            #         - ipAddress
-            #         - port
-            #         type: object
-            #       dataConnection:
-            #         properties:
-            #           connType:
-            #             type: string
-            #           mediaProxyIpAddress:
-            #             type: string
-            #           port:
-            #             type: integer
-            #         required:
-            #         - connType
-            #         - mediaProxyIpAddress
-            #         - port
-            #         type: object
-            #     required:
-            #     - controlConnection
-            #     - dataConnection
-            #     type: object
-            # required:
-            # - appParams
-            # - connections
-            # type: object
           status:
             description: BcsConfigStatus defines the observed state of BcsConfig
             type: object
