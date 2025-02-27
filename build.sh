@@ -836,7 +836,7 @@ function install_in_docker_enviroment {
         --target final-stage \
         "${SCRIPT_DIR}"
 
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" ${ENV_PROXY_ARGS[@]}" \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
