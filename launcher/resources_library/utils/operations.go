@@ -332,9 +332,6 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 }
 
 func boolPtr(b bool) *bool    { return &b }
-func intstrPtr(i int) intstr.IntOrString {
-    return intstr.IntOrString{IntVal: int32(i)}
-}
 
 type K8sConfig struct {
 	K8s        bool `yaml:"k8s"`
@@ -718,9 +715,9 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					// NodeSelector: map[string]string{
-					// 	"node-role.kubernetes.io/worker": "true",
-					// },
+					NodeSelector: map[string]string{
+						"node-role.kubernetes.io/worker": "true",
+					},
 					Containers: []corev1.Container{
 						{
 							Name:    "media-proxy",
@@ -770,14 +767,14 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 									Name:      "dev-vfio",
 									MountPath: "/dev/vfio",
 								},
-								// {
-								// 	Name:      "hugepage-2mi",
-								// 	MountPath: "/hugepages-2Mi",
-								// },
-								// {
-								// 	Name:      "hugepage-1gi",
-								// 	MountPath: "/hugepages-1Gi",
-								// },
+								{
+									Name:      "hugepage-2mi",
+									MountPath: "/hugepages-2Mi",
+								},
+								{
+									Name:      "hugepage-1gi",
+									MountPath: "/hugepages-1Gi",
+								},
 								{
 									Name:      "cache-volume",
 									MountPath: "/dev/shm",

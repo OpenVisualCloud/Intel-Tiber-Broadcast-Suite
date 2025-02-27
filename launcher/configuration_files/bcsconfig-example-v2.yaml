@@ -23,7 +23,7 @@ spec:
       - name: "https_proxy"
         value: ""
     volumes:
-      videos: /root/DEMO_NMOS/move/nmos/nmos-cpp/Development/nmos-cpp-node/
+      videos: /root/demo
       dri: /usr/lib/x86_64-linux-gnu/dri
       kahawaiLock: /tmp/kahawai_lcore.lock
       devNull: /dev/null
