@@ -200,6 +200,7 @@ function install_dependencies {
         librdmacm-dev \
         zlib1g-dev \
         libelf-dev \
+        libsrt-openssl-dev \
         git \
         cmake \
         meson \
@@ -654,7 +655,8 @@ function ffmpeg_download_patch_build {
             --extra-cflags="-march=native -fopenmp -I${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/install/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
             --extra-ldflags="-fopenmp -L${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/vsr/install/lib -L/usr/local/cuda/lib64 -L/usr/lib64 -L/usr/local/lib" \
             --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm -lbpf -lxdp' \
-            --enable-cross-compile &&
+            --enable-cross-compile \
+            --enable-libsrt &&
           make -j"$(nproc)" &&
           sudo make install) >>$log_file 2>&1; then
         echo

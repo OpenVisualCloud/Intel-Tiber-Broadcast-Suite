@@ -102,7 +102,8 @@ RUN \
     ubuntu-drivers-common \
     xxd \
     zip \
-    zlib1g-dev && \
+    zlib1g-dev \
+    libsrt-openssl-dev && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/cuda-keyring_1.1-1_all.deb
 
@@ -328,7 +329,8 @@ RUN \
     --extra-cflags="-march=native -fopenmp -I/usr/local/include/ -I/opt/intel/oneapi/ipp/latest/include/ipp/ -I/usr/local/cuda/include" \
     --extra-ldflags="-fopenmp -L/usr/local/cuda/lib64 -L/usr/lib64 -L/usr/local/lib" \
     --extra-libs='-lraisr -lstdc++ -lippcore -lippvm -lipps -lippi -lpthread -lm -lz -lbsd -lrdmacm -lbpf -lxdp' \
-    --enable-cross-compile && \
+    --enable-cross-compile \
+    --enable-libsrt && \
   make -j${nproc}
 
 COPY /gRPC /tmp/gRPC

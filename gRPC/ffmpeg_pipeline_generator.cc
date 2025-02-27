@@ -191,6 +191,15 @@ int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipe
             pipeline_string += " -";
         }
         break;
+    case srt:
+        if (is_rx) {
+            pipeline_string += " -i ";
+        }
+        else {
+            pipeline_string += " -f mpegts ";
+        }
+        pipeline_string += s.srt.urn;
+        break;
     default:
         break;
     }
@@ -199,7 +208,7 @@ int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipe
 }
 
 int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_string){
-    if (ffmpeg_append_payload(rx.payload,  pipeline_string) != 0) {
+    if ((rx.stream_type.type != srt) && ffmpeg_append_payload(rx.payload,  pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending rx payload" << std::endl;
         return 1;
@@ -234,7 +243,7 @@ int ffmpeg_append_multiviewer_input(Stream &s, int idx, std::string &pipeline_st
         return 1;
     }
 
-    if(ffmpeg_append_payload(s.payload,  pipeline_string) != 0){
+    if((s.stream_type.type != srt) && ffmpeg_append_payload(s.payload,  pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending rx payload" << std::endl;
         return 1;
@@ -386,7 +395,7 @@ int ffmpeg_append_recorder(Config &config, std::string &pipeline_string) {
         std::cout << "Error: recorder requires at least 2 senders" << std::endl;
     }
 
-    if (ffmpeg_append_payload(config.receivers[0].payload,  pipeline_string) != 0){
+    if ((config.receivers[0].stream_type.type != srt) && ffmpeg_append_payload(config.receivers[0].payload,  pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending recorder rx payload" << std::endl;
         return 1;

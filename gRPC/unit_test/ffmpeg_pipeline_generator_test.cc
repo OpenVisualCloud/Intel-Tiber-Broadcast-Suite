@@ -154,6 +154,32 @@ void fill_conf_receiver_mcm(Config &config) {
     }
 }
 
+void fill_conf_receiver_srt(Config &config) {
+    config.function = "rx";
+    config.gpu_hw_acceleration = "none";
+    config.logging_level = 0;
+
+    Payload p = get_video_payload_common();
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::srt;
+        s.stream_type.srt.urn = "srt://:20001?mode=caller";
+        config.receivers.push_back(s);
+    }
+
+    {
+        Stream s;
+
+        s.payload = p;
+        s.stream_type.type = stream_type::file;
+        s.stream_type.file.path = "/home/test/recv";
+        s.stream_type.file.filename = "1920x1080p10le_1.yuv";
+        config.senders.push_back(s);
+    }
+}
+
 void fill_conf_multiviewer(Config &config) {
     config.function = "multiviewer";
     config.gpu_hw_acceleration = "intel";
@@ -425,9 +451,22 @@ TEST(FFmpegPipelineGeneratorTest, test_mcm_receiver) {
     std::string pipeline_string;
 
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
-            ASSERT_EQ(1, 0) << "Error generating receiver pipeline" << std::endl;
+            ASSERT_EQ(1, 0) << "Error generating receiver mcm pipeline" << std::endl;
     }
     std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.10 -port 9002 -i \"0\" /home/test/recv/1920x1080p10le_1.yuv";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_srt) {
+    Config conf;
+    fill_conf_receiver_srt(conf);
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating srt pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -i srt://:20001?mode=caller /home/test/recv/1920x1080p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -462,6 +501,37 @@ TEST(FFmpegPipelineConfigTest, serialize_deserialize_multiviewer) {
 TEST(FFmpegPipelineConfigTest, serialize_deserialize_upscale) {
     Config conf_reference;
     fill_conf_upscale(conf_reference);
+
+    std::string pipeline_string_reference;
+
+    if (ffmpeg_generate_pipeline(conf_reference, pipeline_string_reference) != 0) {
+        ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
+    }
+
+    std::string json_conf_serialized;
+    if(serialize_config_json(conf_reference, json_conf_serialized) != 0) {
+        ASSERT_EQ(1, 0) << "Error serializing config" << std::endl;
+    }
+
+    Config conf_deserialized;
+    std::string pipeline_string_deserialized;
+    if(deserialize_config_json(conf_deserialized, json_conf_serialized) != 0) {
+        ASSERT_EQ(1, 0) << "Error serializing config" << std::endl;
+    }
+    if (ffmpeg_generate_pipeline(conf_deserialized, pipeline_string_deserialized) != 0) {
+        ASSERT_EQ(1, 0) << "Error generating convert pipeline after deserialization" << std::endl;
+    }
+
+    ASSERT_EQ(pipeline_string_reference.compare(pipeline_string_deserialized) == 0, 1) << "Expected: " << std::endl << pipeline_string_reference 
+    << std::endl << " Got: " << std::endl << pipeline_string_deserialized << std::endl;
+}
+
+TEST(FFmpegPipelineConfigTest, serialize_deserialize_upscale_srt) {
+    Config conf_reference;
+    fill_conf_upscale(conf_reference);
+
+    conf_reference.receivers[0].stream_type.type = stream_type::srt;
+    conf_reference.receivers[0].stream_type.srt.urn = "srt://:20001";
 
     std::string pipeline_string_reference;
 

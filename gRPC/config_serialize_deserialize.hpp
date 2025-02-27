@@ -12,8 +12,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Audio, channels, sample_rate, format, packet_
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(File, path, filename)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ST2110, network_interface, local_ip, remote_ip, transport, remote_port, payload_type)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MCM, conn_type, transport, transport_pixel_format, ip, port, urn)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SRT, urn)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Payload, type, video, audio)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(StreamType, type, file, st2110, mcm)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(StreamType, type, file, st2110, mcm, srt)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Stream, payload, stream_type)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, senders, receivers, function, multiviewer_columns, gpu_hw_acceleration, gpu_hw_acceleration_device, logging_level)
 
