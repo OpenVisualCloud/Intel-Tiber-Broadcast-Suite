@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nmos-is05-controller-job
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: nmos-is05-controller
+        image: nmos-is05-controller:latest
+        env:
+        - name: RECEIVER_IP
+          value: "localhost"
+        - name: RECEIVER_PORT
+          value: "90"
+        - name: SENDER_IP
+          value: "localhost"
+        - name: SENDER_PORT
+          value: "95"
+        ports:
+        - containerPort: 90
+        - containerPort: 95
+      restartPolicy: Never
+  backoffLimit: 10

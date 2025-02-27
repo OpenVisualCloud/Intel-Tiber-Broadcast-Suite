@@ -27,34 +27,145 @@ import (
 )
 
 // BcsConfigSpec defines the desired state of BcsConfig
+// type BcsConfigSpec struct {
+// 	AppParams   AppParams   `json:"appParams"`
+// 	Connections Connections `json:"connections"`
+// }
+
 type BcsConfigSpec struct {
-	AppParams   AppParams   `json:"appParams"`
-	Connections Connections `json:"connections"`
-}
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	App       App `json:"app"`
+	Nmos      Nmos `json:"nmos"`
+  }
 
-type AppParams struct {
-	UniqueName  string `json:"uniqueName"`
-	Codec       string `json:"codec"`
-	PixelFormat string `json:"pixelFormat"`
-	Height      int    `json:"height"`
-	Width       int    `json:"width"`
-}
+  type App struct {
+	Image               string `json:"image"`
+	GrpcPort            int    `json:"grpcPort"`
+	EnvironmentVariables []EnvVar `json:"environmentVariables"`
+	Volumes             map[string]string `json:"volumes"`
+  }
 
-type Connections struct {
-	DataConnection    DataConnection    `json:"dataConnection"`
-	ControlConnection ControlConnection `json:"controlConnection"`
-}
+  type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+  }
 
-type DataConnection struct {
-	ConnType            string `json:"connType"`
-	MediaProxyIpAddress string `json:"mediaProxyIpAddress"`
-	Port                int    `json:"port"`
-}
+  type Nmos struct {
+	Image                     string `json:"image"`
+	Args                      []string `json:"args"`
+	EnvironmentVariables      []EnvVar `json:"environmentVariables"`
+	NmosApiPort               int `json:"nmosApiPort"`
+	NmosApiNodePort           int `json:"nmosApiNodePort"`
+	NmosAppCommunicationPort  int `json:"nmosAppCommunicationPort"`
+	NmosAppCommunicationNodePort int `json:"nmosAppCommunicationNodePort"`
+	NmosInputFile             NmosInputFile `json:"nmosInputFile"`
+  }
 
-type ControlConnection struct {
-	IpAddress string `json:"ipAddress"`
-	Port      int    `json:"port"`
-}
+  type NmosInputFile struct {
+	LoggingLevel            int `json:"logging_level"`
+	HttpPort                int `json:"http_port"`
+	Label                   string `json:"label"`
+	Senders                 []string `json:"senders"`
+	SendersCount            []int `json:"senders_count"`
+	Receivers               []string `json:"receivers"`
+	ReceiversCount          []int `json:"receivers_count"`
+	DeviceTags              DeviceTags `json:"device_tags"`
+	Function                string `json:"function"`
+	GpuHwAcceleration       string `json:"gpu_hw_acceleration"`
+	Domain                  string `json:"domain"`
+	FfmpegGrpcServerAddress string `json:"ffmpeg_grpc_server_address"`
+	FfmpegGrpcServerPort    string `json:"ffmpeg_grpc_server_port"`
+	SenderPayloadType       int `json:"sender_payload_type"`
+	Sender                  []Sender `json:"sender"`
+	Receiver                []Receiver `json:"receiver"`
+  }
+
+  type DeviceTags struct {
+	Pipeline []string `json:"pipeline"`
+  }
+
+  type Sender struct {
+	StreamPayload StreamPayload `json:"stream_payload"`
+	StreamType    StreamType `json:"stream_type"`
+  }
+
+  type Receiver struct {
+	StreamPayload StreamPayload `json:"stream_payload"`
+	StreamType    StreamType `json:"stream_type"`
+  }
+
+  type StreamPayload struct {
+	Video Video `json:"video,omitempty"`
+	Audio Audio `json:"audio,omitempty"`
+  }
+
+  type Video struct {
+	FrameWidth  int `json:"frame_width"`
+	FrameHeight int `json:"frame_height"`
+	FrameRate   FrameRate `json:"frame_rate"`
+	PixelFormat string `json:"pixel_format"`
+	VideoType   string `json:"video_type"`
+  }
+
+  type FrameRate struct {
+	Numerator   int `json:"numerator"`
+	Denominator int `json:"denominator"`
+  }
+
+  type Audio struct {
+	Channels   int `json:"channels"`
+	SampleRate int `json:"sampleRate"`
+	Format     string `json:"format"`
+	PacketTime string `json:"packetTime"`
+  }
+
+  type StreamType struct {
+	St2100 *St2100 `json:"st2100,omitempty"`
+	Mcm  *Mcm  `json:"mcm,omitempty"`
+	File *File `json:"file,omitempty"`
+  }
+
+  type St2100 struct {
+	Transport string `json:"transport"`
+	Payload_type string `json:"payload_type"`
+  }
+
+  type Mcm struct {
+	ConnType             string `json:"conn_type"`
+	Transport            string `json:"transport"`
+	Urn                  string `json:"urn"`
+	TransportPixelFormat string `json:"transportPixelFormat"`
+  }
+
+  type File struct {
+	Path     string `json:"path"`
+	Filename string `json:"filename"`
+  }
+
+// type AppParams struct {
+// 	UniqueName  string `json:"uniqueName"`
+// 	Codec       string `json:"codec"`
+// 	PixelFormat string `json:"pixelFormat"`
+// 	Height      int    `json:"height"`
+// 	Width       int    `json:"width"`
+// }
+
+// type Connections struct {
+// 	DataConnection    DataConnection    `json:"dataConnection"`
+// 	ControlConnection ControlConnection `json:"controlConnection"`
+// }
+
+// type DataConnection struct {
+// 	ConnType            string `json:"connType"`
+// 	MediaProxyIpAddress string `json:"mediaProxyIpAddress"`
+// 	Port                int    `json:"port"`
+// }
+
+// type ControlConnection struct {
+// 	IpAddress string `json:"ipAddress"`
+// 	Port      int    `json:"port"`
+// }
 
 // BcsConfigStatus defines the observed state of BcsConfig
 type BcsConfigStatus struct {

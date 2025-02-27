@@ -8,37 +8,56 @@ k8s: true # use in both modes: k8s | docker
 configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
-      imageAndTag:  nginx:latest
-      command: ""
-      exposedPort: ""
-      bindingHostPort: ""
-      ip: ""
-      volumes:
-        - /var/run/mcm:/run/mcm
-        - /dev/hugepages:/dev/hugepages
+      imageAndTag: mcm/mesh-agent:latest
+      gRPCPort: 50051
+      restPort: 8100
+      network: 
+        enable: false
+        name: my_net_801f0
+        ip: 192.168.2.1
     mediaProxyMcm:
-      imageAndTag:  busybox:latest
-      command: ""
-      exposedPort: ""
-      bindingHostPort: ""
-      ip: ""
+      imageAndTag:  mcm/media-proxy:latest
+      interfaceName: eth0
       volumes:
-        - /var/run/mcm:/run/mcm
-        - /dev/hugepages:/dev/hugepages
-      privileged: true
+        - /dev/vfio:/dev/vfio
+      network: 
+        enable: false
+        name: my_net_801f0
+        ip: 192.168.2.2
   workloadToBeRun:
     ffmpegPipeline:
       name: bcs-ffmpeg-pipeline
-      imageAndTag: alpine:latest
-      command: ""
-      exposedPort: 100 
-      bindingHostPort: 8881
-      ip: ""
+      imageAndTag: tiber-broadcast-suite:latest
+      gRPCPort: 50051
+      sourcePort: 5004
+      environmentVariables:
+        - "http_proxy="
+        - "https_proxy=" 
+      volumes:
+        videos: /root #for videos
+        dri: /usr/lib/x86_64-linux-gnu/dri
+        kahawai: /tmp/kahawai_lcore.lock
+        devnull: /dev/null
+        tmpHugepages: /tmp/hugepages
+        hugepages: /hugepages
+        imtl: /var/run/imtl
+        shm: /dev/shm
+      devices:
+        vfio: /dev/vfio
+        dri: /dev/dri
+      network: 
+        enable: true
+        name: my_net_801f0
+        ip: 192.168.2.4
     nmosClient:
       name: bcs-ffmpeg-pipeline-nmos-client
-      imageAndTag: nmos-cpp-node:1.2A-f549712 
-      command: ""
-      exposedPort: 101
-      bindingHostPort: 8089
-      ip: ""
-      network: "host"
+      imageAndTag: tiber-broadcast-suite-nmos-node:latest
+      environmentVariables:
+        - "http_proxy="
+        - "https_proxy=" 
+        - "VFIO_PORT_TX=0000:ca:11.0"
+      nmosConfigPath: /root/demo
+      network: 
+        enable: true
+        name: my_net_801f0
+        ip: 192.168.2.5

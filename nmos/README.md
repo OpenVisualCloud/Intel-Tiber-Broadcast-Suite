@@ -188,10 +188,14 @@ cd <repo>/nmos/k8s
 # Install minikube https://minikube.sigs.k8s.io/docs/start/?arch=%2Fwindows%2Fx86-64%2Fstable%2F.exe+download
 minikube start
 # Build iamges. Refer to 4. Build images
-# Adjust ConfigMaps in <repo>/nmos/k8s/nmos-client.yaml, <repo>/nmos/k8s/nmos-registry.yaml and <repo>/nmos/k8s/nmos-testing.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-client.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-registry.yaml
-kubectl apply -f <repo>/nmos/k8s/nmos-testing.yaml
+# Adjust ConfigMaps in <repo>/nmos/k8s/bcs/nmos-client-<node>.yaml, <repo>/nmos/k8s/testing-dev/nmos-registry.yaml and <repo>/nmos/k8s/testing-dev/nmos-testing.yaml
+
+# Set environment variables: VFIO_PORT_TX and VFIO_PORT_RX that are for virtual functions interfaces
+kubectl apply -f <repo>/nmos/k8s/bcs/nmos-client-tx.yaml
+kubectl apply -f <repo>/nmos/k8s/bcs/nmos-client-rx.yaml
+kubectl apply -f <repo>/nmos/k8s/testing-dev/nmos-registry.yaml
+kubectl apply -f <repo>/nmos/k8s/testing-dev/nmos-is-05-controller.yaml
+kubectl apply -f <repo>/nmos/k8s/testing-dev/nmos-testing.yaml #optional
 # Useful for accessing testing tool browser: https://minikube.sigs.k8s.io/docs/handbook/accessing/
 ```
 
