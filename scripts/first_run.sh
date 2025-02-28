@@ -11,9 +11,32 @@ set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${SCRIPT_DIR}/common.sh"
 
+
+cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/../versions.env}" > "${SCRIPT_DIR}/../.temp.env"
+source "${SCRIPT_DIR}/../.temp.env"
+
+INSTALL_DPDK="${INSTALL_DPDK:-false}"
 TIBER_STACK_DEBUG="${TIBER_STACK_DEBUG:-1}" # (future) Force where possible instead of try to configure
 rm -f /tmp/kahawai_lcore.lock               # Remove MtlManager legacy indicator/switch if exists
 print_logo_anim                             # Print intel animated terminal logo
+
+function cleanup_directory {
+    local dir_name=$1
+
+    if [ "$LOCAL_INSTALL_CLEANUP" != true ]; then
+        return 0
+    fi
+
+    if [ -z "${log_file}" ] || [ ! -f "${log_file}" ]; then
+        log_file=/dev/null
+    fi
+
+    if ! rm -drf "$dir_name" >>$log_file 2>&1; then
+        echo -e $CLEAR_LINE
+        echo -e "${YELLOW}[WARNING] $dir_name cleanup failed ${NC}"
+        echo
+    fi
+}
 
 function setup_jq_package()
 {
@@ -34,6 +57,49 @@ function add_fstab_line()
     ADD_LINE_STRING="${1:-nodev /hugepages hugetlbfs pagesize=1GB 0 0}"
     grep "${ADD_LINE_STRING}" || echo -e "\n${ADD_LINE_STRING}" >> /etc/fstab
 }
+
+function install_dpdk() {
+    if ! [ "$INSTALL_DPDK" = true ]; then
+        return 0
+    fi
+    if ! (mkdir -p "${HOME}/dpdk" &&
+          curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | \
+          tar -zx --strip-components=1 -C "${HOME}/dpdk" ); then
+        echo
+        echo -e ${RED}[ERROR] DPDK download and extraction failed ${NC}
+        return 2
+    fi
+
+    if [ ! -d "${HOME}/Media-Transport-Library" ] && ! (mkdir -p ${HOME}/Media-Transport-Library &&
+          curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | \
+          tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library ); then
+        echo
+        echo -e ${RED}[ERROR] MTL download failed ${NC}
+        return 2
+    fi
+
+    if ! (cd "${HOME}/dpdk" &&
+          git apply "${HOME}/Media-Transport-Library/patches/dpdk/$DPDK_VER"/*.patch &&
+          cd .. &&
+          rm -rf "${HOME}/Media-Transport-Library"); then
+        echo
+        echo -e ${RED}[ERROR] Patching DPDK with Media-Transport-Library patches failed ${NC}
+        return 2
+    fi
+
+    if ! (cd "${HOME}/dpdk" &&
+          meson build &&
+          ninja -C build &&
+          sudo ninja -C build install); then
+        echo
+        echo -e ${RED}[ERROR] DPDK build and installation failed ${NC}
+        return 2
+    fi
+
+    cleanup_directory "${HOME}/dpdk"
+    cleanup_directory "${HOME}/Media-Transport-Library"
+}
+
 
 function copy_nicctl_script()
 {
@@ -175,13 +241,14 @@ print_help() {
     echo "Options:"
     echo "  -l    For users running Intel® Tiber™ Broadcast Suite on bare metal."
     echo "  -h    Display this help message."
+    echo "  -d    Install DPDK with MTL patches."
     echo "  -e    Specify the PCIe addresses for the E810 NIC."
     echo "        By default, all PCIe E810 addresses are selected."
     echo "        e.g. ./first_run.sh -e \"0000:4b:00.0 0000:4b:00.1 \""
     exit 0
 }
 
-while getopts "lhe:" opt; do
+while getopts "lhe:d" opt; do
     case ${opt} in
     l )
         setup_vfio_subsytem
@@ -202,6 +269,9 @@ while getopts "lhe:" opt; do
     e )
         E810_PCIE_SPECIFIED=${OPTARG}
     ;;
+    d )
+        INSTALL_DPDK=true
+    ;;
     \? )
         exit 1
         ;;
@@ -209,6 +279,7 @@ while getopts "lhe:" opt; do
 done
 
 setup_jq_package
+install_dpdk
 setup_vfio_subsytem
 setup_hugepages
 setup_docker_network

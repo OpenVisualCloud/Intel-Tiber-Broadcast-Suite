@@ -775,47 +775,6 @@ function install_locally {
 
 
 ### docker installation
-
-# this should support every distribution
-function docker_host_prerequisites {
-    if ! (mkdir -p "${HOME}/dpdk" &&
-          curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | \
-          tar -zx --strip-components=1 -C "${HOME}/dpdk" ); then
-        echo
-        echo -e ${RED}[ERROR] DPDK download and extraction failed ${NC}
-        return 2
-    fi
-
-    if [ ! -d "${HOME}/Media-Transport-Library" ] && ! (mkdir -p ${HOME}/Media-Transport-Library &&
-          curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | \
-          tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library ); then
-        echo
-        echo -e ${RED}[ERROR] MTL download failed ${NC}
-        return 2
-    fi
-
-    if ! (cd "${HOME}/dpdk" &&
-          git apply "${HOME}/Media-Transport-Library/patches/dpdk/$DPDK_VER"/*.patch &&
-          cd .. &&
-          rm -rf "${HOME}/Media-Transport-Library"); then
-        echo
-        echo -e ${RED}[ERROR] Patching DPDK with Media-Transport-Library patches failed ${NC}
-        return 2
-    fi
-
-    if ! (cd "${HOME}/dpdk" &&
-          meson build &&
-          ninja -C build &&
-          sudo ninja -C build install); then
-        echo
-        echo -e ${RED}[ERROR] DPDK build and installation failed ${NC}
-        return 2
-    fi
-
-    cleanup_directory "${HOME}/dpdk"
-    cleanup_directory "${HOME}/Media-Transport-Library"
-}
-
 function install_in_docker_enviroment {
     ENV_PROXY_ARGS=()
     while IFS='' read -r line; do
@@ -953,8 +912,7 @@ if [ "$LOCAL_INSTALL" = true ]; then
     install_locally || ret=$?
 else
     {
-        install_in_docker_enviroment && \
-        docker_host_prerequisites
+        install_in_docker_enviroment
     } || ret=$?
 fi
 
@@ -966,7 +924,6 @@ if [ "$ret" -ne 0 ]; then
 else
     echo
     echo -e ${GREEN}Intel® Tiber™ Broadcast Suite installed sucessfuly ${NC}
-    echo -e ${YELLOW}Please restart your computer ${NC}
     echo
     exit 0
 fi
