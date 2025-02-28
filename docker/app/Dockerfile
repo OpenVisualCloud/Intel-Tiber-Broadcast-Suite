@@ -337,8 +337,9 @@ COPY src/common /tmp/common
 
 WORKDIR /tmp/gRPC
 RUN \
-    cmake -B build && \
-    make -j$(nproc) -C build
+  echo "**** BUILD gRPC BASED FFmpeg_wrapper_service ****" && \
+  cmake -B build && \
+  make -j${nproc} -C build
 
 WORKDIR /tmp/ffmpeg/
 
