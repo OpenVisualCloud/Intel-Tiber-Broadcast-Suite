@@ -26,7 +26,7 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
     - name: "Build: gRPC"
-      working-directory: "${{ workspace }}/gRPC"
+      working-directory: "${{ github.workspace }}/gRPC"
       run: 
         ./compile.sh
 
@@ -34,15 +34,15 @@ jobs:
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: grpc-bin
-        path: '${{ workspace }}/gRPC/build/*'
+        path: '${{ github.workspace }}/gRPC/build/*'
 
     - name: "Build: launcher"
-      working-directory: "${{ workspace }}/launcher"
+      working-directory: "${{ github.workspace }}/launcher"
       run: 
         go build -a -o manager cmd/main.go
     - name: 'upload launcher binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: launcher-bin
-        path: '${{ workspace }}/launcher/manager'
+        path: '${{ github.workspace }}/launcher/manager'
     
