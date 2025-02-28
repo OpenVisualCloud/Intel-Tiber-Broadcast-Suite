@@ -1,8 +1,8 @@
 diff --git a/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp b/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
-index 5be16feb..8a782831 100644
+index ac5b0f6f..a2c1a4d7 100644
 --- a/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
 +++ b/_studio/mfx_lib/vpp/src/mfx_vpp_hw.cpp
-@@ -6926,6 +6926,16 @@ mfxStatus ConfigureExecuteParams(
+@@ -7126,6 +7126,16 @@ mfxStatus ConfigureExecuteParams(
          }
      }
  
@@ -19,23 +19,3 @@ index 5be16feb..8a782831 100644
  
      if (inDNRatio == outDNRatio && !executeParams.bVarianceEnable && !executeParams.bComposite &&
              !(config.m_extConfig.mode == IS_REFERENCES) )
-diff --git a/_studio/shared/src/libmfx_core_vaapi.cpp b/_studio/shared/src/libmfx_core_vaapi.cpp
-index 7b215e80..d24d0e52 100644
---- a/_studio/shared/src/libmfx_core_vaapi.cpp
-+++ b/_studio/shared/src/libmfx_core_vaapi.cpp
-@@ -1929,10 +1929,11 @@ VAAPIVideoCORE_VPL::DoFastCopyExtended(
-             : VACopyWrapper::VE
-             ;
- 
--        if (m_HWType == MFX_HW_DG2)
--        {
--            vacopyMode = VACopyWrapper::BLT;
--        }
-+        //  Removed to enforce EU engine on Flex 170
-+        // if (m_HWType == MFX_HW_DG2)
-+        // {
-+        //     vacopyMode = VACopyWrapper::BLT;
-+        // }
- 
-         auto vaCopySts = m_pVaCopy->Copy(*pSrc, *pDst, vacopyMode);
-         MFX_RETURN_IF_ERR_NONE(vaCopySts);

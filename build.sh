@@ -174,9 +174,6 @@ function install_dependencies {
     fi
 
     if ! sudo apt-get install --no-install-recommends -y \
-        libigdgmm-dev \
-        libva-dev \
-        libvpl-dev \
         ca-certificates \
         build-essential \
         libarchive-tools \
@@ -281,7 +278,7 @@ function libva_download_build_cleanup {
     fi
 
     if ! (mkdir -p "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/libvpl/build" &&
-          curl -Lf https://github.com/oneapi-src/oneVPL/archive/refs/tags/v${LIBVPL}.tar.gz | \
+          curl -Lf https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL}.tar.gz | \
           tar -zx --strip-components=1 -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/libvpl" &&
           cd "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/libvpl/build" &&
           cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. &&
@@ -293,16 +290,30 @@ function libva_download_build_cleanup {
         return 2
     fi
 
+    if ! (mkdir -p "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/onevpl/build" &&
+          curl -Lf https://github.com/intel/vpl-gpu-rt/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
+            tar -zx --strip-components=1 -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/onevpl" &&
+          cd "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/onevpl/build" &&
+          git -C "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/onevpl" apply "${SCRIPT_DIR}/patches"/onevpl/*.patch &&
+          cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. &&
+          make -j${nproc} &&
+          sudo make install -j${nproc} &&
+          cd -) >>$log_file 2>&1; then
+        echo
+        echo -e ${RED}[ERROR] ONEVPL build failed ${NC}
+        return 2
+    fi
+
     # This package will block libvapi
     (sudo apt-get purge -y intel-media-va-driver) >>$log_file 2>&1
 
     if ! (sudo apt-get install -y --reinstall intel-opencl-icd intel-level-zero-gpu level-zero \
-          intel-media-va-driver-non-free libmfx1 libmfxgen1 libvpl2 \
+          intel-media-va-driver-non-free libmfx1 libmfxgen1 \
           libegl-mesa0 libegl1-mesa libegl1-mesa-dev libgbm1 libgl1-mesa-dev libgl1-mesa-dri \
-          libglapi-mesa libgles2-mesa-dev libglx-mesa0 libigdgmm12 libxatracker2 mesa-va-drivers \
+          libglapi-mesa libgles2-mesa-dev libglx-mesa0 libxatracker2 mesa-va-drivers \
           mesa-vdpau-drivers mesa-vulkan-drivers va-driver-all vainfo hwinfo clinfo) >>$log_file 2>&1; then
         echo
-        echo -e ${RED}[ERROR] Reinstalation of gpu packages faield ${NC}
+        echo -e ${RED}[ERROR] Reinstalation of gpu packages failed ${NC}
         return 2
     fi
 
@@ -310,6 +321,7 @@ function libva_download_build_cleanup {
     cleanup_directory "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/gmmlib"
     cleanup_directory "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/ihd"
     cleanup_directory "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/libvpl"
+    cleanup_directory "${LOCAL_INSTALL_DEPENDENCIES_DIRECTORY}/onevpl"
 }
 
 function vmaf_download_build_cleanup {
