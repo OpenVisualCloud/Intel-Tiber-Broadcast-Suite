@@ -10,8 +10,8 @@ on:
 permissions:
   contents: read
 jobs:
-  docker:
-    name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
+  build:
+    name: "Binaries build for Intel® Tiber™ Broadcast Suite"
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     permissions:
