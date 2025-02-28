@@ -1,4 +1,4 @@
-name: dockerfiles-build
+name: Trivy Scan
 
 on:
   workflow_call:
