@@ -81,6 +81,8 @@ jobs:
 
     - name: "validate build.sh script"
       run: ./build.sh
+      env:
+        BUILD_TYPE: "CI"
 
     - name: "Validation: Build/Push Dokcerfile"
       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0

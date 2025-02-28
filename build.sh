@@ -851,10 +851,11 @@ function install_in_docker_enviroment {
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}"
-
-    docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
-    docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
-    docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
+    if [ "${BUILD_TYPE}" != "CI" ]; then
+        docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
+        docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
+        docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
+    fi
 }
 ### docker installation end
 
