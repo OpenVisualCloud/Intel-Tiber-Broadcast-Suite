@@ -38,7 +38,7 @@ jobs:
           run: |
             export LANGUAGE=cxx
             .github/coverity/install_coverity.sh
-            export LANGUAGE=golang
+            export LANGUAGE=gother
             .github/coverity/install_coverity.sh
           
         - name: 'coverity: build code'
