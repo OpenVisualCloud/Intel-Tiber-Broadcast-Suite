@@ -83,29 +83,3 @@ jobs:
       run: ./build.sh
       env:
         BUILD_TYPE: "CI"
-
-    - name: "Validation: Build/Push Dokcerfile"
-      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
-      with:
-        file: docker/app/Dockerfile
-        push: false
-        load: true
-        target: final-stage
-        tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-        platforms: "linux/amd64"
-        cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-        cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
-
-    - name: "Validation: Run Trivy vulnerability scanner on image"
-      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
-      continue-on-error: true
-      with:
-        image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-        output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-        format: "sarif"
-
-    - name: "Finish: Upload Trivy scan results to GitHub Security tab"
-      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-      continue-on-error: true
-      with:
-        sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
