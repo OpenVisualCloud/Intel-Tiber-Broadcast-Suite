@@ -13,6 +13,7 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
 MY_INSTALL_DIR=$HOME/.local
+num_proc=$(nproc)
 
 # Function to handle errors
 handle_error() {
@@ -36,7 +37,7 @@ function build_grpc() {
         -DCMAKE_CXX_STANDARD=17 \
         -DCMAKE_INSTALL_PREFIX=$MY_INSTALL_DIR \
         ../..
-    make -j$(nproc)
+    make -j"$num_proc"
     make install
     popd
 }
@@ -61,7 +62,7 @@ function build_nmos_cpp_library () {
     -DNMOS_CPP_USE_SUPPLIED_JWT_CPP=ON \
     -DNMOS_CPP_BUILD_EXAMPLES=OFF \
     -DNMOS_CPP_BUILD_TESTS=OFF && \
-    make -j$(nproc) && \
+    make -j"$num_proc" && \
     make install
 }
 
@@ -69,7 +70,7 @@ function build_nmos_node() {
     cd "${SCRIPT_DIR}"/nmos/nmos-node
     mkdir -p build && cd build
     cmake ..
-    make -j$(nproc)
+    make -j"$num_proc"
 }
 
 build_grpc
