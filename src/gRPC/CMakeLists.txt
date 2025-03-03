@@ -55,7 +55,10 @@ add_custom_command(
       DEPENDS "${hw_proto}")
 
 # Include generated *.pb.h files
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}"
+                    ../common
+                    build
+                    ../app)
 
 include(FetchContent)
 FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
@@ -73,7 +76,7 @@ target_link_libraries(hw_grpc_proto
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
 
-add_library(FFmpeg_wrapper_client FFmpeg_wrapper_client.cc FFmpeg_wrapper_client.h)
+add_library(FFmpeg_wrapper_client FFmpeg_wrapper_client.cc)
 target_link_libraries(FFmpeg_wrapper_client
   absl::check
   ${_REFLECTION}
@@ -93,7 +96,7 @@ add_executable(cmd_pass_client cmd_pass_client.cc)
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
-add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc ffmpeg_pipeline_generator.cc)
+add_executable(FFmpeg_wrapper_service FFmpeg_wrapper_service.cc CmdPassImpl.cc ../app/ffmpeg_pipeline_generator.cc)
   target_link_libraries(FFmpeg_wrapper_service
     hw_grpc_proto
     absl::check

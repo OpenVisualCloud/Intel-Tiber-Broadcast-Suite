@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 #
 # SPDX-License-Identifier: BSD-3-Clause
@@ -775,47 +775,6 @@ function install_locally {
 
 
 ### docker installation
-
-# this should support every distribution
-function docker_host_prerequisites {
-    if ! (mkdir -p "${HOME}/dpdk" &&
-          curl -Lf https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz | \
-          tar -zx --strip-components=1 -C "${HOME}/dpdk" ); then
-        echo
-        echo -e ${RED}[ERROR] DPDK download and extraction failed ${NC}
-        return 2
-    fi
-
-    if [ ! -d "${HOME}/Media-Transport-Library" ] && ! (mkdir -p ${HOME}/Media-Transport-Library &&
-          curl -Lf https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | \
-          tar -zx --strip-components=1 -C ${HOME}/Media-Transport-Library ); then
-        echo
-        echo -e ${RED}[ERROR] MTL download failed ${NC}
-        return 2
-    fi
-
-    if ! (cd "${HOME}/dpdk" &&
-          git apply "${HOME}/Media-Transport-Library/patches/dpdk/$DPDK_VER"/*.patch &&
-          cd .. &&
-          rm -rf "${HOME}/Media-Transport-Library"); then
-        echo
-        echo -e ${RED}[ERROR] Patching DPDK with Media-Transport-Library patches failed ${NC}
-        return 2
-    fi
-
-    if ! (cd "${HOME}/dpdk" &&
-          meson build &&
-          ninja -C build &&
-          sudo ninja -C build install); then
-        echo
-        echo -e ${RED}[ERROR] DPDK build and installation failed ${NC}
-        return 2
-    fi
-
-    cleanup_directory "${HOME}/dpdk"
-    cleanup_directory "${HOME}/Media-Transport-Library"
-}
-
 function install_in_docker_enviroment {
     ENV_PROXY_ARGS=()
     while IFS='' read -r line; do
@@ -828,32 +787,34 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
-    docker buildx build "${ENV_PROXY_ARGS[@]}" \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/Dockerfile" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}"
 
-    docker buildx build "${ENV_PROXY_ARGS[@]}" \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/Dockerfile" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
         --target manager-stage \
         "${SCRIPT_DIR}"
 
-    cp -r "${SCRIPT_DIR}/gRPC" "${SCRIPT_DIR}/nmos"
+    #cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
 
-    docker buildx build \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/nmos/Dockerfile" \
+        -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage \
-        "${SCRIPT_DIR}/nmos"
-
-    docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
-    docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
+        "${SCRIPT_DIR}"
+    if [ "${BUILD_TYPE}" != "CI" ]; then
+        docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
+        docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
+        docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
+    fi
 }
 ### docker installation end
 
@@ -951,8 +912,7 @@ if [ "$LOCAL_INSTALL" = true ]; then
     install_locally || ret=$?
 else
     {
-        install_in_docker_enviroment && \
-        docker_host_prerequisites
+        install_in_docker_enviroment
     } || ret=$?
 fi
 
@@ -964,7 +924,6 @@ if [ "$ret" -ne 0 ]; then
 else
     echo
     echo -e ${GREEN}Intel® Tiber™ Broadcast Suite installed sucessfuly ${NC}
-    echo -e ${YELLOW}Please restart your computer ${NC}
     echo
     exit 0
 fi
