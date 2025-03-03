@@ -28,20 +28,98 @@ In case of kuberenetes, MediaProxy/MCM things should only be run once and BCS po
 - kubectl version v1.27+
 - Access to a Kubernetes v1.11.3+ cluster.
 
-### To Run containers on single node  
+### To Run containers on single node
+
+Edit this configuration file under path `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`:
+
+```yaml
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+
+k8s: true # use in both modes: k8s | docker
+configuration: # Configuration should be used only for docker mode
+  runOnce:
+    mediaProxyAgent:
+      imageAndTag: mcm/mesh-agent:latest
+      gRPCPort: 50051
+      restPort: 8100
+      network: 
+        enable: false
+        name: my_net_801f0
+        ip: 192.168.2.1
+    mediaProxyMcm:
+      imageAndTag:  mcm/media-proxy:latest
+      interfaceName: eth0
+      volumes:
+        - /dev/vfio:/dev/vfio
+      network: 
+        enable: false
+        name: my_net_801f0
+        ip: 192.168.2.2
+  workloadToBeRun:
+    ffmpegPipeline:
+      name: bcs-ffmpeg-pipeline
+      imageAndTag: tiber-broadcast-suite:latest
+      gRPCPort: 50051
+      sourcePort: 5004
+      environmentVariables:
+        - "http_proxy="
+        - "https_proxy=" 
+      volumes:
+        videos: /root #for videos
+        dri: /usr/lib/x86_64-linux-gnu/dri
+        kahawai: /tmp/kahawai_lcore.lock
+        devnull: /dev/null
+        tmpHugepages: /tmp/hugepages
+        hugepages: /hugepages
+        imtl: /var/run/imtl
+        shm: /dev/shm
+      devices:
+        vfio: /dev/vfio
+        dri: /dev/dri
+      network: 
+        enable: true
+        name: my_net_801f0
+        ip: 192.168.2.4
+    nmosClient:
+      name: bcs-ffmpeg-pipeline-nmos-client
+      imageAndTag: tiber-broadcast-suite-nmos-node:latest
+      environmentVariables:
+        - "http_proxy="
+        - "https_proxy=" 
+        - "VFIO_PORT_TX=0000:ca:11.0"
+      nmosConfigPath: /root/demo
+      network: 
+        enable: true
+        name: my_net_801f0
+        ip: 192.168.2.5
+```
+
+> It is worth noting that workloads under key `runOnce` are configurable globally and only once, whereas `workloadToBeRun` can be defined many times for diffrent workloads (so under the same path, change the content of the file). The flag should be set as `k8s: false`.
+
+Run `<repo>/first_run.sh` script then run `<repo>/build.sh`.
+Next, follow all guidelines [here](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/media-proxy/README.md)
 
 ```bash
-# currently only in dev phase
+
 cd <repo>/launcher/cmd/
-# Adjust to your needs: ./configuration_files/bcslauncher-static-config.yaml
-go run main.go
+go build main.go
+./main
+# Alternatively instead of go build main.go && ./main, you can type: go run main.go
 ```
 
 ### To Deploy on the cluster
+Follow instructions to build minikube cluster: [here](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/media-proxy/README.md)
+**Build image:**
 
-**Build image:**  
-Modify `./launcher/configuration_files/bcslauncher-static-config.yaml`. `k8s: false` defines docker (containers on single host) mode.  
+Modify `./launcher/configuration_files/bcslauncher-k8s-config.yaml`. `k8s: true` should be set. Resources for media proxy and msh agent are only configured once.
+
 `docker build -t controller:bcs_pod_launcher .`
+
+Modify `./launcher/configuration_files/bcsconfig-example.yaml` to prepare information for bcs pipeline and nmos node. There may be many custom resources that specifies diffrent `workloads` with nmos node.
 
 **BCS pod launcher installer in k8s cluster:**  
 

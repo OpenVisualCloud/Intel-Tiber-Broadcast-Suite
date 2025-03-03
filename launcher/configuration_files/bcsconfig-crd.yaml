@@ -53,60 +53,232 @@ spec:
           metadata:
             type: object
           spec:
-            description: BcsConfigSpec defines the desired state of BcsConfig
-            properties:
-              appParams:
-                properties:
-                  codec:
-                    type: string
-                  height:
-                    type: integer
-                  pixelFormat:
-                    type: string
-                  uniqueName:
-                    type: string
-                  width:
-                    type: integer
-                required:
-                - codec
-                - height
-                - pixelFormat
-                - uniqueName
-                - width
-                type: object
-              connections:
-                properties:
-                  controlConnection:
-                    properties:
-                      ipAddress:
-                        type: string
-                      port:
-                        type: integer
-                    required:
-                    - ipAddress
-                    - port
-                    type: object
-                  dataConnection:
-                    properties:
-                      connType:
-                        type: string
-                      mediaProxyIpAddress:
-                        type: string
-                      port:
-                        type: integer
-                    required:
-                    - connType
-                    - mediaProxyIpAddress
-                    - port
-                    type: object
-                required:
-                - controlConnection
-                - dataConnection
-                type: object
-            required:
-            - appParams
-            - connections
             type: object
+            properties:
+              name:
+                type: string
+              namespace:
+                type: string
+              app:
+                type: object
+                properties:
+                  image:
+                    type: string
+                  grpcPort:
+                    type: integer
+                  environmentVariables:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                  volumes:
+                    type: object
+                    additionalProperties:
+                      type: string
+              nmos:
+                type: object
+                properties:
+                  image:
+                    type: string
+                  args:
+                    type: array
+                    items:
+                      type: string
+                  environmentVariables:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        value:
+                          type: string
+                  nmosApiPort:
+                    type: integer
+                  nmosApiNodePort:
+                    type: integer
+                  nmosAppCommunicationPort:
+                    type: integer
+                  nmosAppCommunicationNodePort:
+                    type: integer
+                  nmosInputFile:
+                    type: object
+                    properties:
+                      logging_level:
+                        type: integer
+                      http_port:
+                        type: integer
+                      label:
+                        type: string
+                      senders:
+                        type: array
+                        items:
+                          type: string
+                      senders_count:
+                        type: array
+                        items:
+                          type: integer
+                      receivers:
+                        type: array
+                        items:
+                          type: string
+                      receivers_count:
+                        type: array
+                        items:
+                          type: integer
+                      device_tags:
+                        type: object
+                        properties:
+                          pipeline:
+                            type: array
+                            items:
+                              type: string
+                      function:
+                        type: string
+                      gpu_hw_acceleration:
+                        type: string
+                      domain:
+                        type: string
+                      ffmpeg_grpc_server_address:
+                        type: string
+                      ffmpeg_grpc_server_port:
+                        type: string
+                      sender_payload_type:
+                        type: integer
+                      sender:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            stream_payload:
+                              type: object
+                              properties:
+                                video:
+                                  type: object
+                                  properties:
+                                    frame_width:
+                                      type: integer
+                                    frame_height:
+                                      type: integer
+                                    frame_rate:
+                                      type: object
+                                      properties:
+                                        numerator:
+                                          type: integer
+                                        denominator:
+                                          type: integer
+                                    pixel_format:
+                                      type: string
+                                    video_type:
+                                      type: string
+                                audio:
+                                  type: object
+                                  properties:
+                                    channels:
+                                      type: integer
+                                    sampleRate:
+                                      type: integer
+                                    format:
+                                      type: string
+                                    packetTime:
+                                      type: string
+                            stream_type:
+                              type: object
+                              properties:
+                                st2110:
+                                  type: object
+                                  properties:
+                                    transport:
+                                      type: string
+                                    payload_type:
+                                      type: string
+                                file:
+                                  type: object
+                                  properties:
+                                    path:
+                                      type: string
+                                    filename:
+                                      type: string
+                                mcm:
+                                  type: object
+                                  properties:
+                                    conn_type:
+                                      type: string
+                                    transport:
+                                      type: string
+                                    urn:
+                                      type: string
+                                    transportPixelFormat:
+                                      type: string
+                      receiver:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            stream_payload:
+                              type: object
+                              properties:
+                                video:
+                                  type: object
+                                  properties:
+                                    frame_width:
+                                      type: integer
+                                    frame_height:
+                                      type: integer
+                                    frame_rate:
+                                      type: object
+                                      properties:
+                                        numerator:
+                                          type: integer
+                                        denominator:
+                                          type: integer
+                                    pixel_format:
+                                      type: string
+                                    video_type:
+                                      type: string
+                                audio:
+                                  type: object
+                                  properties:
+                                    channels:
+                                      type: integer
+                                    sampleRate:
+                                      type: integer
+                                    format:
+                                      type: string
+                                    packetTime:
+                                      type: string
+                            stream_type:
+                              type: object
+                              properties:
+                                file:
+                                  type: object
+                                  properties:
+                                    path:
+                                      type: string
+                                    filename:
+                                      type: string
+                                st2110:
+                                  type: object
+                                  properties:
+                                    transport:
+                                      type: string
+                                    payload_type:
+                                      type: string
+                                mcm:
+                                  type: object
+                                  properties:
+                                    conn_type:
+                                      type: string
+                                    transport:
+                                      type: string
+                                    urn:
+                                      type: string
+                                    transportPixelFormat:
+                                      type: string
           status:
             description: BcsConfigStatus defines the observed state of BcsConfig
             type: object
