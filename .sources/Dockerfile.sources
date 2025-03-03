@@ -30,7 +30,7 @@ RUN \
   source /root/versions.env && \
   export WGET="wget --progress=dot:giga" && \
   echo "**** DOWNLOAD ONEVPL ****" && \
-  $WGET  https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz -O oneVPL-intel-gpu.tar.gz && \
+  $WGET  https://github.com/intel/vpl-gpu-rt/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz -O oneVPL-intel-gpu.tar.gz && \
   echo "**** DOWNLOAD VMAF ****" && \
   $WGET  https://github.com/Netflix/vmaf/archive/refs/tags/v${LIBVMAF}.tar.gz -O vmaf.tar.gz && \
   echo "**** DOWNLOAD SVT-AV1 ****" && \
