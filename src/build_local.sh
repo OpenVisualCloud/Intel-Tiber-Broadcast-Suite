@@ -8,8 +8,6 @@ set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
 NC='\033[0m'
 NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
 MY_INSTALL_DIR=$HOME/.local
