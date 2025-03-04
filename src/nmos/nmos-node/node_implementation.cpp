@@ -87,8 +87,6 @@ namespace tracker{
     }
 }
 
-
-
 namespace grpc {
 // Function to execute the grpc client logic for ffmpeg
 void sendDataToFfmpeg(const std::string& interface, const std::string& port, const Config &configParams) {
@@ -1033,8 +1031,8 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             std::thread ffmpegThread1;
             slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "this is "<< id_type << "---> sends json for sender";
             auto data = connection_resource.data;
-            auto sender_source_ip = "192.168.2.4";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
-            auto receiver_destination_ip = "192.168.2.5";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
+            auto sender_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
             auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
 
             // this data are necessary to send via grpc to ffmpeg
@@ -1053,7 +1051,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
                 s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
                 s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-                s.stream_type.mcm.ip=sender_source_ip; //.as_string();
+                s.stream_type.mcm.ip=sender_source_ip.as_string();
                 s.stream_type.mcm.port=receiver_destination_port.as_integer();
                 s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
             }
@@ -1061,8 +1059,8 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             {
                 s.stream_type.type = stream_type::st2110;
                 s.stream_type.st2110.network_interface = vfio_port_value_tx;
-                s.stream_type.st2110.local_ip = sender_source_ip;//.as_string();
-                s.stream_type.st2110.remote_ip = receiver_destination_ip;//.as_string();
+                s.stream_type.st2110.local_ip = sender_source_ip.as_string();
+                s.stream_type.st2110.remote_ip = receiver_destination_ip.as_string();
                 s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
                 s.stream_type.st2110.remote_port = receiver_destination_port.as_integer();
                 s.stream_type.st2110.payload_type = impl::fields::sender_payload_type(model.settings);
@@ -1074,7 +1072,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
 
             s.payload = payload;
 
-            //sender=nmos, receiver=ffmpeg
+            // sender=nmos, receiver=ffmpeg
             // to get ffmpeg receivers of stream_type::File
             auto configIntel = config_manager.get_config();
             config_manager.print_config();
@@ -1092,10 +1090,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
-            int multiviewer_columns = 3;
-            if (configIntel.function == "multiviewer") {
-                multiviewer_columns = configIntel.multiviewer_columns;
-            }
+            int multiviewer_columns = configIntel.function == "multiviewer" ? configIntel.multiviewer_columns : 3;
             // construct config for NMOS sender
             const Config config = {{s}, ffmpeg_receiver_as_file_vector, configIntel.function, multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.logging_level};
 
@@ -1113,9 +1108,9 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 return;
             }
             auto data = connection_resource.data;
-            auto receiver_source_ip = "192.168.2.5";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
             auto sender_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
-            auto sender_destination_ip = "192.168.2.4";//data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
+            auto sender_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
             auto trasportfile_sdp = data[nmos::fields::endpoint_active][nmos::fields::transport_file][nmos::fields::data];
             std::cout<<utility::us2s(trasportfile_sdp.as_string());
             auto session_description = sdp::parse_session_description(utility::us2s(trasportfile_sdp.as_string()));
@@ -1134,10 +1129,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto width_param = sdp::find_name(params, U("width"));
             auto height_param = sdp::find_name(params, U("height"));
             auto fps = sdp::find_name(params, U("exactframerate"));
-
-            // auto sampling = sdp::find_name(params, U("sampling"));
-            // auto depth = sdp::find_name(params, U("depth"));
-            // auto ssn = sdp::find_name(params, U("SSN"));
 
             auto fps_numerator = nmos::details::parse_exactframerate(sdp::fields::value(*fps).as_string()).numerator();
             auto fps_denominator = nmos::details::parse_exactframerate(sdp::fields::value(*fps).as_string()).denominator();
@@ -1164,7 +1155,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
                 s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
                 s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-                s.stream_type.mcm.ip=receiver_source_ip;//.as_string();
+                s.stream_type.mcm.ip=receiver_source_ip.as_string();
                 s.stream_type.mcm.port=sender_destination_port.as_integer();
                 s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
             }
@@ -1172,8 +1163,8 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             {
                 s.stream_type.type = stream_type::st2110;
                 s.stream_type.st2110.network_interface = vfio_port_value_rx;
-                s.stream_type.st2110.local_ip = receiver_source_ip;//.as_string();
-                s.stream_type.st2110.remote_ip = sender_destination_ip;//destination_addr;
+                s.stream_type.st2110.local_ip = receiver_source_ip.as_string();
+                s.stream_type.st2110.remote_ip = destination_addr;
                 s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
                 s.stream_type.st2110.remote_port = sender_destination_port.as_integer();
                 s.stream_type.st2110.payload_type = payload_type_sdp;
@@ -1200,10 +1191,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
-            int multiviewer_columns = 3;
-            if (configIntel.function == "multiviewer") {
-                multiviewer_columns = configIntel.multiviewer_columns;
-            }
+            int multiviewer_columns = configIntel.function == "multiviewer" ? configIntel.multiviewer_columns : 3;
             // construct config for NMOS sender
             const Config config = {ffmpeg_sender_as_file_vector,{s},configIntel.function,multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
 
