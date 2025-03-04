@@ -331,8 +331,15 @@ RUN \
     --enable-cross-compile && \
   make -j${nproc}
 
-COPY /gRPC /tmp/gRPC
-RUN /tmp/gRPC/compile.sh
+COPY src/gRPC /tmp/gRPC
+COPY src/app /tmp/app
+COPY src/common /tmp/common
+
+WORKDIR /tmp/gRPC
+RUN \
+  echo "**** BUILD gRPC BASED FFmpeg_wrapper_service ****" && \
+  cmake -B build && \
+  make -j${nproc} -C build
 
 WORKDIR /tmp/ffmpeg/
 

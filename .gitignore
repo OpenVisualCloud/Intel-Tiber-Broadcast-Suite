@@ -1,13 +1,18 @@
 docs/_build
 _build
-gRPC/build
-gRPC/unit_test/build
+build
+src/gRPC/build
+src/gRPC/unit_test/build
+src/gRPC/unit_test/Testing
 file*.json
 .reports
 NVMUpdatePackage
+*.a
+*.sdp
+grpc
+nmos-cpp*
 
 # pipeline configuration and input files
-src
 *.yuv
 VARIABLES.rc
 
