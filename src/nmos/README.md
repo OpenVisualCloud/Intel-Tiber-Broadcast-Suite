@@ -1,13 +1,13 @@
 # Environment
 
 - Ubuntu 22.04.4 LTS
-- kernel: 5.15.0-88-generic
+- kernel: 5.15.0-133-generic
 - minikube: v1.34.0 (1 node)
 - docker: 27.3.1
 - kubectl: v1.31.2
 - NMOS supports standards IS-04 and IS-05: <https://specs.amwa.tv/is-04/>, <https://specs.amwa.tv/is-05/>
 
-## Configuration note for NMOS simplified client in the contect of Intel Broadcast Suite
+## Configuration note for NMOS client in the context of Intel Broadcast Suite
 
 `nmos-cpp` repository has been simplified to **IS-04** & **IS-05** implementation only.
 The key change is in configuration of senders and receivers for BCS pipeline.
@@ -130,38 +130,30 @@ For testing purposes there are also NMOS sample cotroller, NMOS registry pod and
 
 ### Docker option
 
-Go to root directory and run:
+Go to project root directory and run:
 
 ```bash
 ./build.sh
+```
+```bash
+cd scripts/
+```
+```bash
 ./first_run.sh
 ```
 
 ### For development purposes
 
-#### 1. Git
+#### 1. Local build
 
 ```bash
-git submodule update --init --recursive
+cd src/
 ```
-
-#### 2. Patch
-
 ```bash
-cd <repo>/nmos/nmos-cpp
-git apply ../patches/nmos-cpp.patch
+./build_local.sh
 ```
 
-#### 3. Build NMOS binaries (client & registry/controller) (optional for user, useful for dev)
-
-```bash
-cd <repo>/nmos/nmos-cpp/Development/
-pip install --upgrade conan~=2.4 
-conan profile detect
-conan install --requires=nmos-cpp/cci.20240223 --deployer=direct_deploy --build=missing
-cd <repo>/nmos/
-./prepare-nmos-cpp.sh
-```
+Binaries related to `nmos-node` will be located in the `src/nmos/nmos-node/build` directory.
 
 ### License
 
