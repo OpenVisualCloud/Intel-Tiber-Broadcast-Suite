@@ -28,7 +28,7 @@ jobs:
     - name: "Build: gRPC"
       working-directory: "${{ github.workspace }}/src"
       run: |
-        sudo apt-get install -y git cmake libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev
+        sudo apt-get install -y git cmake libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
         sudo ./build_local.sh
 
     - name: 'upload gRpc binaries'
