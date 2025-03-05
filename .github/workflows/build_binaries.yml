@@ -26,15 +26,18 @@ jobs:
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
     - name: "Build: gRPC"
-      working-directory: "${{ github.workspace }}/src/gRPC"
+      working-directory: "${{ github.workspace }}/src"
       run: 
-        ./compile.sh
+        ./build_local.sh
 
     - name: 'upload gRpc binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
-        name: grpc-bin
-        path: '${{ github.workspace }}/src/gRPC/build/*'
+        name: grpc-nmos-bin
+        path: | 
+          '${{ github.workspace }}/src/gRPC/build/*'
+          '${{ github.workspace }}/src/nmos/nmos-node/build/*'
+          '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
 
     - name: "Build: launcher"
       working-directory: "${{ github.workspace }}/launcher"
