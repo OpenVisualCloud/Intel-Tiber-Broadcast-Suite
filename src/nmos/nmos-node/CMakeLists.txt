@@ -27,7 +27,6 @@ find_package(websocketpp REQUIRED)
 
 # nmos-cpp-node executable
 set(NMOS_CPP_NODE_SOURCES
-    main.cpp
     node_implementation.cpp
     intel_config_parser.cpp
 )
@@ -44,17 +43,30 @@ include_directories(
 
 link_directories(../../gRPC/build)
 
-add_executable(
-    bcs-nmos-node
-    ${NMOS_CPP_NODE_SOURCES}
-    ${NMOS_CPP_NODE_HEADERS}
-)
+add_library(bcs-nmos-node-lib ${NMOS_CPP_NODE_SOURCES} ${NMOS_CPP_NODE_HEADERS})
 
 target_link_libraries(
-    bcs-nmos-node
+    bcs-nmos-node-lib
     nmos-cpp::nmos-cpp
     FFmpeg_wrapper_client
     protobuf::libprotobuf
     hw_grpc_proto
     gRPC::grpc++
 )
+
+add_executable(
+    bcs-nmos-node
+    main.cpp
+)
+
+target_link_libraries(
+    bcs-nmos-node
+    bcs-nmos-node-lib
+)
+
+# enable or disable the unit test suite
+set(BUILD_TESTING ON CACHE BOOL "Build test suite application")
+
+if(BUILD_TESTING)
+    add_subdirectory(unit_tests)
+endif()
