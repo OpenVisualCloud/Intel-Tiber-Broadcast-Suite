@@ -9,6 +9,10 @@ on:
         description: 'Branch to run scans on'
         default: 'main'
         type: string
+  pull_request:
+    branches:
+      - main
+
 permissions:
   contents: read
 env:
@@ -45,10 +49,13 @@ jobs:
           run: .github/coverity/cov-build.sh all
 
         - name: 'coverity: server upload'
+          if: github.event_name == 'schedule'
           run: .github/coverity/cov-analysis.sh 
  
         - name: 'coverity: upload raw build artifacts'
+          if: github.event_name == 'schedule'
           uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+          if: github.event_name == 'schedule'
           with:
             name: coverity-scan--details
             path: '${{ github.workspace }}/analysis-details.txt'
