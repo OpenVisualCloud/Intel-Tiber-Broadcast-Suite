@@ -23,24 +23,15 @@ function coverity_other_build(){
 
 function usage(){
   echo " Usage : $0 <BUILD_TYPE>"
-  echo " BUILD_TYPE : nmos | nmos-cpp | grpc | launcher"
+  echo " BUILD_TYPE : all | grpc | launcher"
 }
 
-function build_nmos(){
-  log_info "building nmos"
-}
-
-function build_nmos(){
-  log_info "building nmos-cpp"
-  cd ${ROOT_DIR}/nmos
-  # waiting for nmos build fix
-}
 
 function build_grpc(){
   log_info "building gRPC"
-  cd ${ROOT_DIR}/src/gRPC
-  sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' compile.sh
-  coverity_cpp_build /src/gRPC compile.sh
+  cd ${ROOT_DIR}/src
+  sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' gRPC/compile.sh
+  coverity_cpp_build gRPC compile.sh
 }
 
 function build_launcher(){
@@ -55,7 +46,6 @@ function build_all(){
   log_info "starting cov-build"
   build_grpc 
   build_launcher 
-  build_nmos 
   log_info "All builds have completed"
 }
 
@@ -65,12 +55,6 @@ if [ $# -ne 1 ]; then
 fi
 
 case $1 in
-  nmos)
-    build_nmos
-    ;;
-  nmos-cpp)
-    build_nmos_cpp
-    ;;
   grpc)
     build_grpc
     ;;
