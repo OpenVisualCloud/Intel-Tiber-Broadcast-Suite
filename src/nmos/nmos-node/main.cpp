@@ -71,7 +71,10 @@ int main(int argc, char* argv[])
                 node_model.settings.as_object();
             }
             // Parse json to senders' and receivers' config
-            config_manager.parse_json_file(utility::s2us(argv[1]));
+            if(config_manager.parse_json_file(utility::s2us(argv[1]))){
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "Failed to parse json configuration file";
+                return 1;
+            }
             config_manager.print_config();
         }
 

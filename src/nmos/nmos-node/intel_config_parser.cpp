@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "intel_config_parser.h"
 #include <cpprest/filestream.h>
 #include <iostream>
@@ -11,7 +17,7 @@ std::pair<int, int> ConfigManager::get_framerate(const Stream& stream) const {
     return {stream.payload.video.frame_rate.numerator, stream.payload.video.frame_rate.denominator};
 }
 
-void ConfigManager::parse_json_file(const std::string& file_path) {
+int ConfigManager::parse_json_file(const std::string& file_path) {
     try {
         // Open the file stream
         std::ifstream file(file_path);
@@ -41,7 +47,9 @@ void ConfigManager::parse_json_file(const std::string& file_path) {
 
     } catch (const std::exception& e) {
         std::cerr << "Error parsing JSON file: " << e.what() << std::endl;
+        return -1;
     }
+    return 0;
 }
 
 void ConfigManager::print_config() const {
