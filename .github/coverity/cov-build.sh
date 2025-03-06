@@ -7,17 +7,15 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 
 function coverity_cpp_build(){
-  local FOLDER=${1}
-  local SCRIPT=${2}
-  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/"  "--append-log" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  local SCRIPT=${1}
+  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "$(pwd)/${SCRIPT}" > "$(basename $(pwd)).log"
   log_info "cov-build ${FOLDER} done"
 }
 
 function coverity_other_build(){
-  local FOLDER=${1}
-  local SCRIPT=${2}
+  local SCRIPT=${1}
   rm -rf cov/*
-  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "${ROOT_DIR}/${FOLDER}/${SCRIPT}" >  ${FOLDER}.log
+  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "$(pwd)/${SCRIPT}" > "$(basename $(pwd)).log"
   log_info "cov-build ${FOLDER} done"
 }
 
@@ -29,9 +27,9 @@ function usage(){
 
 function build_grpc(){
   log_info "building gRPC"
-  cd ${ROOT_DIR}/src
-  sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' gRPC/compile.sh
-  coverity_cpp_build gRPC compile.sh
+  cd ${ROOT_DIR}/src/gRPC
+  sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' compile.sh
+  coverity_cpp_build compile.sh
 }
 
 function build_launcher(){
@@ -39,7 +37,7 @@ function build_launcher(){
   cd ${ROOT_DIR}/launcher
   echo "go build -a -o manager cmd/main.go" > build.sh
   chmod +x build.sh
-  coverity_other_build launcher build.sh
+  coverity_other_build build.sh
 }
 
 function build_all(){
