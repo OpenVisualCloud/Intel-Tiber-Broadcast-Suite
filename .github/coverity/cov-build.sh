@@ -40,7 +40,7 @@ function build_grpc(){
   log_info "building gRPC"
   cd ${ROOT_DIR}/src/gRPC
   sed -i 's/make -C "${COMPILE_DIR}\/build"/make -B -C "${COMPILE_DIR}\/build"/' compile.sh
-  coverity_cpp_build gRPC compile.sh
+  coverity_cpp_build /src/gRPC compile.sh
 }
 
 function build_launcher(){
