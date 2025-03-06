@@ -6,7 +6,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include "intel_config_parser.h"
 
 class ConfigManagerTest : public ConfigManager {
