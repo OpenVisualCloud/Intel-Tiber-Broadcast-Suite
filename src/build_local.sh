@@ -13,6 +13,22 @@ NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
 MY_INSTALL_DIR=$HOME/.local
 num_proc=$(nproc)
 
+# Function to display help message
+show_help() {
+  echo "Usage: $0 [-ut] [-h|--help]"
+  echo ""
+  echo "Options:"
+  echo "  -ut        Build with unit tests enabled"
+  echo "  -h, --help Show this help message and exit"
+}
+
+UT_OPTION=$1
+
+if [ "$UT_OPTION" == "-h" ] || [ "$UT_OPTION" == "--help" ]; then
+  show_help
+  exit 0
+fi
+
 # Function to handle errors
 handle_error() {
     echo "Error: $1"
@@ -42,7 +58,11 @@ function build_grpc() {
 
 function build_grpc_based_ffmpeg_app() {
     cd "${SCRIPT_DIR}"/gRPC || handle_error "Failed to change directory to gRPC"
-    ./compile.sh
+    if [ "$UT_OPTION" == "-ut" ]; then
+        ./compile.sh --unit_testing
+    else
+        ./compile.sh
+    fi
 }
 
 function build_nmos_cpp_library () {
@@ -67,7 +87,11 @@ function build_nmos_cpp_library () {
 function build_nmos_node() {
     cd "${SCRIPT_DIR}"/nmos/nmos-node
     mkdir -p build && cd build
-    cmake ..
+    if [ "$UT_OPTION" == "-ut" ]; then
+        cmake .. -DENABLE_UNIT_TESTS=ON
+    else
+        cmake .. -DENABLE_UNIT_TESTS=OFF
+    fi
     make -j"$num_proc"
 }
 
