@@ -805,11 +805,12 @@ function install_in_docker_enviroment {
 
     #cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
 
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}"
+
     if [ "${BUILD_TYPE}" != "CI" ]; then
         docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
         docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
