@@ -1,0 +1,249 @@
+#SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+#
+#SPDX-License-Identifier: BSD-3-Clause
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tiber-broadcast-suite-rx
+  namespace: default
+data:
+  node.json: |
+    {
+      "logging_level": 0,
+      "http_port": 95,
+      "label": "intel-broadcast-suite",
+      "senders": ["v"],
+      "senders_count": [0],
+      "receivers": ["v"],
+      "receivers_count": [1],
+      "device_tags": {
+        "pipeline": ["rx-sender"]
+      },
+      "function": "rx-sender",
+      "gpu_hw_acceleration": "none",
+      "domain": "default.svc.cluster.local",
+      "ffmpeg_grpc_server_address": "tiber-broadcast-suite-tx.default.svc.cluster.local",
+      "ffmpeg_grpc_server_port": "50052",
+      "receiver_payload_type": 112,
+      "sender": [{
+        "stream_payload": {
+          "video": {
+            "frame_width": 1920,
+            "frame_height": 1080,
+            "frame_rate": { "numerator": 60, "denominator": 1 },
+            "pixel_format": "yuv422p10le",
+            "video_type": "rawvideo"
+          },
+          "audio": {
+            "channels": 2,
+            "sampleRate": 48000,
+            "format": "pcm_s24be",
+            "packetTime": "1ms"
+          }
+        },
+        "stream_type": {
+          "file": {
+            "path": "/root/recv",
+            "filename": "1920x1080p10le_2.yuv"
+          }
+        }
+      }],
+      "receiver": [{
+        "stream_payload": {
+          "video": {
+            "frame_width": 960,
+            "frame_height": 1080,
+            "frame_rate": { "numerator": 60, "denominator": 1 },
+            "pixel_format": "yuv422p10le",
+            "video_type": "rawvideo"
+          },
+          "audio": {
+            "channels": 2,
+            "sampleRate": 48000,
+            "format": "pcm_s24be",
+            "packetTime": "1ms"
+          }
+        },
+        "stream_type": {
+          "mcm": {
+            "conn_type": "st2110",
+            "transport": "st2110-20",
+            "urn": "NULL",
+            "transportPixelFormat": "yuv422p10le"
+          }
+        }
+      }]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tiber-broadcast-suite-rx
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tiber-broadcast-suite-rx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: tiber-broadcast-suite-rx
+    spec:
+      containers:
+      - args:
+        - config/intel-node-rx.json
+        env:
+        - name: http_proxy
+        - name: https_proxy
+        - name: VFIO_PORT_RX
+          value: "${VFIO_PORT_RX}"
+        image: tiber-broadcast-suite-nmos-node:latest
+        imagePullPolicy: IfNotPresent
+        name: tiber-broadcast-suite-nmos-node
+        ports:
+        - containerPort: 95
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 250m
+            memory: 64Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 50052
+            host: tiber-broadcast-suite-rx.default.svc.cluster.local
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /home/config
+          name: config
+      - args:
+        - localhost
+        - "50052"
+        env:
+        - name: http_proxy
+        - name: https_proxy
+        - name: VFIO_PORT_TX
+          value: "${VFIO_PORT_TX}"
+        - name: VFIO_PORT_RX
+          value: "${VFIO_PORT_RX}"
+        image: tiber-broadcast-suite:latest
+        imagePullPolicy: IfNotPresent
+        name: tiber-broadcast-suite
+        ports:
+        - containerPort: 50052
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 250m
+            memory: 64Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
+          capabilities:
+            add:
+            - ALL
+          privileged: false
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /videos
+          name: videos
+        - mountPath: /usr/local/lib/x86_64-linux-gnu/dri
+          name: dri
+        - mountPath: /tmp/kahawai_lcore.lock
+          name: kahawai-lock
+        - mountPath: /dev/null
+          name: dev-null
+        - mountPath: /tmp/hugepages
+          name: hugepages-tmp
+        - mountPath: /hugepages
+          name: hugepages
+        - mountPath: /var/run/imtl
+          name: imtl
+        - mountPath: /dev/shm
+          name: shm
+      volumes:
+      - hostPath:
+          path: /root/DEMO_NMOS/move/nmos/nmos-cpp/Development/nmos-cpp-node/
+          type: ""
+        name: videos
+      - hostPath:
+          path: /usr/lib/x86_64-linux-gnu/dri
+          type: ""
+        name: dri
+      - hostPath:
+          path: /tmp/kahawai_lcore.lock
+          type: ""
+        name: kahawai-lock
+      - hostPath:
+          path: /dev/null
+          type: ""
+        name: dev-null
+      - hostPath:
+          path: /tmp/hugepages
+          type: ""
+        name: hugepages-tmp
+      - hostPath:
+          path: /hugepages
+          type: ""
+        name: hugepages
+      - hostPath:
+          path: /var/run/imtl
+          type: ""
+        name: imtl
+      - hostPath:
+          path: /dev/shm
+          type: ""
+        name: shm
+      - hostPath:
+          path: /dev/vfio
+          type: ""
+        name: vfio
+      - configMap:
+          defaultMode: 420
+          name: tiber-broadcast-suite-rx
+        name: config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tiber-broadcast-suite-rx
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: tiber-broadcast-suite-rx
+  ports:
+  - protocol: TCP
+    port: 95
+    targetPort: 95
+    name: tiber-broadcast-suite-rx-node-port-http
+    nodePort: 30085
+  - protocol: TCP
+    port: 50052
+    targetPort: 50052
+    name: grpc-client-to-ffmpeg
+    nodePort: 30052
