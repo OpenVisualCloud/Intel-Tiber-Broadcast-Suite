@@ -21,5 +21,14 @@ spec:
         ports:
         - containerPort: 90
         - containerPort: 95
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: false
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
       restartPolicy: Never
   backoffLimit: 10
