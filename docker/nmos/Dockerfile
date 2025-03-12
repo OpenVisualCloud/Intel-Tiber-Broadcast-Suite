@@ -39,8 +39,6 @@ RUN \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY src /tmp
-
 RUN \
     echo "**** DOWNLOAD AND INSTALL gRPC v1.58 ****" && \
     git clone --branch "v1.58.0" --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc-source && \
@@ -49,6 +47,8 @@ RUN \
     make -C "/tmp/grpc-source/cmake/build" -j$(nproc) && \
     make -C "/tmp/grpc-source/cmake/build" install && \
     rm -rf /tmp/grpc-source
+
+COPY src /tmp
 
 ## Get source for Sony nmos-cpp library
 WORKDIR /tmp

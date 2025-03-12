@@ -1004,7 +1004,7 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
         }
     }, gate);
 }
-
+std::vector<Stream> all_receivers; //TODO: Need to be moved to a better place to avoid global variables
 // Connection API activation callback to perform application-specific operations to complete activation
 nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate)
 {
@@ -1191,12 +1191,18 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
-            int multiviewer_columns = configIntel.function == "multiviewer" ? configIntel.multiviewer_columns : 3;
+            int multiviewer_columns = 3; //configIntel.function == "multiviewer" ? configIntel.multiviewer_columns : 3;
             // construct config for NMOS sender
-            const Config config = {ffmpeg_sender_as_file_vector,{s},configIntel.function,multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
+            all_receivers.push_back(s);
+            const Config config = {ffmpeg_sender_as_file_vector,all_receivers,configIntel.function,multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
 
-            ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
-            ffmpegThread2.join();
+            if ( all_receivers.size() < configIntel.receivers.size()) {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+                slog::log<slog::severities::error>(gate, SLOG_FLF) <<  "RECEIVERS NUMBER DOESN'T MATCH " << all_receivers.size() << ":" << configIntel.receivers.size();
+            }else{
+                ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
+                ffmpegThread2.join();
+            }
         }
         connection_events_activation_handler(resource, connection_resource);
         receiver_monitor_connection_activation_handler(connection_resource);
