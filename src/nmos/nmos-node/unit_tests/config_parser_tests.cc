@@ -23,6 +23,20 @@ public:
             config.function = json_value.at(U("function")).as_string();
             config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();
 
+            if (config.function == "multiviewer") {
+              config.multiviewer_columns = json_value.at(U("multiviewer_columns")).as_integer();
+            }
+            else{
+                config.multiviewer_columns = 3;
+            }
+  
+            if (config.gpu_hw_acceleration != "none") {
+                config.gpu_hw_acceleration_device = json_value.at(U("gpu_hw_acceleration_device")).as_string();
+            }
+            else{
+                config.gpu_hw_acceleration_device = "";
+            }
+
             for (const auto& sender : json_value.at(U("sender")).as_array()) {
                 config.senders.push_back(parse_stream(sender));
             }
@@ -121,6 +135,7 @@ TEST(ConfigManagerTest, ParseStreamValidData) {
     EXPECT_EQ(conf.logging_level, 0);                     // "logging_level": 0,
     EXPECT_EQ(conf.function, "rx");                       // "function": "rx",
     EXPECT_EQ(conf.gpu_hw_acceleration, "none");          // "gpu_hw_acceleration": "none",
+    EXPECT_EQ(conf.gpu_hw_acceleration_device, "");        // "gpu_hw_acceleration_device": "",
     //EXPECT_EQ(color_sampling, "YCbCr-4:2:2");           // "color_sampling": "YCbCr-4:2:2",
     //EXPECT_EQ(domain, "local");                         // "domain": "local",
     //EXPECT_EQ(ffmpeg_grpc_server_address, "localhost"); // "ffmpeg_grpc_server_address": "localhost",
@@ -160,6 +175,96 @@ TEST(ConfigManagerTest, ParseStreamValidData) {
     EXPECT_EQ(conf.receivers[0].payload.audio.packet_time, "1ms");
     EXPECT_EQ(conf.receivers[0].stream_type.st2110.transport, "st2110-20");
     EXPECT_EQ(conf.receivers[0].stream_type.st2110.payload_type, 112);
+}
+
+
+TEST(ConfigManagerTest, ParseStreamGpuData) {
+  ConfigManagerTest c_mgr;
+
+  const std::string gpu_json_str = R"json(
+  {
+      "logging_level": 0,
+      "function": "rx",
+      "gpu_hw_acceleration": "intel",
+      "gpu_hw_acceleration_device": "/dev/dri/renderD128",
+      "sender": [],
+      "receiver": []
+  }
+  )json";
+
+  c_mgr.parse_json_string(gpu_json_str);
+
+  Config conf = c_mgr.get_config();
+
+  EXPECT_EQ(conf.gpu_hw_acceleration, "intel");
+  EXPECT_EQ(conf.gpu_hw_acceleration_device, "/dev/dri/renderD128");
+}
+
+TEST(ConfigManagerTest, ParseStreamNoneGpuData) {
+  ConfigManagerTest c_mgr;
+
+  const std::string gpu_json_str = R"json(
+  {
+      "logging_level": 0,
+      "function": "rx",
+      "gpu_hw_acceleration": "none",
+      "gpu_hw_acceleration_device": "",
+      "sender": [],
+      "receiver": []
+  }
+  )json";
+
+  c_mgr.parse_json_string(gpu_json_str);
+
+  Config conf = c_mgr.get_config();
+
+  EXPECT_EQ(conf.gpu_hw_acceleration, "none");
+  EXPECT_EQ(conf.gpu_hw_acceleration_device, "");
+}
+
+TEST(ConfigManagerTest, ParseStreamMultiviewer) {
+  ConfigManagerTest c_mgr;
+
+  const std::string gpu_json_str = R"json(
+  {
+      "logging_level": 0,
+      "function": "multiviewer",
+      "multiviewer_columns": 4,
+      "gpu_hw_acceleration": "none",
+      "gpu_hw_acceleration_device": "",
+      "sender": [],
+      "receiver": []
+  }
+  )json";
+
+  c_mgr.parse_json_string(gpu_json_str);
+
+  Config conf = c_mgr.get_config();
+
+  EXPECT_EQ(conf.function, "multiviewer");
+  EXPECT_EQ(conf.multiviewer_columns, 4);
+}
+
+TEST(ConfigManagerTest, ParseStreamMultiviewerDefault) {
+  ConfigManagerTest c_mgr;
+
+  const std::string gpu_json_str = R"json(
+  {
+      "logging_level": 0,
+      "function": "tx",
+      "gpu_hw_acceleration": "none",
+      "gpu_hw_acceleration_device": "",
+      "sender": [],
+      "receiver": []
+  }
+  )json";
+
+  c_mgr.parse_json_string(gpu_json_str);
+
+  Config conf = c_mgr.get_config();
+
+  EXPECT_EQ(conf.function, "tx");
+  EXPECT_EQ(conf.multiviewer_columns, 3);
 }
 
 TEST(ConfigManagerTest, ParseStreamInvalidData) {

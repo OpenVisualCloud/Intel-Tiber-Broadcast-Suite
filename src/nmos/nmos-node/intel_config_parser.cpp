@@ -36,6 +36,20 @@ int ConfigManager::parse_json_file(const std::string& file_path) {
         config.function = json_value.at(U("function")).as_string();
         config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();
 
+        if (config.function == "multiviewer") {
+            config.multiviewer_columns = json_value.at(U("multiviewer_columns")).as_integer();
+        }
+        else{
+            config.multiviewer_columns = 3;
+        }
+
+        if (config.gpu_hw_acceleration != "none") {
+            config.gpu_hw_acceleration_device = json_value.at(U("gpu_hw_acceleration_device")).as_string();
+        }
+        else{
+            config.gpu_hw_acceleration_device = "";
+        }
+
         for (const auto& sender : json_value.at(U("sender")).as_array()) {
             std::cout<<"Sender: "<<std::endl;
             config.senders.push_back(parse_stream(sender));
@@ -55,7 +69,9 @@ int ConfigManager::parse_json_file(const std::string& file_path) {
 void ConfigManager::print_config() const {
     std::cout << "Logging Level: " << config.logging_level << std::endl;
     std::cout << "Function: " << config.function << std::endl;
+    std::cout << "[if function is multiviewer] Multiviewer Columns: " << config.multiviewer_columns << std::endl;
     std::cout << "GPU HW Acceleration: " << config.gpu_hw_acceleration << std::endl;
+    std::cout << "[if gpu_hw_acceleration is not none] GPU HW Acceleration Device: " << config.gpu_hw_acceleration_device << std::endl;
 
     for (const auto& sender : config.senders) {
         std::cout << "Sender Video Frame Width: " << sender.payload.video.frame_width << std::endl;

@@ -1090,9 +1090,8 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
-            int multiviewer_columns = configIntel.function == "multiviewer" ? configIntel.multiviewer_columns : 3;
             // construct config for NMOS sender
-            const Config config = {{s}, ffmpeg_receiver_as_file_vector, configIntel.function, multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.logging_level};
+            const Config config = {{s}, ffmpeg_receiver_as_file_vector, configIntel.function, configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.logging_level};
 
             ffmpegThread1=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
 
@@ -1191,10 +1190,9 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
-            int multiviewer_columns = 3; //configIntel.function == "multiviewer" ? configIntel.multiviewer_columns : 3;
             // construct config for NMOS sender
             all_receivers.push_back(s);
-            const Config config = {ffmpeg_sender_as_file_vector,all_receivers,configIntel.function,multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
+            const Config config = {ffmpeg_sender_as_file_vector,all_receivers,configIntel.function,configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
 
             if ( all_receivers.size() < configIntel.receivers.size()) {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
