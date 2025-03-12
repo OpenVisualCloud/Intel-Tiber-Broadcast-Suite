@@ -25,6 +25,6 @@ void node_implementation_thread(nmos::node_model& model, nmos::experimental::con
 
 // This constructs all the callbacks used to integrate the example device-specific underlying implementation
 // into the server instance for the NMOS Node.
-nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate);
+nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, ConfigManager& config_manager, std::vector<Stream>& all_receivers, slog::base_gate& gate);
 
 #endif

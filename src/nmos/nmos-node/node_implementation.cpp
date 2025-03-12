@@ -1004,9 +1004,9 @@ nmos::events_ws_message_handler make_node_implementation_events_ws_message_handl
         }
     }, gate);
 }
-std::vector<Stream> all_receivers; //TODO: Need to be moved to a better place to avoid global variables
+
 // Connection API activation callback to perform application-specific operations to complete activation
-nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate)
+nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, ConfigManager& config_manager, std::vector<Stream>& all_receivers, slog::base_gate& gate)
 {
     auto handle_load_ca_certificates = nmos::make_load_ca_certificates_handler(model.settings, gate);
     // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
@@ -1017,7 +1017,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
     // this example uses this callback to update IS-12 Receiver-Monitor connection status
     auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
-    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &model, &config_manager, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &model, &config_manager, &all_receivers, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         if(id_type.second == nmos::types::sender)
@@ -1391,7 +1391,7 @@ namespace impl
 
 // This constructs all the callbacks used to integrate the example device-specific underlying implementation
 // into the server instance for the NMOS Node.
-nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, ConfigManager& config_manager, slog::base_gate& gate)
+nmos::experimental::node_implementation make_node_implementation(nmos::node_model& model, ConfigManager& config_manager,std::vector<Stream>& all_receivers, slog::base_gate& gate)
 {
     return nmos::experimental::node_implementation()
         .on_load_server_certificates(nmos::make_load_server_certificates_handler(model.settings, gate))
@@ -1403,7 +1403,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_validate_connection_resource_patch(make_node_implementation_patch_validator(gate)) // may be omitted if not required
         .on_resolve_auto(make_node_implementation_auto_resolver(model.settings, gate))
         .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings, gate))
-        .on_connection_activated(make_node_implementation_connection_activation_handler(model, config_manager, gate))
+        .on_connection_activated(make_node_implementation_connection_activation_handler(model, config_manager, all_receivers, gate))
         .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
         .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
 }
