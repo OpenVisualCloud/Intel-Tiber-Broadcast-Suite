@@ -1085,7 +1085,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
 
             auto gpu_hw_acceleration_device = "";
             if (configIntel.gpu_hw_acceleration == "intel") {
-                if (!configIntel.gpu_hw_acceleration_device.empty()) {
+                if (configIntel.gpu_hw_acceleration_device.empty()) {
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "GPU hardware acceleration device is not specified for Intel.";
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
@@ -1184,20 +1184,22 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             }
             auto gpu_hw_acceleration_device = "";
             if (configIntel.gpu_hw_acceleration == "intel") {
-                if (!configIntel.gpu_hw_acceleration_device.empty()) {
+                if (configIntel.gpu_hw_acceleration_device.empty()) {
                     slog::log<slog::severities::error>(gate, SLOG_FLF) << "GPU hardware acceleration device is not specified for Intel.";
                 }
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
             // construct config for NMOS sender
             app_resources.all_receivers.push_back(s);
-            const Config config = {ffmpeg_sender_as_file_vector,app_resources.all_receivers,configIntel.function,configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
+            const Config config = {ffmpeg_sender_as_file_vector,app_resources.all_receivers,configIntel.function,configIntel.multiviewer_columns, \
+                configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.logging_level};
 
             if ( app_resources.all_receivers.size() < configIntel.receivers.size()) {
-                slog::log<slog::severities::error>(gate, SLOG_FLF) << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
-                slog::log<slog::severities::error>(gate, SLOG_FLF) <<  "RECEIVERS NUMBER DOESN'T MATCH " << app_resources.all_receivers.size() << ":" << configIntel.receivers.size();
+                slog::log<slog::severities::info>(gate, SLOG_FLF) <<  "Waiting for connection to all declared receivers. Connected " << \
+                app_resources.all_receivers.size() << " receivers from declared " << configIntel.receivers.size() << " receivers";
             }else{
-                ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
+                ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), \
+                impl::fields::ffmpeg_grpc_server_port(model.settings), config);
                 app_resources.threads.push_back(std::move(ffmpegThread2));
             }
         }

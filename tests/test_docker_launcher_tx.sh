@@ -1,7 +1,15 @@
 #!/bin/bash
 
+if [ $# -ne 2 ]; then
+  echo "Usage: $0 <hostname/ip> <port> e.g. $0 192.168.2.1 50057"
+  exit 1
+fi
+
+HOSTNAME=$1
+PORT=$2
+
 docker run -it \
-   --user root\
+   --user root \
    --privileged \
    --device=/dev/vfio:/dev/vfio \
    --device=/dev/dri:/dev/dri \
@@ -18,4 +26,4 @@ docker run -it \
    --network=host \
    --ipc=host \
    -v /dev/shm:/dev/shm \
-      tiber-broadcast-suite localhost 50055
+   tiber-broadcast-suite "$HOSTNAME" "$PORT"
