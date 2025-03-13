@@ -10,6 +10,7 @@
   "device_tags": {
     "pipeline": ["rx"]
   },
+  "stream_loop": false,
   "function": "rx",
   "gpu_hw_acceleration": "none",
   "color_sampling": "YCbCr-4:2:2",
