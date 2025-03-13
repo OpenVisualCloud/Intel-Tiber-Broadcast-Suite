@@ -10,6 +10,7 @@
     "pipeline": ["rx"]
   },
   "function": "multiviewer",
+  "stream_loop": false,
   "multiviewer_columns": 3,
   "gpu_hw_acceleration": "none",
   "domain": "local",

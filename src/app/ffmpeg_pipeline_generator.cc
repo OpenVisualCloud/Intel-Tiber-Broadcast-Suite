@@ -445,6 +445,10 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
         pipeline_string += " -v debug";
     }
 
+    if (config.stream_loop == true) {
+        pipeline_string += " -stream_loop -1";
+    }
+
     if (config.gpu_hw_acceleration == "none") {
         pipeline_string += " -y";
     }
