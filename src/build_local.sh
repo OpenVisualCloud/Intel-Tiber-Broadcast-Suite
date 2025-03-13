@@ -79,7 +79,8 @@ function build_nmos_cpp_library () {
     cmake .. -DNMOS_CPP_USE_SUPPLIED_JSON_SCHEMA_VALIDATOR=ON \
     -DNMOS_CPP_USE_SUPPLIED_JWT_CPP=ON \
     -DNMOS_CPP_BUILD_EXAMPLES=OFF \
-    -DNMOS_CPP_BUILD_TESTS=OFF && \
+    -DNMOS_CPP_BUILD_TESTS=OFF \
+    -DCMAKE_BUILD_TYPE="Debug" && \
     make -j"$num_proc" && \
     make install
 }
@@ -88,9 +89,9 @@ function build_nmos_node() {
     cd "${SCRIPT_DIR}"/nmos/nmos-node
     mkdir -p build && cd build
     if [ "$UT_OPTION" == "-ut" ]; then
-        cmake .. -DENABLE_UNIT_TESTS=ON
+        cmake .. -DENABLE_UNIT_TESTS=ON -DCMAKE_BUILD_TYPE="Debug"
     else
-        cmake .. -DENABLE_UNIT_TESTS=OFF
+        cmake .. -DENABLE_UNIT_TESTS=OFF -DCMAKE_BUILD_TYPE="Debug"
     fi
     make -j"$num_proc"
 }

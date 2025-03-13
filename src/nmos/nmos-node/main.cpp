@@ -2,7 +2,7 @@
 #include <iostream>
 #include "cpprest/grant_type.h"
 #include "cpprest/token_endpoint_auth_method.h"
-#include "nmos/api_utils.h" // for make_api_listener
+#include "nmos/api_utils.h"
 #include "nmos/authorization_behaviour.h"
 #include "nmos/authorization_redirect_api.h"
 #include "nmos/authorization_state.h"
@@ -16,9 +16,8 @@
 #include "nmos/ocsp_state.h"
 #include "nmos/process_utils.h"
 #include "nmos/server.h"
-#include "nmos/server_utils.h" // for make_http_listener_config
+#include "nmos/server_utils.h"
 #include "node_implementation.h"
-// #include "config_params.hpp"
 
 #include "intel_config_parser.h"
 
@@ -41,6 +40,8 @@ int main(int argc, char* argv[])
 
     // Logging should all go through this logging gateway
     nmos::experimental::log_gate gate(error_log, access_log, log_model);
+
+    AppConnectionResources app_conn_resources;
 
     try
     {
@@ -115,7 +116,12 @@ int main(int argc, char* argv[])
 
         // Set up the callbacks between the node server and the underlying implementation
 
-        auto node_implementation = make_node_implementation(node_model, config_manager, gate);
+        
+
+        // auto node_implementation = make_node_implementation(node_model, config_manager, all_receivers, gate);
+        auto node_implementation = make_node_implementation(node_model, config_manager, app_conn_resources, gate);
+
+
 
 // only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config
@@ -209,6 +215,15 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
         return 1;
+    }
+
+    // Join threads in app_conn_resources.threads
+    for (auto& thread : app_conn_resources.threads)
+    {
+        if (thread.joinable())
+        {
+            thread.join();
+        }
     }
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
