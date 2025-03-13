@@ -41,6 +41,8 @@ int main(int argc, char* argv[])
     // Logging should all go through this logging gateway
     nmos::experimental::log_gate gate(error_log, access_log, log_model);
 
+    AppConnectionResources app_conn_resources;
+
     try
     {
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "Starting nmos-cpp node";
@@ -114,9 +116,12 @@ int main(int argc, char* argv[])
 
         // Set up the callbacks between the node server and the underlying implementation
 
-        std::vector<Stream> all_receivers;
+        
 
-        auto node_implementation = make_node_implementation(node_model, config_manager, all_receivers, gate);
+        // auto node_implementation = make_node_implementation(node_model, config_manager, all_receivers, gate);
+        auto node_implementation = make_node_implementation(node_model, config_manager, app_conn_resources, gate);
+
+
 
 // only implement communication with OCSP server if http_listener supports OCSP stapling
 // cf. preprocessor conditions in nmos::make_http_listener_config
@@ -210,6 +215,15 @@ int main(int argc, char* argv[])
     {
         slog::log<slog::severities::severe>(gate, SLOG_FLF) << "Unexpected unknown exception";
         return 1;
+    }
+
+    // Join threads in app_conn_resources.threads
+    for (auto& thread : app_conn_resources.threads)
+    {
+        if (thread.joinable())
+        {
+            thread.join();
+        }
     }
 
     slog::log<slog::severities::info>(gate, SLOG_FLF) << "Stopping nmos-cpp node";
