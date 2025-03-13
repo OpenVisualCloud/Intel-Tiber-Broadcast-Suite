@@ -33,6 +33,7 @@ int ConfigManager::parse_json_file(const std::string& file_path) {
 
         // Fill the Config struct
         config.logging_level = json_value.at(U("logging_level")).as_integer();
+        config.stream_loop = json_value.at(U("stream_loop")).as_bool();
         config.function = json_value.at(U("function")).as_string();
         config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();
 
@@ -72,6 +73,7 @@ void ConfigManager::print_config() const {
     std::cout << "[if function is multiviewer] Multiviewer Columns: " << config.multiviewer_columns << std::endl;
     std::cout << "GPU HW Acceleration: " << config.gpu_hw_acceleration << std::endl;
     std::cout << "[if gpu_hw_acceleration is not none] GPU HW Acceleration Device: " << config.gpu_hw_acceleration_device << std::endl;
+    std::cout << "Stream Loop: " << config.stream_loop << std::endl;
 
     for (const auto& sender : config.senders) {
         std::cout << "Sender Video Frame Width: " << sender.payload.video.frame_width << std::endl;
