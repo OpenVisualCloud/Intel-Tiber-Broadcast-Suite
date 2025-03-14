@@ -95,7 +95,7 @@ struct Config {
     std::string gpu_hw_acceleration; //intel, nvidia, none
     std::string gpu_hw_acceleration_device; // /dev/dri/renderD128
 
-    bool stream_loop; //true, false
+    int stream_loop; // number of times to loop the input stream
 
     int logging_level;
 };

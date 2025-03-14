@@ -34,9 +34,9 @@ int ConfigManager::parse_json_file(const std::string& file_path) {
         // Fill the Config struct
         config.logging_level = json_value.at(U("logging_level")).as_integer();
         if (json_value.has_field(U("stream_loop"))) {
-            config.stream_loop = json_value.at(U("stream_loop")).as_bool();
+            config.stream_loop = json_value.at(U("stream_loop")).as_integer();
         } else {
-            config.stream_loop = false;
+            config.stream_loop = 0;
         }
         config.function = json_value.at(U("function")).as_string();
         config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();

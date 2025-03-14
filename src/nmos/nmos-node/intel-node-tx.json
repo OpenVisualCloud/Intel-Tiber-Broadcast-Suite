@@ -10,7 +10,7 @@
     "pipeline": ["tx"]
   },
   "color_sampling": "YCbCr-4:2:2",
-  "stream_loop": false,
+  "stream_loop": -1,
   "function": "tx",
   "gpu_hw_acceleration": "none",
   "domain": "local",

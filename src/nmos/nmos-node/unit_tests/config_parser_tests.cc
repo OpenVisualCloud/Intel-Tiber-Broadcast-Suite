@@ -21,9 +21,9 @@ public:
             // Fill the Config struct
             config.logging_level = json_value.at(U("logging_level")).as_integer();
             if (json_value.has_field(U("stream_loop"))) {
-              config.stream_loop = json_value.at(U("stream_loop")).as_bool();
+              config.stream_loop = json_value.at(U("stream_loop")).as_integer();
             } else {
-              config.stream_loop = false;
+              config.stream_loop = 0;
             }
             config.function = json_value.at(U("function")).as_string();
             config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();
@@ -280,7 +280,7 @@ TEST(ConfigManagerTest, ParseStreamValidStreamLoop) {
       "function": "tx",
       "gpu_hw_acceleration": "none",
       "gpu_hw_acceleration_device": "",
-      "stream_loop": true,
+      "stream_loop": -1,
       "sender": [],
       "receiver": []
   }
@@ -289,7 +289,7 @@ TEST(ConfigManagerTest, ParseStreamValidStreamLoop) {
 
   Config conf = c.get_config();
 
-  EXPECT_EQ(conf.stream_loop, true);
+  EXPECT_EQ(conf.stream_loop, -1);
 }
 
 TEST(ConfigManagerTest, ParseStreamDefaultStreamLoop) {
@@ -309,7 +309,7 @@ TEST(ConfigManagerTest, ParseStreamDefaultStreamLoop) {
 
   Config conf = c.get_config();
 
-  EXPECT_EQ(conf.stream_loop, false);
+  EXPECT_EQ(conf.stream_loop, 0);
 }
 
 TEST(ConfigManagerTest, ParseStreamInvalidData) {

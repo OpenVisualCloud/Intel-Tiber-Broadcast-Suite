@@ -17,6 +17,7 @@ void fill_conf_sender(Config &config) {
     config.function = "tx";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = -1;
 
     Payload p = get_video_payload_common();
     {
@@ -55,6 +56,7 @@ void fill_conf_receiver(Config &config) {
     config.function = "rx";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = 0;
 
     Payload p = get_video_payload_common();
     {
@@ -94,6 +96,7 @@ void fill_conf_sender_mcm(Config &config) {
     config.function = "tx";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = 2;
 
     Payload p = get_video_payload_common();
     {
@@ -126,6 +129,7 @@ void fill_conf_receiver_mcm(Config &config) {
     config.function = "rx";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = 0;
 
     Payload p = get_video_payload_common();
     {
@@ -160,6 +164,7 @@ void fill_conf_multiviewer(Config &config) {
     config.gpu_hw_acceleration_device = "/dev/dri/renderD128";
     config.multiviewer_columns = 3;
     config.logging_level = 0;
+    config.stream_loop = 0;
 
     Payload p = get_video_payload_common();
     {
@@ -201,6 +206,7 @@ void fill_conf_convert(Config &config) {
     config.function = "rx";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = 0;
 
     {
         Stream s;
@@ -232,6 +238,7 @@ void fill_conf_recorder(Config &config) {
     config.function = "recorder";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = 0;
 
     Payload p = get_video_payload_common();
     {
@@ -269,6 +276,7 @@ void fill_conf_upscale(Config &config) {
     config.function = "upscale";
     config.gpu_hw_acceleration = "none";
     config.logging_level = 0;
+    config.stream_loop = 0;
 
     {
         Stream s;
@@ -306,7 +314,7 @@ TEST(FFmpegPipelineGeneratorTest, test_sender) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating sender pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_1.yuv -p_port 0000:4b:11.0 -p_sip 192.168.2.1 -udp_port 20000 -payload_type 112 -p_tx_ip 192.168.2.2 -f mtl_st20p - -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_2.yuv -p_port 0000:4b:11.0 -p_sip 192.168.2.1 -udp_port 20001 -payload_type 112 -p_tx_ip 192.168.2.2 -f mtl_st20p -";
+    std::string expected_string = " -stream_loop -1 -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_1.yuv -p_port 0000:4b:11.0 -p_sip 192.168.2.1 -udp_port 20000 -payload_type 112 -p_tx_ip 192.168.2.2 -f mtl_st20p - -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_2.yuv -p_port 0000:4b:11.0 -p_sip 192.168.2.1 -udp_port 20001 -payload_type 112 -p_tx_ip 192.168.2.2 -f mtl_st20p -";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -414,7 +422,7 @@ TEST(FFmpegPipelineGeneratorTest, test_mcm_sender) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating sender pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_1.yuv -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.11 -port 9002 -";
+    std::string expected_string = " -stream_loop 2 -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_1.yuv -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.11 -port 9002 -";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
