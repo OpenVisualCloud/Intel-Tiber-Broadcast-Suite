@@ -6,11 +6,22 @@
 
 COMPILE_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 num_proc=$(nproc)
+BUILD_TYPE="Release"
+UNIT_TESTING=false
 
-cmake -S "${COMPILE_DIR}" -B "${COMPILE_DIR}/build" && \
+# Parse input parameters
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --build_type) BUILD_TYPE="$2"; shift 2 ;;
+        --unit_testing) UNIT_TESTING=true; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+done
+
+cmake -S "${COMPILE_DIR}" -B "${COMPILE_DIR}/build" -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
 make -j"$num_proc" -C "${COMPILE_DIR}/build"
 
-if [[ "$1" == "--unit_testing" ]]; then
-cmake -S "${COMPILE_DIR}/unit_test" -B "${COMPILE_DIR}/unit_test/build" && \
-make -j"$num_proc" -C "${COMPILE_DIR}/unit_test/build" && ctest --test-dir "${COMPILE_DIR}/unit_test/build"
+if [[ "$UNIT_TESTING" == true ]]; then
+    cmake -S "${COMPILE_DIR}/unit_test" -B "${COMPILE_DIR}/unit_test/build" -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
+    make -j"$num_proc" -C "${COMPILE_DIR}/unit_test/build" && ctest --test-dir "${COMPILE_DIR}/unit_test/build"
 fi

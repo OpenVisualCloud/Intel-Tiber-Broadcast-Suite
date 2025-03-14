@@ -15,19 +15,26 @@ num_proc=$(nproc)
 
 # Function to display help message
 show_help() {
-  echo "Usage: $0 [-ut] [-h|--help]"
+  echo "Usage: $0 [-ut] [--build_type <type>] [-h|--help]"
   echo ""
   echo "Options:"
-  echo "  -ut        Build with unit tests enabled"
-  echo "  -h, --help Show this help message and exit"
+  echo "  -ut                Build with unit tests enabled"
+  echo "  --build_type <type> Specify the build type (e.g., Debug, Release)"
+  echo "  -h, --help         Show this help message and exit"
 }
 
 UT_OPTION=$1
+BUILD_TYPE="Release"
 
-if [ "$UT_OPTION" == "-h" ] || [ "$UT_OPTION" == "--help" ]; then
-  show_help
-  exit 0
-fi
+# Parse input parameters
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -ut) UT_OPTION="$1"; shift ;;
+        --build_type) BUILD_TYPE="$2"; shift 2 ;;
+        -h|--help) show_help; exit 0 ;;
+        *) echo "Unknown parameter passed: $1"; show_help; exit 1 ;;
+    esac
+done
 
 # Function to handle errors
 handle_error() {
@@ -50,6 +57,7 @@ function build_grpc() {
         -DgRPC_BUILD_TESTS=OFF \
         -DCMAKE_CXX_STANDARD=17 \
         -DCMAKE_INSTALL_PREFIX=$MY_INSTALL_DIR \
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
         ../..
     make -j"$num_proc"
     make install
@@ -59,9 +67,9 @@ function build_grpc() {
 function build_grpc_based_ffmpeg_app() {
     cd "${SCRIPT_DIR}"/gRPC || handle_error "Failed to change directory to gRPC"
     if [ "$UT_OPTION" == "-ut" ]; then
-        ./compile.sh --unit_testing
+        ./compile.sh --unit_testing  --build_type $BUILD_TYPE
     else
-        ./compile.sh
+        ./compile.sh  --build_type $BUILD_TYPE
     fi
 }
 
@@ -80,7 +88,7 @@ function build_nmos_cpp_library () {
     -DNMOS_CPP_USE_SUPPLIED_JWT_CPP=ON \
     -DNMOS_CPP_BUILD_EXAMPLES=OFF \
     -DNMOS_CPP_BUILD_TESTS=OFF \
-    -DCMAKE_BUILD_TYPE="Debug" && \
+    -DCMAKE_BUILD_TYPE=$BUILD_TYPE && \
     make -j"$num_proc" && \
     make install
 }
@@ -89,9 +97,9 @@ function build_nmos_node() {
     cd "${SCRIPT_DIR}"/nmos/nmos-node
     mkdir -p build && cd build
     if [ "$UT_OPTION" == "-ut" ]; then
-        cmake .. -DENABLE_UNIT_TESTS=ON -DCMAKE_BUILD_TYPE="Debug"
+        cmake .. -DENABLE_UNIT_TESTS=ON -DCMAKE_BUILD_TYPE=$BUILD_TYPE
     else
-        cmake .. -DENABLE_UNIT_TESTS=OFF -DCMAKE_BUILD_TYPE="Debug"
+        cmake .. -DENABLE_UNIT_TESTS=OFF -DCMAKE_BUILD_TYPE=$BUILD_TYPE
     fi
     make -j"$num_proc"
 }
