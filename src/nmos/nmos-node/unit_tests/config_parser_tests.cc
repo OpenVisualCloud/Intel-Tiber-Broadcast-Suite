@@ -20,9 +20,13 @@ public:
 
             // Fill the Config struct
             config.logging_level = json_value.at(U("logging_level")).as_integer();
+            if (json_value.has_field(U("stream_loop"))) {
+              config.stream_loop = json_value.at(U("stream_loop")).as_bool();
+            } else {
+              config.stream_loop = false;
+            }
             config.function = json_value.at(U("function")).as_string();
             config.gpu_hw_acceleration = json_value.at(U("gpu_hw_acceleration")).as_string();
-
             if (config.function == "multiviewer") {
               config.multiviewer_columns = json_value.at(U("multiviewer_columns")).as_integer();
             }
@@ -265,6 +269,47 @@ TEST(ConfigManagerTest, ParseStreamMultiviewerDefault) {
 
   EXPECT_EQ(conf.function, "tx");
   EXPECT_EQ(conf.multiviewer_columns, 3);
+}
+
+TEST(ConfigManagerTest, ParseStreamValidStreamLoop) {
+  ConfigManagerTest c;
+
+  const std::string stream_json = R"json(
+  {
+      "logging_level": 0,
+      "function": "tx",
+      "gpu_hw_acceleration": "none",
+      "gpu_hw_acceleration_device": "",
+      "stream_loop": true,
+      "sender": [],
+      "receiver": []
+  }
+  )json";
+  c.parse_json_string(stream_json);
+
+  Config conf = c.get_config();
+
+  EXPECT_EQ(conf.stream_loop, true);
+}
+
+TEST(ConfigManagerTest, ParseStreamDefaultStreamLoop) {
+  ConfigManagerTest c;
+
+  const std::string stream_json = R"json(
+  {
+      "logging_level": 0,
+      "function": "tx",
+      "gpu_hw_acceleration": "none",
+      "gpu_hw_acceleration_device": "",
+      "sender": [],
+      "receiver": []
+  }
+  )json";
+  c.parse_json_string(stream_json);
+
+  Config conf = c.get_config();
+
+  EXPECT_EQ(conf.stream_loop, false);
 }
 
 TEST(ConfigManagerTest, ParseStreamInvalidData) {
