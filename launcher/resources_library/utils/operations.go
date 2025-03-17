@@ -221,7 +221,7 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 			
 			Mounts: []mount.Mount{
 				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Videos, Target: "/videos"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri, Target: "/usr/local/lib/x86_64-linux-gnu/dri/"},
+				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri, Target: "/usr/local/lib/x86_64-linux-gnu/dri"},
 				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Kahawai, Target: "/tmp/kahawai_lcore.lock"},
 				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Devnull, Target: "/dev/null"},
 				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.TmpHugepages, Target: "/tmp/hugepages"},
@@ -233,7 +233,7 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 		}
 		hostConfig.Devices= []container.DeviceMapping{
 			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio, PathInContainer: "/dev/vfio"},
-			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri, PathInContainer: "/dev/dri"},
+			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Dri, PathInContainer: "/dev/dri"},
 		}
 	
 		networkConfig = &network.NetworkingConfig{

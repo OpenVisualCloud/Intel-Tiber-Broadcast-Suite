@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 
-k8s: true # use in both modes: k8s | docker
+k8s: false # use in both modes: k8s | docker
 configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
@@ -16,7 +16,7 @@ configuration: # Configuration should be used only for docker mode
         name: my_net_801f0
         ip: 192.168.2.1
     mediaProxyMcm:
-      imageAndTag:  mcm/media-proxy:latest
+      imageAndTag: mcm/media-proxy:latest
       interfaceName: eth0
       volumes:
         - /dev/vfio:/dev/vfio
