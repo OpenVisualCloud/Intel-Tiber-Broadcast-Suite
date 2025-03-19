@@ -56,7 +56,8 @@ configuration: # Configuration should be used only for docker mode
         - "http_proxy="
         - "https_proxy=" 
         - "VFIO_PORT_TX=0000:ca:11.0"
-      nmosConfigPath: /root/demo
+      nmosConfigPath: /root/repo/launcher/configuration_files
+      nmosConfigFileName: intel-node-example.json
       network: 
         enable: true
         name: my_net_801f0

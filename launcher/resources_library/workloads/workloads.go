@@ -57,6 +57,7 @@ type MediaProxyAgentConfig struct {
 	ImageAndTag         string            `yaml:"imageAndTag"`
 	EnvironmentVariables []string          `yaml:"environmentVariables"`
 	NmosConfigPath      string            `yaml:"nmosConfigPath"`
+	NmosConfigFileName  string            `yaml:"nmosConfigFileName"`
 	Network             NetworkConfig     `yaml:"network"`
   }
 

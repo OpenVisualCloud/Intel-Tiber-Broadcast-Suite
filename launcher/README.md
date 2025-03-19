@@ -92,6 +92,7 @@ configuration: # Configuration should be used only for docker mode
         - "https_proxy=" 
         - "VFIO_PORT_TX=0000:ca:11.0"
       nmosConfigPath: /root/demo
+      nmosConfigFileName: intel-node-example.json
       network: 
         enable: true
         name: my_net_801f0
@@ -107,8 +108,8 @@ Next, follow all guidelines [here](https://github.com/OpenVisualCloud/Media-Comm
 
 cd <repo>/launcher/cmd/
 go build main.go
-./main
-# Alternatively instead of go build main.go && ./main, you can type: go run main.go
+./main <pass path to file ./launcher/configuration_files/bcslauncher-k8s-config.yaml>
+# Alternatively instead of go build main.go && ./main, you can type: go run main.go <pass path to file ./launcher/configuration_files/bcslauncher-k8s-config.yaml>
 ```
 
 ### To Deploy on the cluster

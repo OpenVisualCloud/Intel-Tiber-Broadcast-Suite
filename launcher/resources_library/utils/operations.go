@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"github.com/docker/docker/api/types/container"
@@ -34,6 +35,9 @@ import (
 
 	bcsv1 "bcs.pod.launcher.intel/api/v1"
 )
+
+var fileMutex sync.Mutex
+
 
 func isImagePulled(ctx context.Context, cli *client.Client, imageName string) (error, bool) {
 	images, err := cli.ImageList(ctx, image.ListOptions{})
@@ -141,8 +145,50 @@ func removeContainer(ctx context.Context, cli *client.Client, containerID string
 	return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 }
 
+func updateNmosJsonFile(filePath string, ip string, port int) error {
+    fileMutex.Lock()
+    defer fileMutex.Unlock()
 
-func constructContainerConfig(containerInfo general.Containers) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
+    file, err := os.Open(filePath)
+    if err != nil {
+        return fmt.Errorf("error opening file: %w", err)
+    }
+    defer file.Close()
+
+	byteValue, err := io.ReadAll(file)
+    if err != nil {
+        return fmt.Errorf("error reading file: %w", err)
+    }
+
+    var config map[string]interface{}
+    err = json.Unmarshal(byteValue, &config)
+    if err != nil {
+        return fmt.Errorf("error unmarshalling JSON: %w", err)
+    }
+
+    config["ffmpeg_grpc_server_address"] = ip
+    config["ffmpeg_grpc_server_port"] = port
+
+    modifiedData, err := json.MarshalIndent(config, "", "  ")
+    if err != nil {
+        return fmt.Errorf("error marshalling JSON: %w", err)
+    }
+
+    err = os.WriteFile(filePath, modifiedData, 0644)
+    if err != nil {
+        return fmt.Errorf("error writing to file: %w", err)
+    }
+
+    fmt.Println("File updated successfully")
+    return nil
+}
+
+func FileExists(filePath string) bool {
+    _, err := os.Stat(filePath)
+    return !os.IsNotExist(err)
+}
+
+func constructContainerConfig(containerInfo general.Containers, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
 	var containerConfig *container.Config
 	var hostConfig *container.HostConfig
 	var networkConfig *network.NetworkingConfig
@@ -246,10 +292,25 @@ func constructContainerConfig(containerInfo general.Containers) (*container.Conf
 			},
 		}
 	case general.BcsPipelineNmosClient:
-		fmt.Printf(">> NmosClient: %+v\n", containerInfo.Configuration.WorkloadConfig.NmosClient)
+		
+		nmosFileNameJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName
+		nmosFilePathJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath + "/" + nmosFileNameJson
+		if !FileExists(nmosFilePathJson){
+			log.Error(errors.New("NMOS json file does not exist"), "NMOS json file does not exist")
+			return nil, nil, nil
+		}
+
+		errUpdateJson := updateNmosJsonFile(nmosFilePathJson,
+			containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP,
+			containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)
+		if errUpdateJson != nil {
+			log.Error(errUpdateJson, "Error updating NMOS json file")
+			return nil, nil, nil
+		}
+		configPathContainer := "config/"+nmosFileNameJson
 		containerConfig = &container.Config{
 			Image: containerInfo.Configuration.WorkloadConfig.NmosClient.ImageAndTag,
-			Cmd: []string{"config/node.json"},
+			Cmd: []string{configPathContainer},
 			Env: containerInfo.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables,
 			User:       "root",
 		}
@@ -311,7 +372,12 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 	}
 	// Define the container configuration
 
-	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo)
+	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
+
+	if containerConfig == nil || hostConfig == nil || networkConfig == nil {
+		// log.Error(errors.New("container configuration is nil"), "Failed to construct container configuration")
+		return errors.New("container configuration is nil")
+	}
 	// Create the container
 	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, nil, containerInfo.ContainerName)
 

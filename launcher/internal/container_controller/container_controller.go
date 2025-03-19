@@ -127,6 +127,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.ImageAndTag = config.WorkloadToBeRun.NmosClient.ImageAndTag
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables = config.WorkloadToBeRun.NmosClient.EnvironmentVariables
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName = config.WorkloadToBeRun.NmosClient.NmosConfigFileName
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
