@@ -138,6 +138,11 @@ int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipe
         if (is_rx) {
             pipeline_string += "-i ";
         }
+        if (!is_rx) {
+            if(st.payload.video.video_type != "rawvideo") {
+                pipeline_string += " -c:v " + st.payload.video.video_type + " ";
+            }
+        }
 
         pipeline_string += s.file.path;
         if (!s.file.path.empty() && s.file.path.back() != '/') {
@@ -219,6 +224,12 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
         }
     }
 
+    if (ffmpeg_append_payload(tx.payload, pipeline_string) != 0) {
+        pipeline_string.clear();
+        std::cout << "Error appending tx payload" << std::endl;
+        return 1;
+    }
+
     if (ffmpeg_append_stream_type(tx, false/*is_rx*/, idx, pipeline_string) != 0) {
         pipeline_string.clear();
         std::cout << "Error appending tx stream type" << std::endl;
@@ -260,7 +271,7 @@ int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &out
     for (int i = 0; i < receivers.size(); i++) {
         pipeline_string += "[" + std::to_string(i) + ":v]";
         if(intel_gpu){
-            pipeline_string += "hwupload,scale_qsv=";
+            pipeline_string += "hwupload=extra_hw_frames=1,scale_qsv=";
         }
         else{
             pipeline_string += "scale=";
@@ -286,8 +297,12 @@ int ffmpeg_append_multiviewer_process(std::vector<Stream> &receivers, Video &out
             pipeline_string += "|";
         }
     }
-    pipeline_string += ",format=y210le,format=yuv422p10le\"";
-
+    if(intel_gpu){
+        pipeline_string += ",hwdownload,format=y210le,format=" + output_video.pixel_format + "\"";
+    }
+    else{
+        pipeline_string += ",format=" + output_video.pixel_format + "\"";
+    }
     return 0;
 }
 
@@ -299,12 +314,12 @@ int ffmpeg_append_split_process(std::vector<Stream> &senders, uint32_t intel_gpu
     pipeline_string += ";";
     for (int i = 0; i < senders.size(); i++) {
         if(intel_gpu){
-            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=";
+            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + ",hwdownload,format=" + senders[i].payload.video.pixel_format + "[out_tmp" + std::to_string(i) + "];";
         }
         else{
-            pipeline_string += "[in" + std::to_string(i) + "]scale=";
+            pipeline_string += "[in" + std::to_string(i) + "]scale=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
         }
-        pipeline_string += std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
+        //pipeline_string += std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
     }
     pipeline_string += "\"";
 
@@ -495,5 +510,6 @@ int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
         std::cout << "Error: function " << config.function << " not supported yet" << std::endl;
         return 1;
     }
+    std::cout << "FFmpeg Pipeline: " << pipeline_string << std::endl;
     return 0;
 }

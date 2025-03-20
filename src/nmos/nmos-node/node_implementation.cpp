@@ -1190,7 +1190,11 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
             // construct config for NMOS sender
-            app_resources.all_receivers.push_back(s);
+            if ( app_resources.all_receivers.size() < configIntel.receivers.size()) {
+                app_resources.all_receivers.push_back(s);
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "New receiver added to the list. Total receivers: " << app_resources.all_receivers.size();
+            }
+
             const Config config = {ffmpeg_sender_as_file_vector,app_resources.all_receivers,configIntel.function,configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.stream_loop, configIntel.logging_level};
 
             if ( app_resources.all_receivers.size() < configIntel.receivers.size()) {
@@ -1200,6 +1204,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 ffmpegThread2=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), \
                 impl::fields::ffmpeg_grpc_server_port(model.settings), config);
                 app_resources.threads.push_back(std::move(ffmpegThread2));
+                app_resources.all_receivers.clear();
             }
         }
         connection_events_activation_handler(resource, connection_resource);
