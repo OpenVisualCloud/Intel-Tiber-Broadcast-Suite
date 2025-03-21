@@ -56,12 +56,25 @@ func init() {
 
 func main() {
 	ctx := ctrl.SetupSignalHandler()
-	launcherStartupConfig := "../configuration_files/bcslauncher-static-config.yaml"
-	_, err := os.Stat(launcherStartupConfig)
-	if os.IsNotExist(err) {
-		setupLog.Error(err, "File does not exist: ../configuration_files/bcslauncher-static-config.yaml")
+
+	if len(os.Args) < 2 {
+		fmt.Println("No argument provided. Please pass path to the configuration file bcslauncher-static-config.yaml.")
+		fmt.Println("Example: go run main.go ../configuration_files/bcslauncher-static-config.yaml")
+		fmt.Println("   or")
+		fmt.Println("Example: ./main ../configuration_files/bcslauncher-static-config.yaml")
 		os.Exit(1)
 	}
+
+	launcherStartupConfig := os.Args[1]
+	fmt.Println("Argument passed:", launcherStartupConfig)
+	// launcherStartupConfig := "../configuration_files/bcslauncher-static-config.yaml"
+	_, err := os.Stat(launcherStartupConfig)
+
+	if os.IsNotExist(err) {
+		setupLog.Error(err, "File does not exist", "file", launcherStartupConfig)
+		os.Exit(1)
+	}
+
 	fmt.Println("Launcher configuration file exists: ../configuration_files/bcslauncher-static-config.yaml")
 	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)
 	fmt.Println("Launcher mode: ", isKubernetesMode)
