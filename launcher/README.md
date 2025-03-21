@@ -35,8 +35,8 @@ Note that you have to adjust **NMOS** node configuration file. Examples with use
 Remember the path of above mentioned configuration NMOS file because it must be provided in the next config below: `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`
 
 ```json
-      nmosConfigPath: /root/demo
-      nmosConfigFileName: intel-node-example.json
+nmosConfigPath: /root/demo
+nmosConfigFileName: intel-node-example.json
 ```
 
 Edit this configuration file under path `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`:
@@ -117,8 +117,8 @@ Remember to export RX and TX vfio ports (consequently TX port for sender and RX 
 
 ``` bash
  # Use dpdk-devbind.py -s to check pci address of vfio device
- export VFIO_PORT_TX="0000:ca:11.0"
- export VFIO_PORT_RX="0000:ca:11.1"
+ export VFIO_PORT_TX="pci address"
+ export VFIO_PORT_RX="pci address"
 ```
 
 ```bash
