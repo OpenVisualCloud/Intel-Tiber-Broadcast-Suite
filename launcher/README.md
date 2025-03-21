@@ -35,8 +35,13 @@ Note that you have to adjust **NMOS** node configuration file. Examples with use
 Remember the path of above mentioned configuration NMOS file because it must be provided in the next config below: `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`
 
 ```json
+<<<<<<< HEAD
 nmosConfigPath: /root/demo
 nmosConfigFileName: intel-node-example.json
+=======
+      nmosConfigPath: /root/demo
+      nmosConfigFileName: intel-node-example.json
+>>>>>>> 67d4790 (Update readme)
 ```
 
 Edit this configuration file under path `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`:
