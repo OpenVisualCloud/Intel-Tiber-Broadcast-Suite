@@ -67,7 +67,6 @@ func main() {
 
 	launcherStartupConfig := os.Args[1]
 	fmt.Println("Argument passed:", launcherStartupConfig)
-	// launcherStartupConfig := "../configuration_files/bcslauncher-static-config.yaml"
 	_, err := os.Stat(launcherStartupConfig)
 
 	if os.IsNotExist(err) {
