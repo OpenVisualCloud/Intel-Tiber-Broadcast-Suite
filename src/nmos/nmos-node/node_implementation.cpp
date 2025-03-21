@@ -72,6 +72,9 @@ namespace tracker{
 
     std::vector<Stream> get_file_streams_receivers(const Config& config) {
         std::vector<Stream> file_streams;
+        if (config.receivers.empty()) {
+            std::cout<< "No receivers in config in get_file_streams_receivers" << std::endl<<std::flush;
+        }
         std::copy_if(config.receivers.begin(), config.receivers.end(), std::back_inserter(file_streams), [](const Stream& stream) {
             return stream.stream_type.type == stream_type::file;
         });
@@ -80,6 +83,9 @@ namespace tracker{
 
     std::vector<Stream> get_file_streams_senders(const Config& config) {
         std::vector<Stream> file_streams;
+        if (config.senders.empty()) {
+            std::cout<< "No senders in config in get_file_streams_senders" << std::endl<<std::flush;
+        }
         std::copy_if(config.senders.begin(), config.senders.end(), std::back_inserter(file_streams), [](const Stream& stream) {
             return stream.stream_type.type == stream_type::file;
         });
@@ -882,7 +888,6 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
 
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
-    //change
     const auto senders_count = impl::parse_count(impl::fields::senders_count(settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
     const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
     const auto sender_ports = impl::parse_ports(impl::fields::senders(settings));
@@ -967,61 +972,15 @@ nmos::connection_sender_transportfile_setter make_node_implementation_transportf
     };
 }
 
-// Example Events WebSocket API client message handler
-nmos::events_ws_message_handler make_node_implementation_events_ws_message_handler(const nmos::node_model& model, slog::base_gate& gate)
-{
-    const auto seed_id = nmos::experimental::fields::seed_id(model.settings);
-    const auto receivers_count = impl::parse_count(impl::fields::receivers_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
-    const auto receivers_count_total = std::accumulate(receivers_count.begin(), receivers_count.end(), 0);
-    const auto receiver_ports = impl::parse_ports(impl::fields::receivers(model.settings));
-    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
-    const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, receivers_count_total);
-
-    // the message handler will be used for all Events WebSocket connections, and each connection may potentially
-    // have subscriptions to a number of sources, for multiple receivers, so this example uses a handler adaptor
-    // that enables simple processing of "state" messages (events) per receiver
-    return nmos::experimental::make_events_ws_message_handler(model, [ws_receiver_ids, &gate](const nmos::resource& receiver, const nmos::resource& connection_receiver, const web::json::value& message)
-    {
-        const auto found = boost::range::find(ws_receiver_ids, connection_receiver.id);
-        if (ws_receiver_ids.end() != found)
-        {
-            const auto event_type = nmos::event_type(nmos::fields::state_event_type(message));
-            const auto& payload = nmos::fields::state_payload(message);
-
-            if (nmos::is_matching_event_type(nmos::event_types::wildcard(nmos::event_types::number), event_type))
-            {
-                const nmos::events_number value(nmos::fields::payload_number_value(payload).to_double(), nmos::fields::payload_number_scale(payload));
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Event received: " << value.scaled_value() << " (" << event_type.name << ")";
-            }
-            else if (nmos::is_matching_event_type(nmos::event_types::wildcard(nmos::event_types::string), event_type))
-            {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Event received: " << nmos::fields::payload_string_value(payload) << " (" << event_type.name << ")";
-            }
-            else if (nmos::is_matching_event_type(nmos::event_types::wildcard(nmos::event_types::boolean), event_type))
-            {
-                slog::log<slog::severities::more_info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Event received: " << std::boolalpha << nmos::fields::payload_boolean_value(payload) << " (" << event_type.name << ")";
-            }
-        }
-    }, gate);
-}
-
 // Connection API activation callback to perform application-specific operations to complete activation
 nmos::connection_activation_handler make_node_implementation_connection_activation_handler(nmos::node_model& model, ConfigManager& config_manager, AppConnectionResources& app_resources, slog::base_gate& gate)
 {
-    auto handle_load_ca_certificates = nmos::make_load_ca_certificates_handler(model.settings, gate);
-    // this example uses this callback to (un)subscribe a IS-07 Events WebSocket receiver when it is activated
-    // and, in addition to the message handler, specifies the optional close handler in order that any subsequent
-    // connection errors are reflected into the /active endpoint by setting master_enable to false
-    auto handle_events_ws_message = make_node_implementation_events_ws_message_handler(model, gate);
-    auto handle_close = nmos::experimental::make_events_ws_close_handler(model, gate);
-    auto connection_events_activation_handler = nmos::make_connection_events_websocket_activation_handler(handle_load_ca_certificates, handle_events_ws_message, handle_close, model.settings, gate);
-    // this example uses this callback to update IS-12 Receiver-Monitor connection status
-    auto receiver_monitor_connection_activation_handler = nmos::make_receiver_monitor_connection_activation_handler(model.control_protocol_resources);
-    return [connection_events_activation_handler, receiver_monitor_connection_activation_handler, &model, &config_manager, &app_resources, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
+    return [&model, &config_manager, &app_resources, &gate](const nmos::resource& resource, const nmos::resource& connection_resource)
     {
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         if(id_type.second == nmos::types::sender)
         {
+            std::cout<<"Connection API activation handler --- sender"<<std::endl<<std::flush;
             const char* vfio_port = "VFIO_PORT_TX";
             const char* vfio_port_value_tx = std::getenv(vfio_port);
             auto config_by_id = tracker::get_stream_info(id_type.first);
@@ -1036,6 +995,10 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto sender_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
             auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
             auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
+
+            std::cout << "Sender Source IP: " << sender_source_ip.serialize() << std::endl;
+            std::cout << "Receiver Destination IP: " << receiver_destination_ip.serialize() << std::endl;
+            std::cout << "Receiver Destination Port: " << receiver_destination_port.serialize() << std::endl;
 
             // this data are necessary to send via grpc to ffmpeg
             Video v;
@@ -1093,12 +1056,13 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             }
             // construct config for NMOS sender
             const Config config = {{s}, ffmpeg_receiver_as_file_vector, configIntel.function, configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.stream_loop, configIntel.logging_level};
-
+            std::cout<<"GRPC ADDRESS PORT: "<<impl::fields::ffmpeg_grpc_server_address(model.settings)<<":"<<impl::fields::ffmpeg_grpc_server_port(model.settings)<<std::endl;
             ffmpegThread1=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
             app_resources.threads.push_back(std::move(ffmpegThread1));
 }
         if(id_type.second == nmos::types::receiver)
         {
+            std::cout<<"Connection API activation handler --- receiver"<<std::endl<<std::flush;
             std::thread ffmpegThread2;
             const char* vfio_port = "VFIO_PORT_RX";
             const char* vfio_port_value_rx = std::getenv(vfio_port);
@@ -1112,6 +1076,11 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
             auto sender_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
             auto sender_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
+
+            std::cout << "Receiver Source IP: " << receiver_source_ip.serialize() << std::endl;
+            std::cout << "Sender Destination Port: " << sender_destination_port.serialize() << std::endl;
+            std::cout << "Sender Destination IP: " << sender_destination_ip.serialize() << std::endl;
+
             auto trasportfile_sdp = data[nmos::fields::endpoint_active][nmos::fields::transport_file][nmos::fields::data];
             std::cout<<utility::us2s(trasportfile_sdp.as_string());
             auto session_description = sdp::parse_session_description(utility::us2s(trasportfile_sdp.as_string()));
@@ -1184,6 +1153,9 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 stream_sender.payload.type = payload_type::video;
                 std::cout<<"Ffmpeg TX file -> frame_width: "<<stream_sender.payload.video.frame_width<<std::endl;
             }
+            if (ffmpeg_sender_as_file_vector.empty()) {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "No ffmpeg senders of stream_type::File found.";
+            }
             auto gpu_hw_acceleration_device = "";
             if (configIntel.gpu_hw_acceleration == "intel") {
                 if (configIntel.gpu_hw_acceleration_device.empty()) {
@@ -1196,7 +1168,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 app_resources.all_receivers.push_back(s);
                 slog::log<slog::severities::info>(gate, SLOG_FLF) << "New receiver added to the list. Total receivers: " << app_resources.all_receivers.size();
             }
-
             const Config config = {ffmpeg_sender_as_file_vector,app_resources.all_receivers,configIntel.function,configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration,gpu_hw_acceleration_device, configIntel.stream_loop, configIntel.logging_level};
 
             if ( app_resources.all_receivers.size() < configIntel.receivers.size()) {
@@ -1209,8 +1180,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 app_resources.all_receivers.clear();
             }
         }
-        connection_events_activation_handler(resource, connection_resource);
-        receiver_monitor_connection_activation_handler(connection_resource);
     };
 }
 

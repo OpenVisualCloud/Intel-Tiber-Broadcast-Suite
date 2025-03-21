@@ -30,6 +30,15 @@ In case of kuberenetes, MediaProxy/MCM things should only be run once and BCS po
 
 ### To Run containers on single node
 
+Note that you have to adjust **NMOS** node configuration file. Examples with use cases you can find under the path `<repo>/tests` or `<repo>/launcher/configuration_files` (Files in json format).
+
+Remember the path of above mentioned configuration NMOS file because it must be provided in the next config below: `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`
+
+```json
+nmosConfigPath: /root/demo
+nmosConfigFileName: intel-node-example.json
+```
+
 Edit this configuration file under path `<repo>/launcher/configuration_files/bcslauncher-static-config.yaml`:
 
 ```yaml
@@ -39,7 +48,7 @@ Edit this configuration file under path `<repo>/launcher/configuration_files/bcs
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 
-k8s: true # use in both modes: k8s | docker
+k8s: false
 configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
@@ -104,6 +113,14 @@ configuration: # Configuration should be used only for docker mode
 Run `<repo>/first_run.sh` script then run `<repo>/build.sh`.
 Next, follow all guidelines [here](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/media-proxy/README.md)
 
+Remember to export RX and TX vfio ports (consequently TX port for sender and RX port por receiver):
+
+``` bash
+ # Use dpdk-devbind.py -s to check pci address of vfio device
+ export VFIO_PORT_TX="pci address"
+ export VFIO_PORT_RX="pci address"
+```
+
 ```bash
 
 cd <repo>/launcher/cmd/
@@ -113,6 +130,7 @@ go build main.go
 ```
 
 ### To Deploy on the cluster
+
 Follow instructions to build minikube cluster: [here](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/media-proxy/README.md)
 **Build image:**
 
