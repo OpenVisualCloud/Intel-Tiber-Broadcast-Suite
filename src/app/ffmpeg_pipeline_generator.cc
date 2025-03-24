@@ -139,8 +139,14 @@ int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipe
             pipeline_string += "-i ";
         }
         if (!is_rx) {
-            if(st.payload.video.video_type != "rawvideo") {
-                pipeline_string += " -c:v " + st.payload.video.video_type + " ";
+            if(st.payload.video.video_type == "rawvideo") {
+                pipeline_string += "-video_size " + std::to_string(st.payload.video.frame_width) + "x" + std::to_string(st.payload.video.frame_height);
+                pipeline_string += " -pix_fmt " + st.payload.video.pixel_format;
+                pipeline_string += " -r " + std::to_string(st.payload.video.frame_rate.numerator) + "/" + std::to_string(st.payload.video.frame_rate.denominator);
+                pipeline_string += " -f rawvideo ";
+            }
+            else if (!st.payload.video.video_type.empty()) {
+                pipeline_string += "-c:v " + st.payload.video.video_type + " ";
             }
         }
 
@@ -222,12 +228,6 @@ int ffmpeg_combine_rx_tx(Stream &rx, Stream &tx, int idx, std::string &pipeline_
             std::cout << "Error appending tx payload" << std::endl;
             return 1;
         }
-    }
-
-    if (ffmpeg_append_payload(tx.payload, pipeline_string) != 0) {
-        pipeline_string.clear();
-        std::cout << "Error appending tx payload" << std::endl;
-        return 1;
     }
 
     if (ffmpeg_append_stream_type(tx, false/*is_rx*/, idx, pipeline_string) != 0) {
@@ -319,15 +319,11 @@ int ffmpeg_append_split_process(std::vector<Stream> &senders, uint32_t intel_gpu
         else{
             pipeline_string += "[in" + std::to_string(i) + "]scale=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
         }
-        //pipeline_string += std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
     }
     pipeline_string += "\"";
 
     for (int i = 0; i < senders.size(); i++) {
         pipeline_string += " -map \"[out" + std::to_string(i) + "]\"";
-        if(senders[i].payload.video.video_type != "rawvideo") {
-            pipeline_string += " -c:v " + senders[i].payload.video.video_type;
-        }
         ffmpeg_append_stream_type(senders[i], false /*is_rx*/, i, pipeline_string);
     }
     return 0;
@@ -457,7 +453,7 @@ int ffmpeg_append_upscale(Config &config, std::string &pipeline_string) {
 int ffmpeg_generate_pipeline(Config &config, std::string &pipeline_string) {
     if (config.logging_level > 0) {
         // TODO: add more logging level
-        pipeline_string += " -v debug";
+        pipeline_string += " -v debug ";
     }
 
     if (config.stream_loop != 0) {
