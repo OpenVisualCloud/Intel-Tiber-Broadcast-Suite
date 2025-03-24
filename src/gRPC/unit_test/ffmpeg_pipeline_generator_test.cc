@@ -225,6 +225,7 @@ void fill_conf_convert(Config &config) {
         s.payload.video.frame_width = 1280;
         s.payload.video.frame_height = 720;
         s.payload.video.pixel_format = "yuv422p";
+        s.payload.video.video_type = "x264";
         s.payload.video.frame_rate = {5, 1};
 
         s.stream_type.type = stream_type::file;
@@ -327,7 +328,7 @@ TEST(FFmpegPipelineGeneratorTest, test_receiver) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating receiver pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -p_port 0000:4b:11.1 -p_sip 192.168.2.2 -udp_port 20000 -payload_type 112 -p_rx_ip 192.168.2.1 -f mtl_st20p -i \"0\" /home/test/recv/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -p_port 0000:4b:11.1 -p_sip 192.168.2.2 -udp_port 20001 -payload_type 112 -p_rx_ip 192.168.2.1 -f mtl_st20p -i \"1\" 1920x1080p10le_2.yuv";
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -p_port 0000:4b:11.1 -p_sip 192.168.2.2 -udp_port 20000 -payload_type 112 -p_rx_ip 192.168.2.1 -f mtl_st20p -i \"0\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /home/test/recv/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -p_port 0000:4b:11.1 -p_sip 192.168.2.2 -udp_port 20001 -payload_type 112 -p_rx_ip 192.168.2.1 -f mtl_st20p -i \"1\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo 1920x1080p10le_2.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -340,7 +341,7 @@ TEST(FFmpegPipelineGeneratorTest, test_multiviewer) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating multiviewer pipeline" << std::endl;
     }
-    std::string expected_string = " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]hwupload,scale_qsv=640:360[out0];[1:v]hwupload,scale_qsv=640:360[out1];[2:v]hwupload,scale_qsv=640:360[out2];[3:v]hwupload,scale_qsv=640:360[out3];[4:v]hwupload,scale_qsv=640:360[out4];[5:v]hwupload,scale_qsv=640:360[out5];[6:v]hwupload,scale_qsv=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack_qsv=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=y210le,format=yuv422p10le\" /videos/recv/1920x1080p10le_1.yuv";
+    std::string expected_string = " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out0];[1:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out1];[2:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out2];[3:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out3];[4:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out4];[5:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out5];[6:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack_qsv=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,hwdownload,format=y210le,format=yuv422p10le\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /videos/recv/1920x1080p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -356,7 +357,7 @@ TEST(FFmpegPipelineGeneratorTest, test_multiviewer_2) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating multiviewer pipeline" << std::endl;
     }
-    std::string expected_string = " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv -i /videos/compressed720p.mp4 -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]hwupload,scale_qsv=640:360[out0];[1:v]hwupload,scale_qsv=640:360[out1];[2:v]hwupload,scale_qsv=640:360[out2];[3:v]hwupload,scale_qsv=640:360[out3];[4:v]hwupload,scale_qsv=640:360[out4];[5:v]hwupload,scale_qsv=640:360[out5];[6:v]hwupload,scale_qsv=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack_qsv=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=y210le,format=yuv422p10le\" /videos/recv/1920x1080p10le_1.yuv";
+    std::string expected_string = " -y -qsv_device /dev/dri/renderD128 -hwaccel qsv -i /videos/compressed720p.mp4 -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out0];[1:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out1];[2:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out2];[3:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out3];[4:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out4];[5:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out5];[6:v]hwupload=extra_hw_frames=1,scale_qsv=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack_qsv=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,hwdownload,format=y210le,format=yuv422p10le\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /videos/recv/1920x1080p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -370,7 +371,7 @@ TEST(FFmpegPipelineGeneratorTest, test_multiviewer_3) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating multiviewer pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]scale=640:360[out0];[1:v]scale=640:360[out1];[2:v]scale=640:360[out2];[3:v]scale=640:360[out3];[4:v]scale=640:360[out4];[5:v]scale=640:360[out5];[6:v]scale=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=y210le,format=yuv422p10le\" /videos/recv/1920x1080p10le_1.yuv";
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_2.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"[0:v]scale=640:360[out0];[1:v]scale=640:360[out1];[2:v]scale=640:360[out2];[3:v]scale=640:360[out3];[4:v]scale=640:360[out4];[5:v]scale=640:360[out5];[6:v]scale=640:360[out6];[out0][out1][out2][out3][out4][out5][out6]xstack=inputs=7:layout=0_0|640_0|1280_0|0_360|640_360|1280_360|0_720,format=yuv422p10le\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /videos/recv/1920x1080p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -383,7 +384,7 @@ TEST(FFmpegPipelineGeneratorTest, test_convert) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -pix_fmt yuv422p -vf scale=1280x720 -r 5/1 /videos/recv/1920x1080p10le_1.mp4";   
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -pix_fmt yuv422p -vf scale=1280x720 -r 5/1 -c:v x264 /videos/recv/1920x1080p10le_1.mp4";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -396,7 +397,7 @@ TEST(FFmpegPipelineGeneratorTest, test_recorder) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"split=2[in0][in1];[in0]scale=640:360[out0];[in1]scale=1280:720[out1];\" -map \"[out0]\" /videos/recv/recv_1.yuv -map \"[out1]\" -c:v h263p /videos/recv/recv_2.mov";   
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"split=2[in0][in1];[in0]scale=640:360[out0];[in1]scale=1280:720[out1];\" -map \"[out0]\" -video_size 640x360 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /videos/recv/recv_1.yuv -map \"[out1]\" -c:v h263p /videos/recv/recv_2.mov";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -435,7 +436,7 @@ TEST(FFmpegPipelineGeneratorTest, test_mcm_receiver) {
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating receiver pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.10 -port 9002 -i \"0\" /home/test/recv/1920x1080p10le_1.yuv";
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -f mcm -conn_type st2110 -transport st2110-20 -transport_pixel_format yuv422p10rfc4175 -ip_addr 192.168.96.10 -port 9002 -i \"0\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /home/test/recv/1920x1080p10le_1.yuv";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 

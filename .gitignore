@@ -11,6 +11,8 @@ NVMUpdatePackage
 *.sdp
 grpc
 nmos-cpp*
+src/nmos/nmos-is05-controller/receiver.json
+src/nmos/nmos-is05-controller/sender.json
 
 # pipeline configuration and input files
 *.yuv
