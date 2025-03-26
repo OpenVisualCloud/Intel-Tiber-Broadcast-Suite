@@ -59,6 +59,8 @@ type MediaProxyAgentConfig struct {
 	NmosConfigPath      string            `yaml:"nmosConfigPath"`
 	NmosConfigFileName  string            `yaml:"nmosConfigFileName"`
 	Network             NetworkConfig     `yaml:"network"`
+	FfmpegConectionAddress string		  `yaml:"ffmpegConectionAddress"`
+	FfmpegConnectionPort  string		  `yaml:"ffmpegConnectionPort"`
   }
 
   type NetworkConfig struct {

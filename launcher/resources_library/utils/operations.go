@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
+	"bcs.pod.launcher.intel/resources_library/resources/nmos"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
@@ -145,42 +146,40 @@ func removeContainer(ctx context.Context, cli *client.Client, containerID string
 	return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 }
 
-func updateNmosJsonFile(filePath string, ip string, port int) error {
-    fileMutex.Lock()
-    defer fileMutex.Unlock()
+func updateNmosJsonFile(filePath string, ip string, port string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println("Error opening file:", err)
+		return err
+	}
+	defer file.Close()
 
-    file, err := os.Open(filePath)
-    if err != nil {
-        return fmt.Errorf("error opening file: %w", err)
-    }
-    defer file.Close()
+	byteValue, _ := io.ReadAll(file)
 
-	byteValue, err := io.ReadAll(file)
-    if err != nil {
-        return fmt.Errorf("error reading file: %w", err)
-    }
+	var config nmos.Config
+	err = json.Unmarshal(byteValue, &config)
+	if err != nil {
+		fmt.Println("Error unmarshalling JSON:", err)
+		return err
+	}
 
-    var config map[string]interface{}
-    err = json.Unmarshal(byteValue, &config)
-    if err != nil {
-        return fmt.Errorf("error unmarshalling JSON: %w", err)
-    }
+	config.FfmpegGrpcServerAddress = ip
+	config.FfmpegGrpcServerPort = port
 
-    config["ffmpeg_grpc_server_address"] = ip
-    config["ffmpeg_grpc_server_port"] = port
+	updatedJson, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshalling JSON:", err)
+		return err
+	}
 
-    modifiedData, err := json.MarshalIndent(config, "", "  ")
-    if err != nil {
-        return fmt.Errorf("error marshalling JSON: %w", err)
-    }
+	err = os.WriteFile(filePath, updatedJson, 0644)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return err
+	}
 
-    err = os.WriteFile(filePath, modifiedData, 0644)
-    if err != nil {
-        return fmt.Errorf("error writing to file: %w", err)
-    }
-
-    fmt.Println("File updated successfully")
-    return nil
+	fmt.Println("Updated configuration saved to ", filePath)
+	return nil
 }
 
 func FileExists(filePath string) bool {
@@ -188,7 +187,7 @@ func FileExists(filePath string) bool {
     return !os.IsNotExist(err)
 }
 
-func constructContainerConfig(containerInfo general.Containers, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
+func constructContainerConfig(containerInfo *general.Containers, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
 	var containerConfig *container.Config
 	var hostConfig *container.HostConfig
 	var networkConfig *network.NetworkingConfig
@@ -292,22 +291,20 @@ func constructContainerConfig(containerInfo general.Containers, log logr.Logger)
 			},
 		}
 	case general.BcsPipelineNmosClient:
-		
 		nmosFileNameJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName
 		nmosFilePathJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath + "/" + nmosFileNameJson
 		if !FileExists(nmosFilePathJson){
 			log.Error(errors.New("NMOS json file does not exist"), "NMOS json file does not exist")
 			return nil, nil, nil
 		}
-
 		errUpdateJson := updateNmosJsonFile(nmosFilePathJson,
-			containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP,
-			containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)
+			containerInfo.Configuration.WorkloadConfig.NmosClient.FfmpegConectionAddress,
+			containerInfo.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort)
 		if errUpdateJson != nil {
 			log.Error(errUpdateJson, "Error updating NMOS json file")
 			return nil, nil, nil
 		}
-		configPathContainer := "config/"+nmosFileNameJson
+		configPathContainer := "config/" + nmosFileNameJson
 		containerConfig = &container.Config{
 			Image: containerInfo.Configuration.WorkloadConfig.NmosClient.ImageAndTag,
 			Cmd: []string{configPathContainer},
@@ -337,7 +334,7 @@ func constructContainerConfig(containerInfo general.Containers, log logr.Logger)
 	return containerConfig, hostConfig, networkConfig
 }
 
-func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo general.Containers) error {
+func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo *general.Containers) error {
 	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
 		log.Error(err, "Failed to read container status (if it is in running state)")
@@ -371,6 +368,7 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 		return err
 	}
 	// Define the container configuration
+	fmt.Println("--------------------------------------------------------------", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)
 
 	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
 
