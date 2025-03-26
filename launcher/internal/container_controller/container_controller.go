@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-// This package will be exploited in task SDBQ-1261
 package containercontroller
 
 import (
 	"context"
 	"reflect"
+	"strconv"
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/utils"
@@ -89,7 +89,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = config.RunOnce.MediaProxyAgent.Network.Name
 		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.IP = config.RunOnce.MediaProxyAgent.Network.IP
 
-		err := utils.CreateAndRunContainer(ctx, d.cli, log, mcmAgentContainer)
+		err := utils.CreateAndRunContainer(ctx, d.cli, log, &mcmAgentContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer MCM MediaProxy Agent!")
 			return err
@@ -110,7 +110,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Name = config.RunOnce.MediaProxyMcm.Network.Name
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.IP = config.RunOnce.MediaProxyMcm.Network.IP
 		
-		err := utils.CreateAndRunContainer(ctx, d.cli, log, mediaProxyContainer)
+		err := utils.CreateAndRunContainer(ctx, d.cli, log, &mediaProxyContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer MCM MediaProxy!")
 			return err
@@ -127,11 +127,14 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.ImageAndTag = config.WorkloadToBeRun.NmosClient.ImageAndTag
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables = config.WorkloadToBeRun.NmosClient.EnvironmentVariables
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName = config.WorkloadToBeRun.NmosClient.NmosConfigFileName
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
-		
-		err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsNmosContainer)
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConectionAddress = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort = strconv.Itoa(config.WorkloadToBeRun.FfmpegPipeline.GRPCPort)
+
+		err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsNmosContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer!")
 			return err
@@ -163,7 +166,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name = config.WorkloadToBeRun.FfmpegPipeline.Network.Name
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
 
-	err = utils.CreateAndRunContainer(ctx, d.cli, log, bcsPipelinesContainer)
+	err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsPipelinesContainer)
 	if err != nil {
 		log.Error(err, "Failed to create contianer!")
 		return err
