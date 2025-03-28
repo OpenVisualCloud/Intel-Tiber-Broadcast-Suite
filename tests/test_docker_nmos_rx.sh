@@ -1,5 +1,29 @@
 #!/bin/bash
 
+if [ -z "$1" ]; then
+  echo "Usage: $0 <video_type>"
+  exit 1
+fi
+
+case $1 in
+  "raw")
+    format=""
+    ;;
+  "h264")
+    format="-h264"
+    ;;
+  "h265")
+    format="-h265"
+    ;;
+  *)
+    echo "Invalid option: $2"
+    echo "Valid options are: raw, h264, h265"
+    exit 1
+    ;;
+esac
+
+config_file="intel-node-rx${format}.json"
+
 docker run -it \
    --user root\
    --privileged \
@@ -19,4 +43,4 @@ docker run -it \
    --network=host \
    --ipc=host \
    -v /dev/shm:/dev/shm \
-      tiber-broadcast-suite-nmos-node config/intel-node-rx.json
+      tiber-broadcast-suite-nmos-node config/$config_file
