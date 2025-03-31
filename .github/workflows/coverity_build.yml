@@ -21,6 +21,7 @@ env:
   VERSION: ${{ github.sha }} 
 jobs:
   build:
+      if: github.repository == 'OpenVisualCloud/Intel-Tiber-Broadcast-Suite'
       name: 'coverity'
       runs-on: ubuntu-latest
       timeout-minutes: 90
@@ -56,3 +57,9 @@ jobs:
           with:
             name: coverity-scan--details
             path: '${{ github.workspace }}/analysis-details.txt'
+      if: github.repository != 'OpenVisualCloud/Intel-Tiber-Broadcast-Suite'
+      name: 'coverity'
+      runs-on: ubuntu-latest
+      steps:
+        # temporary solution remove as soon as possible
+        - run: echo "coverity cannot run on forked branches"
