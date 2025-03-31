@@ -20,7 +20,16 @@ env:
   DESCRIPTION: ${{ github.ref_name }}
   VERSION: ${{ github.sha }} 
 jobs:
+  skip-build:
+    if: github.event_name == 'pull_request' && github.repository != 'OpenVisualCloud/Intel-Tiber-Broadcast-Suite'
+    runs-on: ubuntu-latest
+    name: 'coverity'
+    steps:
+      - name: check repo
+        run: |
+          echo "This workflow is only for the OpenVisualCloud/Intel-Tiber-Broadcast-Suite repo"
   build:
+      if: github.repository == 'OpenVisualCloud/Intel-Tiber-Broadcast-Suite'
       name: 'coverity'
       runs-on: ubuntu-latest
       timeout-minutes: 90
