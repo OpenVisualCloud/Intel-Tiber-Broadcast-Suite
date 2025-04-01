@@ -50,6 +50,8 @@ jobs:
         - name: 'Handle failure: add fix comment, commit, and create PR'
           if: failure() && github.event_name == 'push'
           run: .github/coverity/fix.sh
+          env:
+            GH_TOKEN: ${{ github.token }}
 
         - name: 'coverity: server upload'
           if: github.event_name == 'schedule'
