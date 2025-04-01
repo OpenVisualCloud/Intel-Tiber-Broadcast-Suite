@@ -1,6 +1,7 @@
 echo "#fix me " | cat - .github/coverity/cov_build > temp && mv temp .github/coverity/cov_build
 git config --global user.name "github-actions[bot]"
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
+git remote set-url origin https://x-access-token:${TOKEN}@github.com/${REPO}
 git checkout -b cov-build-fix
 git add .github/coverity/cov_build
 git commit -m "Add fix comment to .github/coverity/cov_build"
