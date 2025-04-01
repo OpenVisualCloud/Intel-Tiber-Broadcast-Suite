@@ -12,16 +12,6 @@ on:
         default: 'main'
         type: string
 
-jobs:
-  build:
-    name: 'coverity'
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      # Existing steps here...
-
-
-
 permissions:
   contents: read
 env:
