@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 env:
   COVERITY_PROJECT: 'Intel-Tiber-Broadcast-Suite'
   COVERITY_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
@@ -48,7 +49,7 @@ jobs:
           run: .github/coverity/cov-build.sh all
 
         - name: 'Handle failure: add fix comment, commit, and create PR'
-          if: failure() && github.event_name == 'push'
+          if: failure()
           run: .github/coverity/fix.sh
           env:
             GH_TOKEN: ${{ github.token }}
