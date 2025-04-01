@@ -52,6 +52,7 @@ jobs:
           if: failure()
           run: .github/coverity/fix.sh
           env:
+            GH_TOKEN: ${{ github.token }}
             TOKEN: ${{ github.token }}
             REPO: ${{ github.repository }}
 
