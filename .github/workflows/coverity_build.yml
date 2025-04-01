@@ -1,6 +1,8 @@
 name: Coverity scan
-
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
@@ -9,7 +11,16 @@ on:
         description: 'Branch to run scans on'
         default: 'main'
         type: string
-  pull_request:
+
+jobs:
+  build:
+    name: 'coverity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # Existing steps here...
+
+
 
 permissions:
   contents: read
@@ -45,6 +56,10 @@ jobs:
           
         - name: 'coverity: build code'
           run: .github/coverity/cov-build.sh all
+
+        - name: 'Handle failure: add fix comment, commit, and create PR'
+          if: failure() && github.event_name == 'push'
+          run: .github/coverity/fix.sh
 
         - name: 'coverity: server upload'
           if: github.event_name == 'schedule'
