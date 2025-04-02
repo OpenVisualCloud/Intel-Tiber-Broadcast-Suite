@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 env:
   COVERITY_PROJECT: 'Intel-Tiber-Broadcast-Suite'
   COVERITY_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
