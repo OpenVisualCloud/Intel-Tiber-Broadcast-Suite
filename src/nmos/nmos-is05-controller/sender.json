@@ -6,17 +6,17 @@
     },
     "transport_params": [
         {
-            "destination_ip": "232.105.26.177",
+            "destination_ip": "192.168.2.7",
             "destination_port": 20000,
             "rtp_enabled": true,
-            "source_ip": "auto",
+            "source_ip": "192.168.2.6",
             "source_port": 20000
         },
         {
-            "destination_ip": "232.105.26.177",
+            "destination_ip": "192.168.2.7",
             "destination_port": 20000,
             "rtp_enabled": true,
-            "source_ip": "auto",
+            "source_ip": "192.168.2.6",
             "source_port": 20000
         }
     ]

@@ -1024,7 +1024,9 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
         {
             const char* vfio_port = "VFIO_PORT_TX";
             const char* vfio_port_value_tx = std::getenv(vfio_port);
-            if (!vfio_port_value_tx) {
+            auto config_by_id = tracker::get_stream_info(id_type.first);
+            if (!vfio_port_value_tx && config_by_id.stream_type.type != stream_type::mcm) {
+                // if the stream type is not mcm, then vfio_port_value_tx should be set
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "VFIO_PORT_TX environment variable is not set. You should export one of the virtual function interface port values.";
                 return;
             }
@@ -1036,7 +1038,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
 
             // this data are necessary to send via grpc to ffmpeg
-            auto config_by_id = tracker::get_stream_info(id_type.first);
             Video v;
             v.frame_width=config_by_id.payload.video.frame_width;
             v.frame_height=config_by_id.payload.video.frame_height;
@@ -1051,7 +1052,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
                 s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
                 s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-                s.stream_type.mcm.ip=sender_source_ip.as_string();
+                s.stream_type.mcm.ip=receiver_destination_ip.as_string();
                 s.stream_type.mcm.port=receiver_destination_port.as_integer();
                 s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
             }
@@ -1101,7 +1102,9 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             std::thread ffmpegThread2;
             const char* vfio_port = "VFIO_PORT_RX";
             const char* vfio_port_value_rx = std::getenv(vfio_port);
-            if (!vfio_port_value_rx) {
+            auto config_by_id = tracker::get_stream_info(id_type.first);
+            if (!vfio_port_value_rx && config_by_id.stream_type.type != stream_type::mcm) {
+                // if the stream type is not mcm, then vfio_port_value_rx should be set
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "VFIO_PORT_RX environment variable is not set. You should export one of the virtual function interface port values.";
                 return;
             }
@@ -1132,7 +1135,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto fps_denominator = nmos::details::parse_exactframerate(sdp::fields::value(*fps).as_string()).denominator();
 
             // this data are necessary to send via grpc to ffmpeg
-            auto config_by_id = tracker::get_stream_info(id_type.first);
             config_manager.print_config();
 
             Video v;
@@ -1153,7 +1155,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
                 s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
                 s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-                s.stream_type.mcm.ip=receiver_source_ip.as_string();
+                s.stream_type.mcm.ip=destination_addr;
                 s.stream_type.mcm.port=sender_destination_port.as_integer();
                 s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
             }
