@@ -28,7 +28,10 @@ jobs:
     - name: "Build: gRPC and nmos"
       working-directory: "${{ github.workspace }}/src"
       run: |
-        sudo apt-get install -y git cmake libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
+        sudo apt-get install -y git wget libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
+        wget -q -O cmake-linux.sh https://github.com/Kitware/CMake/releases/download/v3.30.3/cmake-3.30.3-linux-x86_64.sh
+        sh cmake-linux.sh -- --skip-license --prefix=$HOME/.local
+        rm cmake-linux.sh
         sudo ./build_local.sh -ut
     - name: "grpc unit tests" 
       working-directory: "${{ github.workspace }}/src/gRPC/unit_test/build"
