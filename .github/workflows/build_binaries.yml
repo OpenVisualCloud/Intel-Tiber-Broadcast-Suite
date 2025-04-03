@@ -80,10 +80,8 @@ jobs:
 
     - name: "grpc unit tests"
       run: |
-        ls 
-        ./FFmpegPipelineGeneratorTests
-        ./FFmpegWrapperServiceTests
+        sudo chmod +x ./FFmpegPipelineGeneratorTests && ./FFmpegPipelineGeneratorTests
+        sudo chmod +x ./FFmpegWrapperServiceTests && ./FFmpegWrapperServiceTests
     - name: "nmos unit tests"
       run: |
-        ls
-        ./NmosNodeTests
+        sudo chmod +x ./NmosNodeTests && ./NmosNodeTests
