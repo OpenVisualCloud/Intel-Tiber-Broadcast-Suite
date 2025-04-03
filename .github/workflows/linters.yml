@@ -8,9 +8,6 @@ on:
   push:
     branches: [ 'main' ]
 
-env:
-  HADOLINT_RESULTS_FILE: 'hadolint.sarif'
-
 permissions:
   contents: read
 defaults:

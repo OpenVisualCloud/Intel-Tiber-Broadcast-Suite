@@ -35,16 +35,16 @@ jobs:
     - name: "Cache unit test binaries"
       uses: actions/cache@v3
       with:
-      path: |
-        "${{ github.workspace }}/src/gRPC/unit_test/build"
-        "${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests"
-      key: bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
+        path: |
+          ${{ github.workspace }}/src/gRPC/unit_test/build
+          ${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests
+        key: bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
 
     - name: 'upload gRpc binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: grpc-nmos-bin
-        path: | 
+        path: |
           '${{ github.workspace }}/src/gRPC/build/*'
           '${{ github.workspace }}/src/nmos/nmos-node/build/*'
           '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
@@ -75,9 +75,8 @@ jobs:
     - name: "Retrieve Cached Binaries"
       uses: actions/cache@v3
       with:
-      path: |
-        "${{ github.workspace }}"
-      key: bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
+        path: ${{ github.workspace }}
+        key: bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
 
     - name: "grpc unit tests"
       run: |
