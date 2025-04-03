@@ -23,20 +23,20 @@ static int serialize_config_json(const Config &input_config, std::string &output
     try {
         nlohmann::json config_json = input_config;
         //Dump json to string
-        std::cout << "Starting to dump json" << std::endl<< std::flush;
+        std::cout << "Starting to dump json" << std::endl;
         output_string = config_json.dump();
-        std::cout << "JSON output string: " << std::endl << output_string << std::endl << std::flush;
+        std::cout << "JSON output string: " << std::endl << output_string << std::endl;
     }
     catch (const nlohmann::json::parse_error &e) {
-        std::cout << "JSON parse error: " << e.what() << std::endl<< std::flush;
+        std::cout << "JSON parse error: " << e.what() << std::endl;
         return 1;
     }
     catch (const nlohmann::json::type_error &e) {
-        std::cout << "JSON type error: " << e.what() << std::endl<< std::flush;
+        std::cout << "JSON type error: " << e.what() << std::endl;
         return 1;
     }
     catch (const std::exception &e) {
-        std::cout << "Exception: " << e.what() << std::endl<< std::flush;
+        std::cout << "Exception: " << e.what() << std::endl;
         return 1;
     }
     return 0;
