@@ -28,6 +28,10 @@ jobs:
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
       with:
         egress-policy: audit
+
+    - name: 'setup: checkout repo'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
     - name: Lint Code Base
       uses: github/super-linter/slim@4e51915f4a812abf59fed160bb14595c0a38a9e7 # v6
       env:
@@ -43,9 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LOG_LEVEL: WARN
     
-
-    - name: 'setup: checkout repo'
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
 #     - name: 'setup: sarif output folder'
 #       run: mkdir -p "${{ github.workspace }}/sarif"
