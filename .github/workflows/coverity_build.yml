@@ -9,7 +9,6 @@ on:
         description: 'Branch to run scans on'
         default: 'main'
         type: string
-  pull_request:
 
 permissions:
   contents: read
