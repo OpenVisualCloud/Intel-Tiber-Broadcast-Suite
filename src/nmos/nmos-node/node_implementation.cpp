@@ -73,7 +73,7 @@ namespace tracker{
     std::vector<Stream> get_file_streams_receivers(const Config& config) {
         std::vector<Stream> file_streams;
         if (config.receivers.empty()) {
-            std::cout<< "No receivers in config in get_file_streams_receivers" << std::endl<<std::flush;
+            std::cout<< "No receivers in config in get_file_streams_receivers" << std::endl;
         }
         std::copy_if(config.receivers.begin(), config.receivers.end(), std::back_inserter(file_streams), [](const Stream& stream) {
             return stream.stream_type.type == stream_type::file;
@@ -84,7 +84,7 @@ namespace tracker{
     std::vector<Stream> get_file_streams_senders(const Config& config) {
         std::vector<Stream> file_streams;
         if (config.senders.empty()) {
-            std::cout<< "No senders in config in get_file_streams_senders" << std::endl<<std::flush;
+            std::cout<< "No senders in config in get_file_streams_senders" << std::endl;
         }
         std::copy_if(config.senders.begin(), config.senders.end(), std::back_inserter(file_streams), [](const Stream& stream) {
             return stream.stream_type.type == stream_type::file;
@@ -980,7 +980,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         if(id_type.second == nmos::types::sender)
         {
-            std::cout<<"Connection API activation handler --- sender"<<std::endl<<std::flush;
+            std::cout<<"Connection API activation handler --- sender"<<std::endl;
             const char* vfio_port = "VFIO_PORT_TX";
             const char* vfio_port_value_tx = std::getenv(vfio_port);
             auto config_by_id = tracker::get_stream_info(id_type.first);
@@ -1062,7 +1062,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
 }
         if(id_type.second == nmos::types::receiver)
         {
-            std::cout<<"Connection API activation handler --- receiver"<<std::endl<<std::flush;
+            std::cout<<"Connection API activation handler --- receiver"<<std::endl;
             std::thread ffmpegThread2;
             const char* vfio_port = "VFIO_PORT_RX";
             const char* vfio_port_value_rx = std::getenv(vfio_port);

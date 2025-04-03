@@ -100,11 +100,11 @@ std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& con
     std::vector<std::pair<std::string, std::string>> result;
 
     if (config.receivers.empty()) {
-        std::cout<< "No receivers in config in commitConfigs" << std::endl<<std::flush;
+        std::cout<< "No receivers in config in commitConfigs" << std::endl;
     }
 
     if (config.senders.empty()) {
-        std::cout<< "No senders in config in commitConfigs" << std::endl<<std::flush;
+        std::cout<< "No senders in config in commitConfigs" << std::endl;
     }
     
     std::string json_str;
@@ -112,7 +112,7 @@ std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& con
         result.push_back({"json", json_str});
     }
     else {
-        std::cout << "Error serializing Config to json, trying previos solution" << std::endl<<std::flush;
+        std::cout << "Error serializing Config to json, trying previos solution" << std::endl;
     };
 
     return result;
