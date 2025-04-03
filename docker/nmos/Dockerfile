@@ -101,6 +101,7 @@ ENV \
 
 ##Copy required files from build container
 COPY --from=build-stage /tmp/buildout /home
+COPY scripts/entrypoint.sh /home/entrypoint.sh
 
 ##Update container with latest patches and needed packages
 RUN apt-get update && \
@@ -135,5 +136,6 @@ HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "bcs-nmos-node" || exi
 
 USER "nmos"
 
-WORKDIR /home/
-ENTRYPOINT ["./bcs-nmos-node"]
+RUN chmod +x /home/entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
