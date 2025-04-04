@@ -129,8 +129,8 @@ namespace impl
         // senders, receivers: controls which kinds of sender and receiver are instantiated by the example node
         // the values must be an array of unique strings identifying the kinds of 'port', like ["v", "a", "d"], see impl::ports
         // when omitted, all ports are instantiated
-        const web::json::field_as_value_or senders{ U("senders"), {} };
-        const web::json::field_as_value_or receivers{ U("receivers"), {} };
+        // const web::json::field_as_value_or senders{ U("senders"), {} };
+        // const web::json::field_as_value_or receivers{ U("receivers"), {} };
 
         const web::json::field_as_array sender{ U("sender") };
         const web::json::field_as_array receiver{ U("receiver") };
@@ -138,8 +138,8 @@ namespace impl
         // coresponding arrays for senders, receivers that provide count by type of port.
         // example: for senders: ["v", "a", "d"], the senders_count: [3, 1, 1] should be defined.
         // it means that there are 3 senders of type video, 1 sender of type audio and 1 sender of type data
-        const web::json::field_as_value_or senders_count{ U("senders_count"), {} };
-        const web::json::field_as_value_or receivers_count{ U("receivers_count"), {} };
+        // const web::json::field_as_value_or senders_count{ U("senders_count"), {} };
+        // const web::json::field_as_value_or receivers_count{ U("receivers_count"), {} };
 
         // sender_payload_type, receiver_payload_type: controls the payload_type of senders and receivers
         // TODO: change the reference to Config by stream sender or receiver
@@ -203,24 +203,8 @@ namespace impl
         // video/SMPTE2022-6
         const port mux{ U("m") };
 
-        // example measurement event
-        const port temperature{ U("t") };
-        // example boolean event
-        const port burn{ U("b") };
-        // example string event
-        const port nonsense{ U("s") };
-        // example number/enum event
-        const port catcall{ U("c") };
-
         const std::vector<port> rtp{ video, audio, data, mux };
-        const std::vector<port> ws{ temperature, burn, nonsense, catcall };
-        const std::vector<port> all{ boost::copy_range<std::vector<port>>(boost::range::join(rtp, ws)) };
     }
-
-    bool is_rtp_port(const port& port);
-    bool is_ws_port(const port& port);
-    std::vector<port> parse_ports(const web::json::value& value);
-    std::vector<int> parse_count(const web::json::value& value);
 
     const std::vector<nmos::channel> channels_repeat{
         { U("Left Channel"), nmos::channel_symbols::L },
@@ -249,18 +233,13 @@ namespace impl
 
     // add an example "natural grouping" hint to a sender or receiver
     void insert_group_hint(nmos::resource& resource, const port& port, int index);
-
-    // specific event types used by the example node
-    const auto temperature_Celsius = nmos::event_types::measurement(U("temperature"), U("C"));
-    const auto temperature_wildcard = nmos::event_types::measurement(U("temperature"), nmos::event_types::wildcard);
-    const auto catcall = nmos::event_types::named_enum(nmos::event_types::number, U("caterwaul"));
 }
 
 // forward declarations for node_implementation_thread
 void node_implementation_init(nmos::node_model& model, nmos::experimental::control_protocol_state& control_protocol_state, ConfigManager& config_manager, slog::base_gate& gate);
 void node_implementation_run(nmos::node_model& model, slog::base_gate& gate);
-nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings, slog::base_gate& gate);
-nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings, slog::base_gate& gate);
+nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings, ConfigManager& config_manager, slog::base_gate& gate);
+nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings, ConfigManager& config_manager, slog::base_gate& gate);
 
 struct node_implementation_init_exception {};
 
@@ -326,19 +305,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     auto receiver_arr_length = configIntel.receivers.size();
     auto receiver_arr = configIntel.receivers;
 
-    //change
-    const auto senders_count = impl::parse_count(impl::fields::senders_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
-    const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
-    //change
-    const auto receivers_count = impl::parse_count(impl::fields::receivers_count(model.settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
-    const auto receivers_count_total = std::accumulate(receivers_count.begin(), receivers_count.end(), 0);
-    const auto sender_ports = impl::parse_ports(impl::fields::senders(model.settings));
-    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
-    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_ws_port));
-    const auto receiver_ports = impl::parse_ports(impl::fields::receivers(model.settings));
-    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_rtp_port));
-    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(receiver_ports | boost::adaptors::filtered(impl::is_ws_port));
-
+    const std::vector<impl::port> media_ports = { impl::ports::video };
+ 
     //generic values for whole node
     // const auto interlace_mode = impl::get_interlace_mode(model.settings);
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
@@ -362,15 +330,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     // any delay between updates to the model resources is unnecessary unless for debugging purposes
     const unsigned int delay_millis{ 0 };
 
-    if (senders_count.size() != sender_ports.size()){
-        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "the length of arrays of senders and senders_count differs. Check JSON configuration";
-        throw node_implementation_init_exception();
-    }
-    if (receivers_count.size() != receiver_ports.size()){
-        slog::log<slog::severities::severe>(gate, SLOG_FLF) << "the length of arrays of receivers and receivers_count differs. Check JSON configuration";
-        throw node_implementation_init_exception();
-    }
-
     // it is important that the model be locked before inserting, updating or deleting a resource
     // and that the the node behaviour thread be notified after doing so
     const auto insert_resource_after = [&model, &lock](unsigned int milliseconds, nmos::resources& resources, nmos::resource&& resource, slog::base_gate& gate)
@@ -391,8 +350,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         return success;
     };
 
-    const auto resolve_auto = make_node_implementation_auto_resolver(model.settings, gate);
-    const auto set_transportfile = make_node_implementation_transportfile_setter(model.node_resources, model.settings, gate);
+    const auto resolve_auto = make_node_implementation_auto_resolver(model.settings, config_manager, gate);
+    const auto set_transportfile = make_node_implementation_transportfile_setter(model.node_resources, model.settings, config_manager, gate);
 
     const auto clocks = web::json::value_of({ nmos::make_internal_clock(nmos::clock_names::clk0) });
     // filter network interfaces to those that correspond to the specified host_addresses
@@ -439,26 +398,33 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const auto interface_names = smpte2022_7
         ? std::vector<utility::string_t>{ primary_interface.name, secondary_interface.name }
         : std::vector<utility::string_t>{ primary_interface.name };
+
     {
         // For simplified NMOS and BCS needs, only one device = pipeline is required.
         slog::log<slog::severities::info>(gate, SLOG_FLF) << "DEVICE";
-        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, senders_count_total);
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "SENDERS_TOTAL = " << senders_count_total;
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << "RECEIVERS_TOTAL = " << receivers_count_total;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "SENDERS_TOTAL = " << sender_arr_length;
+        slog::log<slog::severities::info>(gate, SLOG_FLF) << "RECEIVERS_TOTAL = " << receiver_arr_length;
 
-        if (0 <= nmos::fields::events_port(model.settings)) boost::range::push_back(sender_ids, impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, senders_count_total));
-        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, receiver_ports, receivers_count_total);
+        auto sender_ids = impl::make_ids(seed_id, nmos::types::sender, media_ports, sender_arr_length);
+        auto receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, media_ports, receiver_arr_length);
+
         auto device = nmos::make_device(device_id, node_id, sender_ids, receiver_ids, model.settings);
+
         device.data[nmos::fields::tags] = impl::fields::device_tags(model.settings);
+
         if (!insert_resource_after(delay_millis, model.node_resources, std::move(device), gate)) throw node_implementation_init_exception();
     }
 
-    for (const auto& port : rtp_sender_ports)
+    // currently only media_port video is supported, in next iterations, the support of audio will be implemented
+    for (const auto& port : media_ports)
     {
-        // senders_count[senders_iterator] is the total count of senders by port type - video/audio/data/mux
-        // Change to length of sender array instaed of sender_count
         for (int index = 0; index < sender_arr_length; ++index)
         {
+            if (sender_arr_length[index].stream_type.type == stream_type::file)
+            {
+                std::cout<< "Sender stream type is file" << std::endl;
+                continue;
+            }
             const auto source_id = impl::make_id(seed_id, nmos::types::source, port, index);
             const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
             const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
@@ -491,7 +457,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             {
                 source = nmos::make_video_source(source_id, device_id, nmos::clock_names::clk0, frame_rate_parsed_rational, model.settings);
             }
-            else if (impl::ports::audio == port) // not yet supported or add to release notes
+            else if (impl::ports::audio == port) // not yet supported
             {
                 const auto channels = boost::copy_range<std::vector<nmos::channel>>(boost::irange(0, channel_count) | boost::adaptors::transformed([&](const int& index)
                 {
@@ -574,6 +540,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             if (!insert_resource_after(delay_millis, model.node_resources, std::move(flow), gate)) throw node_implementation_init_exception();
 
             const auto manifest_href = nmos::experimental::make_manifest_api_manifest(sender_id, model.settings);
+            std::cout<< "Make sender"<< std::endl;
             auto sender = nmos::make_sender(sender_id, flow_id, nmos::transports::rtp, device_id, manifest_href.to_string(), interface_names, model.settings);
             tracker::add_stream_info(sender_id,senderDefinition);
             // hm, could add nmos::make_video_jxsv_sender to encapsulate this?
@@ -616,8 +583,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
         }
     }
 
-    for (const auto& port : rtp_receiver_ports) {
+    for (const auto& port : media_ports) {
         for (int index = 0; index < receiver_arr_length; ++index){
+            if (receiver_arr_length[index].stream_type.type == stream_type::file)
+            {
+                std::cout<< "Receiver stream type is file" << std::endl;
+                continue;
+            }
+
             const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
             auto configIntel = config_manager.get_config();
             auto receiverDefinition = configIntel.receivers[index];
@@ -822,28 +795,27 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
 }
 
 // Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
-nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings, slog::base_gate& gate)
+nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings, ConfigManager& config_manager, slog::base_gate& gate)
 {
     using web::json::value;
 
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto device_id = impl::make_id(seed_id, nmos::types::device);
-    const auto senders_count = impl::parse_count(impl::fields::senders_count(settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
-    const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
-    const auto receivers_count = impl::parse_count(impl::fields::receivers_count(settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
-    const auto receivers_count_total = std::accumulate(receivers_count.begin(), receivers_count.end(), 0);
-    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::senders(settings)) | boost::adaptors::filtered(impl::is_rtp_port));
-    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, senders_count_total);
-    const auto ws_sender_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::senders(settings)) | boost::adaptors::filtered(impl::is_ws_port));
-    const auto ws_sender_ids = impl::make_ids(seed_id, nmos::types::sender, ws_sender_ports, senders_count_total);
-    const auto ws_sender_uri = nmos::make_events_ws_api_connection_uri(device_id, settings);
-    const auto rtp_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_rtp_port));
-    const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, rtp_receiver_ports, receivers_count_total);
-    const auto ws_receiver_ports = boost::copy_range<std::vector<impl::port>>(impl::parse_ports(impl::fields::receivers(settings)) | boost::adaptors::filtered(impl::is_ws_port));
-    const auto ws_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, ws_receiver_ports, receivers_count_total);
+
+    auto configIntel = config_manager.get_config();
+    auto sender_arr_length = configIntel.senders.size();
+    auto sender_arr = configIntel.senders;
+    auto receiver_arr_length = configIntel.receivers.size();
+    auto receiver_arr = configIntel.receivers;
+
+    const std::vector<impl::port> media_ports = { impl::ports::video };
+
+    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, media_ports, sender_arr_length);
+    const auto rtp_receiver_ids = impl::make_ids(seed_id, nmos::types::receiver, media_ports, receiver_arr_length);
+
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, ws_sender_ids, ws_sender_uri, ws_receiver_ids, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+    return [rtp_sender_ids, rtp_receiver_ids, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
         // this code relies on the specific constraints added by node_implementation_thread
@@ -869,35 +841,30 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
-        else if (ws_sender_ids.end() != boost::range::find(ws_sender_ids, id_type.first))
-        {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_uri, [&] { return value::string(ws_sender_uri.to_string()); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
-        }
-        else if (ws_receiver_ids.end() != boost::range::find(ws_receiver_ids, id_type.first))
-        {
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::connection_authorization, [&] { return value::boolean(false); });
-        }
     };
 }
 
 // Example Connection API activation callback to update senders' /transportfile endpoint - captures node_resources by reference!
-nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings, slog::base_gate& gate)
+nmos::connection_sender_transportfile_setter make_node_implementation_transportfile_setter(const nmos::resources& node_resources, const nmos::settings& settings, ConfigManager& config_manager, slog::base_gate& gate)
 {
     using web::json::value;
 
     const auto seed_id = nmos::experimental::fields::seed_id(settings);
     const auto node_id = impl::make_id(seed_id, nmos::types::node);
-    const auto senders_count = impl::parse_count(impl::fields::senders_count(settings)); // max count of elements = 4 (because 4 types of ports: video, audio, mux, data)
-    const auto senders_count_total = std::accumulate(senders_count.begin(), senders_count.end(), 0);
-    const auto sender_ports = impl::parse_ports(impl::fields::senders(settings));
-    const auto rtp_sender_ports = boost::copy_range<std::vector<impl::port>>(sender_ports | boost::adaptors::filtered(impl::is_rtp_port));
-    const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, rtp_sender_ports, senders_count_total);
-    const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, rtp_sender_ports, senders_count_total);
-    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, rtp_sender_ports, senders_count_total);
+
+    auto configIntel = config_manager.get_config();
+    auto sender_arr_length = configIntel.senders.size();
+    auto sender_arr = configIntel.senders;
+
+    const std::vector<impl::port> media_ports = { impl::ports::video };
+
+    const auto rtp_source_ids = impl::make_ids(seed_id, nmos::types::source, media_ports, sender_arr_length);
+    const auto rtp_flow_ids = impl::make_ids(seed_id, nmos::types::flow, media_ports, sender_arr_length);
+    const auto rtp_sender_ids = impl::make_ids(seed_id, nmos::types::sender, media_ports, sender_arr_length);
+
     const uint64_t payload_type_video = impl::fields::sender_payload_type(settings);
     // as part of activation, the example sender /transportfile should be updated based on the active transport parameters
-    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids,payload_type_video,&gate](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
+    return [&node_resources, node_id, rtp_source_ids, rtp_flow_ids, rtp_sender_ids, payload_type_video,&gate](const nmos::resource& sender, const nmos::resource& connection_sender, value& endpoint_transportfile)
     {
         const auto found = boost::range::find(rtp_sender_ids, connection_sender.id);
         if (rtp_sender_ids.end() != found)
@@ -1183,42 +1150,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
     };
 }
 
-// Example Channel Mapping API callback to perform application-specific validation of the merged active map during a POST /map/activations request
-nmos::details::channelmapping_output_map_validator make_node_implementation_map_validator()
-{
-    // this example uses an 'empty' std::function because it does not need to do any validation
-    // beyond what is expressed by the schemas and /caps endpoints
-    return{};
-}
-
-// Example Channel Mapping API activation callback to perform application-specific operations to complete activation
-nmos::channelmapping_activation_handler make_node_implementation_channelmapping_activation_handler(slog::base_gate& gate)
-{
-    return [&gate](const nmos::resource& channelmapping_output)
-    {
-        const auto output_id = nmos::fields::channelmapping_id(channelmapping_output.data);
-        slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Activating output: " << output_id;
-    };
-}
-
-// Example Control Protocol WebSocket API property changed callback to perform application-specific operations to complete the property changed
-nmos::control_protocol_property_changed_handler make_node_implementation_control_protocol_property_changed_handler(slog::base_gate& gate)
-{
-    return [&gate](const nmos::resource& resource, const utility::string_t& property_name, int index)
-    {
-        if (index >= 0)
-        {
-            // sequence property
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " index " << index << " has value changed to " << resource.data.at(property_name).at(index).serialize();
-        }
-        else
-        {
-            // non-sequence property
-            slog::log<slog::severities::info>(gate, SLOG_FLF) << nmos::stash_category(impl::categories::node_implementation) << "Property: " << property_name << " has value changed to " << resource.data.at(property_name).serialize();
-        }
-    };
-}
-
 namespace impl
 {
     nmos::interlace_mode get_interlace_mode(const nmos::rational& frame_rate, uint32_t frame_height, const nmos::settings& settings)
@@ -1236,34 +1167,6 @@ namespace impl
         return (nmos::rates::rate25 == frame_rate || nmos::rates::rate29_97 == frame_rate) && 1080 == frame_height
             ? nmos::interlace_modes::interlaced_tff
             : nmos::interlace_modes::progressive;
-    }
-
-    bool is_rtp_port(const impl::port& port)
-    {
-        return impl::ports::rtp.end() != boost::range::find(impl::ports::rtp, port);
-    }
-
-    bool is_ws_port(const impl::port& port)
-    {
-        return impl::ports::ws.end() != boost::range::find(impl::ports::ws, port);
-    }
-
-    std::vector<port> parse_ports(const web::json::value& value)
-    {
-        if (value.is_null()) return impl::ports::all;
-        return boost::copy_range<std::vector<port>>(value.as_array() | boost::adaptors::transformed([&](const web::json::value& value)
-        {
-            return port{ value.as_string() };
-        }));
-    }
-
-    std::vector<int> parse_count(const web::json::value& value)
-    {
-        if (value.is_null()) return {};
-        return boost::copy_range<std::vector<int>>(value.as_array() | boost::adaptors::transformed([&](const web::json::value& value)
-        {
-            return int{ value.as_integer() };
-        }));
     }
 
     // find interface with the specified address
@@ -1377,9 +1280,7 @@ nmos::experimental::node_implementation make_node_implementation(nmos::node_mode
         .on_registration_changed(make_node_implementation_registration_handler(gate)) // may be omitted if not required
         .on_parse_transport_file(make_node_implementation_transport_file_parser(gate)) // may be omitted if the default is sufficient
         .on_validate_connection_resource_patch(make_node_implementation_patch_validator(gate)) // may be omitted if not required
-        .on_resolve_auto(make_node_implementation_auto_resolver(model.settings, gate))
-        .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings, gate))
-        .on_connection_activated(make_node_implementation_connection_activation_handler(model, config_manager, app_resources, gate))
-        .on_validate_channelmapping_output_map(make_node_implementation_map_validator()) // may be omitted if not required
-        .on_channelmapping_activated(make_node_implementation_channelmapping_activation_handler(gate));
+        .on_resolve_auto(make_node_implementation_auto_resolver(model.settings, config_manager, gate))
+        .on_set_transportfile(make_node_implementation_transportfile_setter(model.node_resources, model.settings, config_manager, gate))
+        .on_connection_activated(make_node_implementation_connection_activation_handler(model, config_manager, app_resources, gate));
 }
