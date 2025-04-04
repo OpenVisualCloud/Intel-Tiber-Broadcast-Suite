@@ -73,7 +73,7 @@ jobs:
         egress-policy: audit
 
     - name: "Download unit test binaries"
-      uses: actions/download-artifact
+      uses: actions/download-artifact@v4
       with:
         name: unit-test-bins
         path: ${{ github.workspace }}
