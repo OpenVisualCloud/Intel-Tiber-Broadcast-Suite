@@ -24,7 +24,7 @@ const (
 	BCSPipelineContainerName     = "bcs-ffmpeg-pipeline"
 )
 type ContainerController interface {
-	CreateAndRunContainers(ctx context.Context, log logr.Logger) error
+	CreateAndRunContainers(ctx context.Context,launcherConfigName string, log logr.Logger) error
 	IsContainerRunning(containerID string) (bool, error)
 }
 
