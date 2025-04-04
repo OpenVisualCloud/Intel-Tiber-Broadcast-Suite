@@ -21,10 +21,8 @@ jobs:
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
       with:
         egress-policy: audit
-
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-
     - name: "Build: gRPC and nmos"
       working-directory: "${{ github.workspace }}/src"
       run: |
@@ -32,14 +30,13 @@ jobs:
         sudo apt-get install -y git cmake=3.22* libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
         sudo ./build_local.sh -ut
     
-    - name: "upload unit test binaries"
-      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+    - name: "Cache unit test binaries"
+      uses: actions/cache@v3
       with:
-        name: unit-test-bins
         path: |
-          ${{ github.workspace }}/src/gRPC/unit_test/build/*
-          ${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests/*
-
+          ${{ github.workspace }}/src/gRPC/unit_test/build
+          ${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests
+        key: bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
     - name: 'upload gRpc binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
@@ -48,12 +45,10 @@ jobs:
           '${{ github.workspace }}/src/gRPC/build/*'
           '${{ github.workspace }}/src/nmos/nmos-node/build/*'
           '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
-
     - name: "Build: launcher"
       working-directory: "${{ github.workspace }}/launcher"
       run: 
         go build -a -o manager cmd/main.go
-
     - name: 'upload launcher binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
@@ -72,19 +67,20 @@ jobs:
       with:
         egress-policy: audit
 
-    - name: "Download unit test binaries"
-      uses: actions/download-artifact@v4
+    - name: "Retrieve Cached Binaries"
+      uses: actions/cache@v3
       with:
-        name: unit-test-bins
         path: ${{ github.workspace }}
+        key: bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
 
     - name: "grpc unit tests"
+      working-directory: ${{ github.workspace }}/bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
       run: |
-        cd ${{ github.workspace }}/unit-test-bins/src/gRPC/unit_test/build
+        cd src/gRPC/unit_test/build/
         ./FFmpegPipelineGeneratorTests
         ./FFmpegWrapperServiceTests
-
     - name: "nmos unit tests"
+      working-directory: ${{ github.workspace }}/bcs-unit-tests-${{ hashFiles('src/gRPC/unit_test/build/*', 'src/nmos/nmos-node/build/unit_tests/*') }}
       run: |
         cd src/nmos/nmos-node/build/unit_tests/
         ./NmosNodeTests
