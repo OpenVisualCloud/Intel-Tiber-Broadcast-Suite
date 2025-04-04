@@ -80,7 +80,7 @@ jobs:
 
     - name: "grpc unit tests"
       run: |
-        cd src/gRPC/unit_test/build
+        cd ${{ github.workspace }}/src/gRPC/unit_test/build
         ./FFmpegPipelineGeneratorTests
         ./FFmpegWrapperServiceTests
 
