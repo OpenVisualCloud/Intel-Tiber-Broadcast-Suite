@@ -114,8 +114,6 @@ spec:
                         type: integer
                       label:
                         type: string
-                        items:
-                          type: integer
                       device_tags:
                         type: object
                         properties:
