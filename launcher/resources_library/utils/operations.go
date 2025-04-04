@@ -334,6 +334,7 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 	return containerConfig, hostConfig, networkConfig
 }
 
+
 func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo *general.Containers) error {
 	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
