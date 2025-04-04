@@ -60,10 +60,6 @@ type BcsConfigSpec struct {
 	LoggingLevel            int `json:"logging_level"`
 	HttpPort                int `json:"http_port"`
 	Label                   string `json:"label"`
-	Senders                 []string `json:"senders"`
-	SendersCount            []int `json:"senders_count"`
-	Receivers               []string `json:"receivers"`
-	ReceiversCount          []int `json:"receivers_count"`
 	DeviceTags              DeviceTags `json:"device_tags"`
 	Function                string `json:"function"`
 	GpuHwAcceleration       string `json:"gpu_hw_acceleration"`

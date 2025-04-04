@@ -45,12 +45,6 @@
       }
     }
   ],
-  "receivers": [
-    "v"
-  ],
-  "receivers_count": [
-    0
-  ],
   "sender": [
     {
       "stream_payload": {
@@ -79,11 +73,5 @@
       }
     }
   ],
-  "sender_payload_type": 112,
-  "senders": [
-    "v"
-  ],
-  "senders_count": [
-    1
-  ]
+  "sender_payload_type": 112
 }
