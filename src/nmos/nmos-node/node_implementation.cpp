@@ -126,20 +126,8 @@ namespace impl
         // activate_senders: controls whether to activate senders on start up (true, default) or not (false)
         const web::json::field_as_bool_or activate_senders{ U("activate_senders"), true };
 
-        // senders, receivers: controls which kinds of sender and receiver are instantiated by the example node
-        // the values must be an array of unique strings identifying the kinds of 'port', like ["v", "a", "d"], see impl::ports
-        // when omitted, all ports are instantiated
-        // const web::json::field_as_value_or senders{ U("senders"), {} };
-        // const web::json::field_as_value_or receivers{ U("receivers"), {} };
-
         const web::json::field_as_array sender{ U("sender") };
         const web::json::field_as_array receiver{ U("receiver") };
-
-        // coresponding arrays for senders, receivers that provide count by type of port.
-        // example: for senders: ["v", "a", "d"], the senders_count: [3, 1, 1] should be defined.
-        // it means that there are 3 senders of type video, 1 sender of type audio and 1 sender of type data
-        // const web::json::field_as_value_or senders_count{ U("senders_count"), {} };
-        // const web::json::field_as_value_or receivers_count{ U("receivers_count"), {} };
 
         // sender_payload_type, receiver_payload_type: controls the payload_type of senders and receivers
         // TODO: change the reference to Config by stream sender or receiver
@@ -420,7 +408,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     {
         for (int index = 0; index < sender_arr_length; ++index)
         {
-            if (sender_arr_length[index].stream_type.type == stream_type::file)
+            if (sender_arr[index].stream_type.type == 0)
             {
                 std::cout<< "Sender stream type is file" << std::endl;
                 continue;
@@ -429,7 +417,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             const auto flow_id = impl::make_id(seed_id, nmos::types::flow, port, index);
             const auto sender_id = impl::make_id(seed_id, nmos::types::sender, port, index);
 
-            auto senderDefinition = configIntel.senders[index];
+            auto senderDefinition = sender_arr[index];
 
             const auto frame_rate_json_format = web::json::value_of({
                 { nmos::fields::numerator, config_manager.get_framerate(senderDefinition).first },
@@ -585,15 +573,14 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
     for (const auto& port : media_ports) {
         for (int index = 0; index < receiver_arr_length; ++index){
-            if (receiver_arr_length[index].stream_type.type == stream_type::file)
+            if (receiver_arr[index].stream_type.type == stream_type::file)
             {
                 std::cout<< "Receiver stream type is file" << std::endl;
                 continue;
             }
 
             const auto receiver_id = impl::make_id(seed_id, nmos::types::receiver, port, index);
-            auto configIntel = config_manager.get_config();
-            auto receiverDefinition = configIntel.receivers[index];
+            auto receiverDefinition = receiver_arr[index];
             const auto rx_frame_rate_json_format = web::json::value_of({
                 { nmos::fields::numerator, config_manager.get_framerate(receiverDefinition).first },
                 { nmos::fields::denominator, config_manager.get_framerate(receiverDefinition).second }

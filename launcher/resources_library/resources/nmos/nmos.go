@@ -12,10 +12,6 @@ type Config struct {
 	LoggingLevel           int               `json:"logging_level,omitempty"`
 	HttpPort               int               `json:"http_port"`
 	Label                  string            `json:"label,omitempty"`
-	Senders                []string          `json:"senders"`
-	SendersCount           []int             `json:"senders_count"`
-	Receivers              []string          `json:"receivers"`
-	ReceiversCount         []int             `json:"receivers_count"`
 	DeviceTags             map[string][]string `json:"device_tags,omitempty"`
 	Function               string            `json:"function"`
 	StreamLoop             int               `json:"stream_loop,omitempty"`

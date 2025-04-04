@@ -114,20 +114,6 @@ spec:
                         type: integer
                       label:
                         type: string
-                      senders:
-                        type: array
-                        items:
-                          type: string
-                      senders_count:
-                        type: array
-                        items:
-                          type: integer
-                      receivers:
-                        type: array
-                        items:
-                          type: string
-                      receivers_count:
-                        type: array
                         items:
                           type: integer
                       device_tags:
