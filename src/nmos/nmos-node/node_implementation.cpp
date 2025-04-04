@@ -408,7 +408,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     {
         for (int index = 0; index < sender_arr_length; ++index)
         {
-            if (sender_arr[index].stream_type.type == 0)
+            if (sender_arr[index].stream_type.type == stream_type::file)
             {
                 std::cout<< "Sender stream type is file" << std::endl;
                 continue;
