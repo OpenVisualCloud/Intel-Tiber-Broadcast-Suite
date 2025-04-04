@@ -7,10 +7,15 @@
 package utils
 
 import (
+	"os"
 	"testing"
+
+	bcsv1 "bcs.pod.launcher.intel/api/v1"
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/workloads"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/docker/engine-api/types/strslice"
 	"github.com/docker/go-connections/nat"
@@ -150,7 +155,7 @@ func TestUnmarshalK8sConfig_MissingFields(t *testing.T) {
 k8s: true
 definition:
   meshAgent:
-	image: "mesh-agent-image:latest"
+    image: "mesh-agent-image:latest"
 `
 	config, err := UnmarshalK8sConfig([]byte(yamlData))
 	assert.NoError(t, err)
@@ -159,4 +164,230 @@ definition:
 	assert.Equal(t, "mesh-agent-image:latest", config.Definition.MeshAgent.Image)
 	assert.Equal(t, 0, config.Definition.MeshAgent.RestPort) // Default value for int
 	assert.Equal(t, 0, config.Definition.MeshAgent.GrpcPort) // Default value for int
+}
+
+func TestUpdateNmosJsonFile_Success(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "nmos_config_*.json")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+	initialJson := `{
+		"domain":"",
+		"ffmpeg_grpc_server_address":"192.9.1.200",
+		"ffmpeg_grpc_server_port":"6001",
+		"function":"",
+		"gpu_hw_acceleration":"",
+		"http_port":0,
+		"receiver": [],
+		"receivers": [],
+		"receivers_count": [],
+		"sender": [],
+		"sender_payload_type":0, 
+		"senders":[],
+		"senders_count":[]
+		}`
+	_, err = tempFile.WriteString(initialJson)
+	assert.NoError(t, err)
+	tempFile.Close()
+
+	err = updateNmosJsonFile(tempFile.Name(), "192.168.1.200", "60051")
+	assert.NoError(t, err)
+
+	updatedContent, err := os.ReadFile(tempFile.Name())
+	assert.NoError(t, err)
+
+	expectedJson := `{
+		"domain":"",
+		"ffmpeg_grpc_server_address":"192.168.1.200",
+		"ffmpeg_grpc_server_port":"60051",
+		"function":"",
+		"gpu_hw_acceleration":"",
+		"http_port":0,
+		"receiver": [],
+		"receivers": [],
+		"receivers_count": [],
+		"sender": [],
+		"sender_payload_type":0, 
+		"senders":[],
+		"senders_count":[]
+		}`
+	assert.JSONEq(t, expectedJson, string(updatedContent))
+}
+
+func TestUpdateNmosJsonFile_FileNotFound(t *testing.T) {
+	err := updateNmosJsonFile("non_existent_file.json", "192.168.1.200", "60051")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "open non_existent_file.json: no such file or directory")
+}
+func TestCreateNamespace(t *testing.T) {
+	namespaceName := "test-namespace"
+	namespace := CreateNamespace(namespaceName)
+
+	assert.NotNil(t, namespace)
+	assert.Equal(t, namespaceName, namespace.ObjectMeta.Name)
+}
+
+
+
+func TestConvertEnvVars(t *testing.T) {
+	input := []bcsv1.EnvVar{
+		{Name: "ENV_VAR1", Value: "VALUE1"},
+		{Name: "ENV_VAR2", Value: "VALUE2"},
+	}
+
+	expected := []corev1.EnvVar{
+		{Name: "ENV_VAR1", Value: "VALUE1"},
+		{Name: "ENV_VAR2", Value: "VALUE2"},
+	}
+
+	result := convertEnvVars(input)
+
+	assert.Equal(t, expected, result)
+}
+
+func TestConvertEnvVars_EmptyInput(t *testing.T) {
+	input := []bcsv1.EnvVar{}
+
+	expected := []corev1.EnvVar(nil)
+
+	result := convertEnvVars(input)
+
+	assert.Equal(t, expected, result)
+}
+
+func TestConvertEnvVars_NilInput(t *testing.T) {
+	var input []bcsv1.EnvVar
+
+	expected := []corev1.EnvVar(nil)
+
+	result := convertEnvVars(input)
+
+	assert.Equal(t, expected, result)
+}
+
+// func TestCreateBcsDeployment(t *testing.T) {
+// 	bcsConfig := &bcsv1.BcsConfig{
+// 		Spec: bcsv1.BcsConfigSpec{
+// 			Name:      "test-bcs",
+// 			Namespace: "test-namespace",
+// 			Nmos: bcsv1.Nmos{
+// 				Image: "nmos-image:latest",
+// 				Args:  []string{"--arg1", "--arg2"},
+// 				EnvironmentVariables: []bcsv1.EnvVar{
+// 					{Name: "ENV_VAR1", Value: "VALUE1"},
+// 					{Name: "ENV_VAR2", Value: "VALUE2"},
+// 				},
+// 			},
+// 			App: bcsv1.App{
+// 				Image:    "app-image:latest",
+// 				GrpcPort: 50051,
+// 				Volumes: map[string]string{
+// 					"videos":       "/host/videos",
+// 					"dri":          "/host/dri",
+// 					"kahawaiLock":  "/host/kahawai.lock",
+// 					"devNull":      "/dev/null",
+// 					"hugepagesTmp": "/host/hugepages/tmp",
+// 					"hugepages":    "/host/hugepages",
+// 					"imtl":         "/host/imtl",
+// 					"shm":          "/dev/shm",
+// 					"vfio":         "/dev/vfio",
+// 					"driDev":       "/dev/dri",
+// 				},
+// 				EnvironmentVariables: []bcsv1.EnvVar{
+// 					{Name: "APP_ENV_VAR1", Value: "APP_VALUE1"},
+// 					{Name: "APP_ENV_VAR2", Value: "APP_VALUE2"},
+// 				},
+// 			},
+// 		},
+// 	}
+
+// 	deployment := CreateBcsDeployment(bcsConfig)
+
+// 	assert.NotNil(t, deployment)
+// 	assert.Equal(t, "test-bcs", deployment.ObjectMeta.Name)
+// 	assert.Equal(t, "test-namespace", deployment.ObjectMeta.Namespace)
+
+// 	assert.Equal(t, 2, len(deployment.Spec.Template.Spec.Containers))
+
+// 	nmosContainer := deployment.Spec.Template.Spec.Containers[0]
+// 	assert.Equal(t, "tiber-broadcast-suite-nmos-node", nmosContainer.Name)
+// 	assert.Equal(t, "nmos-image:latest", nmosContainer.Image)
+// 	assert.ElementsMatch(t, []string{"--arg1", "--arg2"}, nmosContainer.Args)
+// 	assert.ElementsMatch(t, []corev1.EnvVar{
+// 		{Name: "ENV_VAR1", Value: "VALUE1"},
+// 		{Name: "ENV_VAR2", Value: "VALUE2"},
+// 	}, nmosContainer.Env)
+
+// 	appContainer := deployment.Spec.Template.Spec.Containers[1]
+// 	assert.Equal(t, "tiber-broadcast-suite", appContainer.Name)
+// 	assert.Equal(t, "app-image:latest", appContainer.Image)
+// 	assert.ElementsMatch(t, []string{"localhost", "50051"}, appContainer.Args)
+// 	assert.ElementsMatch(t, []corev1.EnvVar{
+// 		{Name: "APP_ENV_VAR1", Value: "APP_VALUE1"},
+// 		{Name: "APP_ENV_VAR2", Value: "APP_VALUE2"},
+// 	}, appContainer.Env)
+
+// 	assert.Equal(t, 11, len(deployment.Spec.Template.Spec.Volumes))
+// 	assert.Equal(t, "/host/videos", deployment.Spec.Template.Spec.Volumes[0].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/host/dri", deployment.Spec.Template.Spec.Volumes[1].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/host/kahawai.lock", deployment.Spec.Template.Spec.Volumes[2].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/dev/null", deployment.Spec.Template.Spec.Volumes[3].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/host/hugepages/tmp", deployment.Spec.Template.Spec.Volumes[4].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/host/hugepages", deployment.Spec.Template.Spec.Volumes[5].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/host/imtl", deployment.Spec.Template.Spec.Volumes[6].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/dev/shm", deployment.Spec.Template.Spec.Volumes[7].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/dev/vfio", deployment.Spec.Template.Spec.Volumes[8].VolumeSource.HostPath.Path)
+// 	assert.Equal(t, "/dev/dri", deployment.Spec.Template.Spec.Volumes[9].VolumeSource.HostPath.Path)
+// }
+func TestCreateBcsService(t *testing.T) {
+	bcsConfig := &bcsv1.BcsConfig{
+		Spec: bcsv1.BcsConfigSpec{
+			Name:      "test-bcs-service",
+			Namespace: "test-namespace",
+			Nmos: bcsv1.Nmos{
+				NmosApiPort:                8080,
+				NmosApiNodePort:            30080,
+				NmosAppCommunicationPort:   9090,
+				NmosAppCommunicationNodePort: 30090,
+			},
+		},
+	}
+
+	service := CreateBcsService(bcsConfig)
+
+	assert.NotNil(t, service)
+	assert.Equal(t, "test-bcs-service", service.ObjectMeta.Name)
+	assert.Equal(t, "test-namespace", service.ObjectMeta.Namespace)
+	assert.Equal(t, corev1.ServiceTypeNodePort, service.Spec.Type)
+
+	assert.Equal(t, 2, len(service.Spec.Ports))
+
+	nmosApiPort := service.Spec.Ports[0]
+	assert.Equal(t, "nmos-node-api", nmosApiPort.Name)
+	assert.Equal(t, corev1.ProtocolTCP, nmosApiPort.Protocol)
+	assert.Equal(t, int32(8080), nmosApiPort.Port)
+	assert.Equal(t, intstr.FromInt(8080), nmosApiPort.TargetPort)
+	assert.Equal(t, int32(30080), nmosApiPort.NodePort)
+
+	nmosAppCommunicationPort := service.Spec.Ports[1]
+	assert.Equal(t, "nmos-app-communication", nmosAppCommunicationPort.Name)
+	assert.Equal(t, corev1.ProtocolTCP, nmosAppCommunicationPort.Protocol)
+	assert.Equal(t, int32(9090), nmosAppCommunicationPort.Port)
+	assert.Equal(t, intstr.FromInt(9090), nmosAppCommunicationPort.TargetPort)
+	assert.Equal(t, int32(30090), nmosAppCommunicationPort.NodePort)
+
+	assert.Equal(t, map[string]string{"app": "test-bcs-service"}, service.Spec.Selector)
+}
+func TestCreateService(t *testing.T) {
+	serviceName := "test-service"
+	service := CreateService(serviceName)
+
+	assert.NotNil(t, service)
+	assert.Equal(t, serviceName, service.ObjectMeta.Name)
+	assert.Equal(t, "default", service.ObjectMeta.Namespace)
+	assert.Equal(t, map[string]string{"app": serviceName}, service.Spec.Selector)
+
+	assert.Equal(t, 1, len(service.Spec.Ports))
+	port := service.Spec.Ports[0]
+	assert.Equal(t, corev1.ProtocolTCP, port.Protocol)
+	assert.Equal(t, int32(80), port.Port)
 }
