@@ -15,6 +15,7 @@ import (
 	"bcs.pod.launcher.intel/resources_library/utils"
 
 	// "bcs.pod.launcher.intel/resources_library/utils"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/go-logr/logr"
 )
@@ -23,13 +24,26 @@ const (
 	MediaProxyContainerName      = "media-proxy"
 	BCSPipelineContainerName     = "bcs-ffmpeg-pipeline"
 )
+
 type ContainerController interface {
-	CreateAndRunContainers(ctx context.Context, log logr.Logger) error
+	CreateAndRunContainers(ctx context.Context, launcherConfigName string, log logr.Logger) error
 	IsContainerRunning(containerID string) (bool, error)
+	// ContainerList(ctx context.Context, options types.ContainerListOptions) ([]types.Container, error)
+	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
+	// ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
+    // ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
+    // ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
+	// // ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *v1.Platform, containerName string) (container.CreateResponse, error)
+    // ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
+    // ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
 }
 
 type DockerContainerController struct {
 	cli *client.Client
+}
+
+func (d *DockerContainerController) ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error) {
+	return d.cli.ImageList(ctx, options)
 }
 
 func NewDockerContainerController() (*DockerContainerController, error) {
@@ -39,6 +53,32 @@ func NewDockerContainerController() (*DockerContainerController, error) {
 	}
 	return &DockerContainerController{cli: cli}, nil
 }
+
+// func (d *DockerContainerController) ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error) {
+//     return d.cli.ImageList(ctx, options)
+// }
+
+// func (d *DockerContainerController) ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error) {
+//     return d.cli.ImagePull(ctx, ref, options)
+// }
+
+// func (d *DockerContainerController) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error){
+//     return d.cli.ContainerList(ctx, options)
+// }
+
+// // func (d *DockerContainerController) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *v1.Platform, containerName string) (container.CreateResponse, error){
+// // 	// Convert networkingConfig to the correct type if necessary
+	
+// // 	return d.cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, nil, containerName)
+// // }
+
+// func (d *DockerContainerController) ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error{
+//     return d.cli.ContainerStart(ctx, containerID, options)
+// }
+
+// func (d *DockerContainerController) ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error{
+//     return d.cli.ContainerRemove(ctx, containerID, options)
+// }
 
 func (d *DockerContainerController) isEmptyStruct(s interface{}) bool {
 	return reflect.DeepEqual(s, reflect.Zero(reflect.TypeOf(s)).Interface())
@@ -65,7 +105,7 @@ func (d *DockerContainerController) isEmptyStruct(s interface{}) bool {
 //   5. Creates and runs the BCS NMOS client container if its configuration is provided.
 //   6. Creates and runs the BCS FFmpeg pipeline container with predefined settings.
 
-func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, launcherConfigName string, log logr.Logger) error {
+func (d *DockerContainerController) s(ctx context.Context, launcherConfigName string, log logr.Logger) error {
 	config, err := utils.ParseLauncherConfiguration(launcherConfigName)
 	if err != nil {
 		log.Error(err, "Failed to parse launcher configuration file")

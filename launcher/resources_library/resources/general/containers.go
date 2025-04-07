@@ -37,17 +37,4 @@ type Containers struct {
 	Configuration   ContainersConfig
 	ContainerName   string
 	Image           string // image + tag
-	// Command    		string
-	// ContainerName   string
-	// Ip              string
-	// ExposedPort     []string // "format should be: 80/tcp"
-	// BindingHostPort []string
-	// NetworkMode     string
-	// Overridden      string
-	// Privileged      bool
-	// VolumeMount     []string
-	// EnviromentVariables []string
-	// Network         string
-    // DeviceDri       string
-    // DeviceVfio      string
 }
