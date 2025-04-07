@@ -71,3 +71,4 @@ jobs:
           PYTHON_RUFF_CONFIG_FILE: .ruff.toml
           DOCKERFILE_HADOLINT_FILE_NAME: .hadolint.yaml
           BASH_FILE_NAME: .shellcheckrc
+          GO_CONFIG_FILE: .golangci.yaml
