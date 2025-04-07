@@ -69,6 +69,7 @@ jobs:
           VALIDATE_GO: false
           VALIDATE_YAML_PRETTIER: false
           VALIDATE_YAML: false
+          LINTER_RULES_PATH: .github/configs
           DOCKERFILE_HADOLINT_FILE_NAME: .hadolint.yaml
 
 
