@@ -25,7 +25,6 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      DISABLE_ERRORS: "true"
       BASH_SEVERITY: "warning"
     steps:
     - name: 'setup: harden runner'
