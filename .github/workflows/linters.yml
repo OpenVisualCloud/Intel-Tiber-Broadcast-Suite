@@ -43,6 +43,9 @@ jobs:
           VALIDATE_CPP: false
           VALIDATE_JSCPD: false
           VALIDATE_JSON: false
+          VALIDATE_JSON_PRETTIER: false
+          VALIDATE_MARKDOWN_PRETTIER: false
+          VALIDATE_MARKDOWN: false
           VALIDATE_CHECKOV: false
           VALIDATE_BASH_EXEC: false
           VALIDATE_CLANG_FORMAT: false
@@ -61,6 +64,8 @@ jobs:
           VALIDATE_PYTHON_PYINK: false
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_KUBERNETES_KUBECONFORM: false
+          VALIDATE_SHELL_SHFMT: false
+          VALIDATE_GO_MODULES: false
 #     - name: 'setup: sarif output folder'
 #       run: mkdir -p "${{ github.workspace }}/sarif"
 
