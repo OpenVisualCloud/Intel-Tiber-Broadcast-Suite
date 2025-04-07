@@ -47,8 +47,7 @@ jobs:
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_MARKDOWN: false
           VALIDATE_CHECKOV: false
-          VALIDATE_BASH_EXEC: false
-          VALIDATE_CLANG_FORMAT: false
+          VALIDATE_BASH_EXEC: false 
           VALIDATE_CSS_PRETTIER: false
           VALIDATE_ENV: false
           VALIDATE_GIT_COMMITLINT: false
