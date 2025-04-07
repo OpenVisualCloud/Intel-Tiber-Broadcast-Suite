@@ -1,3 +1,4 @@
+# https://docs.astral.sh/ruff/settings/
 ignored:
   - DL3002 # DL3002 Last user should not be root.
   - DL3006 # DL3006 Always tag the version of an image explicitly
