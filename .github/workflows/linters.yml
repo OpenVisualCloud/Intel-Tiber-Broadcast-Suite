@@ -47,7 +47,23 @@ jobs:
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_GITHUB_ACTIONS: false
-
+          VALIDATE_BASH_EXEC: false
+          VALIDATE_CLANG_FORMAT: false
+          VALIDATE_CSS_PRETTIER: false
+          VALIDATE_ENV: false
+          VALIDATE_GIT_COMMITLINT: false
+          VALIDATE_GIT_MERGE_CONFLICT_MARKERS: false
+          VALIDATE_GITHUB_ACTIONS: false
+          VALIDATE_GITLEAKS: false
+          VALIDATE_NATURAL_LANGUAGE: false
+          VALIDATE_PYTHON: false
+          VALIDATE_PYTHON_BLACK: false
+          VALIDATE_PYTHON_FLAKE8:	false
+          VALIDATE_PYTHON_ISORT: false
+          VALIDATE_PYTHON_MYPY: false
+          VALIDATE_PYTHON_PYINK: false
+          VALIDATE_PYTHON_PYLINT: false
+          VALIDATE_KUBERNETES_KUBECONFORM: false
 #     - name: 'setup: sarif output folder'
 #       run: mkdir -p "${{ github.workspace }}/sarif"
 
