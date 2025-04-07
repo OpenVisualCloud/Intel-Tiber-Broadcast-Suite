@@ -69,10 +69,10 @@ jobs:
           VALIDATE_GO: false
           VALIDATE_YAML_PRETTIER: false
           VALIDATE_YAML: false
-          DOCKERFILE_HADOLINT_FILE_NAME: .github/configs/hadolint.yaml
+          DOCKERFILE_HADOLINT_FILE_NAME: ./.github/configs/hadolint.yaml
 
 
-          
+
 #     - name: 'setup: sarif output folder'
 #       run: mkdir -p "${{ github.workspace }}/sarif"
 
