@@ -1,0 +1,11 @@
+1. ./prepare_vfio.sh <address> <number_of_vfio_to_create> example: ./prepare_vfio.sh 0000:27:00.0 15
+2. ./prepare_tx_json.sh <number_of_additional_configuration_files_to_create>
+3. ./prepare_multiviewer_json.sh <number_of_senders>
+
+Run tests:
+./test_docker_launcher_rx.sh localhost 50056
+./test_docker_launcher_tx.sh localhost <number_of_containers>
+./test_docker_nmos_tx-multiviewer.sh <number_of_containers> <video_type>
+./test_docker_nmos_multiviewer.sh <video_type>
+
+./controller_multiviewer.sh <number_of_receivers> 
