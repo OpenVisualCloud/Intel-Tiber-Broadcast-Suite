@@ -1,4 +1,6 @@
 ./src/grpc
+./src/gRPC/unit_test
+./src/nmos/nmos-node/unit_tests
 ./src/nmos/nmos-cpp
 ./patches
 ./.github
