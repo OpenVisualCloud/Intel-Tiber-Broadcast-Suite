@@ -36,7 +36,6 @@ const (
 
 type ContainerController interface {
 	CreateAndRunContainers(ctx context.Context, launcherConfigName string, log logr.Logger) error
-	IsContainerRunning(containerID string) (bool, error)
 	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
     ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
 	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
@@ -209,14 +208,6 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		return err
 	}
 	return nil
-}
-
-func (d *DockerContainerController) IsContainerRunning(contaierName string) (bool, error) {
-	cotainerStatus, err := d.cli.ContainerInspect(context.Background(), contaierName)
-	if err != nil {
-		return false, err
-	}
-	return cotainerStatus.State.Running, nil
 }
 
 func isImagePulled(ctx context.Context, cli ContainerController, imageName string) (error, bool) {
