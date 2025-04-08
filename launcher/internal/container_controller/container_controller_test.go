@@ -34,11 +34,6 @@ func (m *MockContainerController) CreateAndRunContainers(ctx context.Context, la
 	return args.Error(0)
 }
 
-func (m *MockContainerController) IsContainerRunning(containerID string) (bool, error) {
-	args := m.Called(containerID)
-	return args.Bool(0), args.Error(1)
-}
-
 func (m *MockContainerController) ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error) {
 	args := m.Called(ctx, options)
 	return args.Get(0).([]image.Summary), args.Error(1)
