@@ -12,7 +12,7 @@ message CmdMsg {
 }
 
 message ReqCmds {
-  repeated CmdMsg obj = 1;
+  repeated CmdMsg objs = 1;
 }
 
 message FFmpegServiceRes {
