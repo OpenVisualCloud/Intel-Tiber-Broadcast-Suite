@@ -1,12 +1,13 @@
 # https://golangci-lint.run/usage/configuration/
-
-run:
-    # The mode used to evaluate relative paths.
-    # It's used by exclusions, Go plugins, and some linters.
-    # The value can be:
-    # - `gomod`: the paths will be relative to the directory of the `go.mod` file.
-    # - `gitroot`: the paths will be relative to the git root (the parent directory of `.git`).
-    # - `cfg`: the paths will be relative to the configuration file.
-    # - `wd` (NOT recommended): the paths will be relative to the place where golangci-lint is run.
-    # Default: cfg
-    relative-path-mode: gitroot
+# https://github.com/oxsecurity/megalinter/blob/main/TEMPLATES/.golangci.yml
+linters:
+  disable-all: true
+  enable:
+    - gofmt
+    - gocritic
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
