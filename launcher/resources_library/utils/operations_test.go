@@ -7,9 +7,13 @@
 package utils
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 
 	"bcs.pod.launcher.intel/resources_library/resources/general"
+	"bcs.pod.launcher.intel/resources_library/resources/nmos"
 	"bcs.pod.launcher.intel/resources_library/workloads"
 
 	"github.com/docker/docker/api/types/strslice"
@@ -36,7 +40,7 @@ func TestConstructContainerConfig_MediaProxyAgent(t *testing.T) {
         },
     }
 
-    containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
     assert.NotNil(t, containerConfig)
     assert.NotNil(t, hostConfig)
@@ -72,7 +76,7 @@ func TestConstructContainerConfig_MediaProxyMCM(t *testing.T) {
         },
     }
 
-    containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
     assert.NotNil(t, containerConfig)
     assert.NotNil(t, hostConfig)
@@ -115,7 +119,7 @@ func TestConstructContainerConfig_BcsPipelineFfmpeg(t *testing.T) {
         },
     }
 
-    containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
     assert.NotNil(t, containerConfig)
     assert.NotNil(t, hostConfig)
@@ -160,8 +164,343 @@ definition:
     assert.Equal(t, 0, config.Definition.MeshAgent.RestPort) // Default value for int
     assert.Equal(t, 0, config.Definition.MeshAgent.GrpcPort) // Default value for int
 }
+func TestUpdateNmosJsonFile_Success(t *testing.T) {
+    tempFile, err := os.CreateTemp("", "nmos_config_*.json")
+    assert.NoError(t, err)
+    defer os.Remove(tempFile.Name())
 
+    initialConfig := `{
+  "logging_level": 10,
+  "http_port": 95,
+  "label": "intel-broadcast-suite",
+  "device_tags": {
+    "pipeline": [
+      "rx"
+    ]
+  },
+  "function": "rx",
+  "gpu_hw_acceleration": "none",
+  "domain": "local",
+  "ffmpeg_grpc_server_address": "192.168.2.6",
+  "ffmpeg_grpc_server_port": "50053",
+  "sender_payload_type": 0,
+  "sender": [
+    {
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
+      },
+      "stream_type": {
+        "file": {
+          "path": "/videos/recv",
+          "filename": "1920x1080p10le_0.yuv"
+        }
+      }
+    }
+  ],
+  "receiver": [
+    {
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
+      },
+      "stream_type": {
+        "st2110": {
+          "transport": "st2110-20",
+          "payloadType": 112
+        }
+      }
+    }
+  ]
+}`
+    _, err = tempFile.WriteString(initialConfig)
+    assert.NoError(t, err)
+    tempFile.Close()
+
+    err = updateNmosJsonFile(tempFile.Name(), "192.168.1.100", "8080")
+    assert.NoError(t, err)
+
+    updatedContent, err := os.ReadFile(tempFile.Name())
+    assert.NoError(t, err)
+
+    var updatedConfig nmos.Config
+	err = json.Unmarshal(updatedContent, &updatedConfig)
+    assert.NoError(t, err)
+
+    assert.Equal(t, "192.168.1.100", updatedConfig.FfmpegGrpcServerAddress)
+    assert.Equal(t, "8080", updatedConfig.FfmpegGrpcServerPort)
+}
+
+func TestUpdateNmosJsonFile_FileNotFound(t *testing.T) {
+    err := updateNmosJsonFile("nonexistent_file.json", "192.168.1.100", "8080")
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "no such file")
+}
+
+func TestUpdateNmosJsonFile_InvalidJson(t *testing.T) {
+    tempFile, err := os.CreateTemp("", "invalid_nmos_config_*.json")
+    assert.NoError(t, err)
+    defer os.Remove(tempFile.Name())
+
+    _, err = tempFile.WriteString("invalid_json")
+    assert.NoError(t, err)
+    tempFile.Close()
+
+    err = updateNmosJsonFile(tempFile.Name(), "192.168.1.100", "8080")
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "invalid character")
+}
+func TestFileExists_FileExists(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "test_file_exists_*.txt")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	exists := FileExists(tempFile.Name())
+	assert.True(t, exists)
+}
+
+func TestFileExists_FileDoesNotExist(t *testing.T) {
+	nonExistentFile := "nonexistent_file.txt"
+	exists := FileExists(nonExistentFile)
+	assert.False(t, exists)
+}
+func TestConstructContainerConfig_BcsPipelineNmosClient(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+		Type: general.BcsPipelineNmosClient,
+		Configuration: general.ContainersConfig{
+			WorkloadConfig: workloads.WorkloadConfig{
+				NmosClient: workloads.NmosClientConfig{
+                    Name:                 "nmos-client",
+					ImageAndTag:              "nmos-client-image:latest",
+					NmosConfigFileName:       "nmos_config.json",
+					NmosConfigPath:           "/host/config",
+					FfmpegConectionAddress:   "192.168.1.103",
+					FfmpegConnectionPort:     "8081",
+					EnvironmentVariables:     []string{"ENV_VAR=VALUE"},
+					Network: workloads.NetworkConfig{
+                        Enable: true,
+						Name: "nmos-network",
+						IP:   "192.168.1.103",
+					},
+				},
+			},
+		},
+	}
+
+	// Create a temporary NMOS config file
+	tempDir := t.TempDir()
+	nmosFilePath := tempDir + "/nmos_config.json"
+	err := os.WriteFile(nmosFilePath, []byte(`{"ffmpeg_grpc_server_address": "", "ffmpeg_grpc_server_port": ""}`), 0644)
+	assert.NoError(t, err)
+
+	// Update the container info to use the temporary file path
+	containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = tempDir
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.NotNil(t, containerConfig)
+	assert.NotNil(t, hostConfig)
+	assert.NotNil(t, networkConfig)
+
+	assert.Equal(t, "nmos-client-image:latest", containerConfig.Image)
+	assert.ElementsMatch(t, []string{"config/nmos_config.json"}, containerConfig.Cmd)
+	assert.ElementsMatch(t, []string{"ENV_VAR=VALUE"}, containerConfig.Env)
+
+	assert.True(t, hostConfig.Privileged)
+	assert.ElementsMatch(t, []string{fmt.Sprintf("%s:/home/config/", tempDir)}, hostConfig.Binds)
+
+	assert.Equal(t, "192.168.1.103", networkConfig.EndpointsConfig["nmos-network"].IPAMConfig.IPv4Address)
+	assert.ElementsMatch(t, []string{"nmos-network"}, networkConfig.EndpointsConfig["nmos-network"].Aliases)
+}
+
+func TestConstructContainerConfig_UnknownType(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+    Type: 7, // based on enum iota
+	}
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.Nil(t, containerConfig)
+	assert.Nil(t, hostConfig)
+	assert.Nil(t, networkConfig)
+}
+func TestConstructContainerConfig_InvalidType(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+		Type: -1, // Invalid type
+	}
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.Nil(t, containerConfig)
+	assert.Nil(t, hostConfig)
+	assert.Nil(t, networkConfig)
+}
+
+func TestConstructContainerConfig_MediaProxyAgent_NoNetwork(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+		Type: general.MediaProxyAgent,
+		Configuration: general.ContainersConfig{
+			MediaProxyAgentConfig: workloads.MediaProxyAgentConfig{
+				ImageAndTag: "test-image:latest",
+				RestPort:    "8080",
+				GRPCPort:    "9090",
+				Network: workloads.NetworkConfig{
+					Enable: false, // Network disabled
+				},
+			},
+		},
+	}
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.NotNil(t, containerConfig)
+	assert.NotNil(t, hostConfig)
+	assert.NotNil(t, networkConfig)
+
+	assert.Equal(t, "test-image:latest", containerConfig.Image)
+	assert.ElementsMatch(t, strslice.StrSlice{"-c", "8080", "-p", "9090"}, containerConfig.Cmd)
+
+	assert.True(t, hostConfig.Privileged)
+	assert.Equal(t, nat.PortMap{
+		"8080/tcp": []nat.PortBinding{{HostPort: "8080"}},
+		"9090/tcp": []nat.PortBinding{{HostPort: "9090"}},
+	}, hostConfig.PortBindings)
+
+	assert.Empty(t, networkConfig.EndpointsConfig)
+}
+
+
+func TestConstructContainerConfig_BcsPipelineNmosClient_MissingConfigFile(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+		Type: general.BcsPipelineNmosClient,
+		Configuration: general.ContainersConfig{
+			WorkloadConfig: workloads.WorkloadConfig{
+				NmosClient: workloads.NmosClientConfig{
+					ImageAndTag:        "nmos-client-image:latest",
+					NmosConfigFileName: "missing_config.json",
+					NmosConfigPath:     "/nonexistent/path",
+					Network: workloads.NetworkConfig{
+						Name: "nmos-network",
+						IP:   "192.168.1.103",
+					},
+				},
+			},
+		},
+	}
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.Nil(t, containerConfig)
+	assert.Nil(t, hostConfig)
+	assert.Nil(t, networkConfig)
+}
 // type ContainerControllerMock interface {
+func TestConstructContainerConfig_InvalidConfiguration(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+		Type: general.MediaProxyAgent,
+		Configuration: general.ContainersConfig{
+			MediaProxyAgentConfig: workloads.MediaProxyAgentConfig{
+				ImageAndTag: "",
+				RestPort:    "",
+				GRPCPort:    "",
+				Network: workloads.NetworkConfig{
+					Enable: true,
+					Name:   "",
+					IP:     "",
+				},
+			},
+		},
+	}
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.NotNil(t, containerConfig)
+	assert.NotNil(t, hostConfig)
+	assert.NotNil(t, networkConfig)
+
+	assert.Equal(t, "", containerConfig.Image)
+	assert.ElementsMatch(t, []string{"-c", "", "-p", ""}, containerConfig.Cmd)
+
+	assert.True(t, hostConfig.Privileged)
+	assert.Equal(t, nat.PortMap{
+		"/tcp": []nat.PortBinding{{HostPort: ""}},
+	}, hostConfig.PortBindings)
+
+	assert.Equal(t, "", networkConfig.EndpointsConfig[""].IPAMConfig.IPv4Address)
+}
+
+func TestConstructContainerConfig_BcsPipelineNmosClient_InvalidJsonUpdate(t *testing.T) {
+	log := testr.New(t)
+	containerInfo := &general.Containers{
+		Type: general.BcsPipelineNmosClient,
+		Configuration: general.ContainersConfig{
+			WorkloadConfig: workloads.WorkloadConfig{
+				NmosClient: workloads.NmosClientConfig{
+					ImageAndTag:        "nmos-client-image:latest",
+					NmosConfigFileName: "invalid_config.json",
+					NmosConfigPath:     "/tmp",
+					FfmpegConectionAddress: "192.168.1.103",
+					FfmpegConnectionPort:   "8081",
+					EnvironmentVariables:   []string{"ENV_VAR=VALUE"},
+					Network: workloads.NetworkConfig{
+						Name: "nmos-network",
+						IP:   "192.168.1.103",
+					},
+				},
+			},
+		},
+	}
+
+	// Create an invalid NMOS config file
+	tempDir := t.TempDir()
+	nmosFilePath := tempDir + "/invalid_config.json"
+	err := os.WriteFile(nmosFilePath, []byte("invalid_json"), 0644)
+	assert.NoError(t, err)
+
+	// Update the container info to use the temporary file path
+	containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = tempDir
+
+	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+	assert.Nil(t, containerConfig)
+	assert.Nil(t, hostConfig)
+	assert.Nil(t, networkConfig)
+}
+
 // 	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
 // }
 
