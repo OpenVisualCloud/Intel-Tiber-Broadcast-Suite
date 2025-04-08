@@ -1,6 +1,8 @@
 ---
 BasedOnStyle: LLVM
 IndentWidth: 4
+---
+Language: Cpp
 UseTab: Never
 ColumnLimit: 100
 BreakBeforeBraces: Custom
@@ -19,4 +21,3 @@ AccessModifierOffset: -4
 # Don't format .proto files.
 Language: Proto
 DisableFormat: true
-...
