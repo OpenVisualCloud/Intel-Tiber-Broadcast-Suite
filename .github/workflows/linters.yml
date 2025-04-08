@@ -66,7 +66,7 @@ jobs:
           VALIDATE_SHELL_SHFMT: false
           VALIDATE_YAML_PRETTIER: false
           VALIDATE_YAML: false
-          VALIDATE_GO_MODULE: false
+          VALIDATE_GO_MODULES: false
           VALIDATE_CLANG_FORMAT: false # TODO:  clang still see the same errors after running formatter on code base
           LINTER_RULES_PATH: .github/configs
           PYTHON_RUFF_CONFIG_FILE: .ruff.toml
