@@ -1,1 +1,4 @@
 # https://golangci-lint.run/usage/configuration/
+GO_GOLANGCI_LINT_CLI_LINT_MODE: project    # will remove the list of files as arguments and run the linter with root workspace cwd
+GO_GOLANGCI_LINT_ARGUMENTS: ["./.."]           # will force arguments
+LOG_LEVEL: DEBUG                                                # will show you the exact command run
