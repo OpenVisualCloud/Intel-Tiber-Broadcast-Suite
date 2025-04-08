@@ -1,4 +1,12 @@
 # https://golangci-lint.run/usage/configuration/
-GO_GOLANGCI_LINT_CLI_LINT_MODE: project    # will remove the list of files as arguments and run the linter with root workspace cwd
-GO_GOLANGCI_LINT_ARGUMENTS: ["./.."]           # will force arguments
-LOG_LEVEL: DEBUG                                                # will show you the exact command run
+
+run:
+    # The mode used to evaluate relative paths.
+    # It's used by exclusions, Go plugins, and some linters.
+    # The value can be:
+    # - `gomod`: the paths will be relative to the directory of the `go.mod` file.
+    # - `gitroot`: the paths will be relative to the git root (the parent directory of `.git`).
+    # - `cfg`: the paths will be relative to the configuration file.
+    # - `wd` (NOT recommended): the paths will be relative to the place where golangci-lint is run.
+    # Default: cfg
+    relative-path-mode: gitroot
