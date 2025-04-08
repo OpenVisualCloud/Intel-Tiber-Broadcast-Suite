@@ -71,3 +71,4 @@ jobs:
           DOCKERFILE_HADOLINT_FILE_NAME: .hadolint.yaml
           BASH_FILE_NAME: .shellcheckrc
           GO_CONFIG_FILE: .golangci.yaml
+          CLANG_FORMAT_FILE_NAME: .clang-format

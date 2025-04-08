@@ -119,7 +119,8 @@ RUN \
     make os=linux install
 
 WORKDIR /home
-RUN \ set -o pipefail && \
+RUN \ 
+    set -o pipefail && \
     curl -sS -k "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x77b7346a59027b33c10cafe35e64e954262c4500" | apt-key add - && \
     echo "deb http://ppa.launchpad.net/mosquitto-dev/mosquitto-ppa/ubuntu noble main" | tee /etc/apt/sources.list.d/mosquitto.list && \
     apt-get update && apt-get install -y --no-install-recommends mosquitto libc6 && \
