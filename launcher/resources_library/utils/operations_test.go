@@ -15,11 +15,18 @@ import (
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/resources/nmos"
 	"bcs.pod.launcher.intel/resources_library/workloads"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-logr/logr/testr"
 	"github.com/stretchr/testify/assert"
+
+	bcsv1 "bcs.pod.launcher.intel/api/v1"
 )
 
 func TestConstructContainerConfig_MediaProxyAgent(t *testing.T) {
@@ -252,7 +259,7 @@ func TestUpdateNmosJsonFile_Success(t *testing.T) {
     assert.NoError(t, err)
 
     var updatedConfig nmos.Config
-	err = json.Unmarshal(updatedContent, &updatedConfig)
+    err = json.Unmarshal(updatedContent, &updatedConfig)
     assert.NoError(t, err)
 
     assert.Equal(t, "192.168.1.100", updatedConfig.FfmpegGrpcServerAddress)
@@ -279,229 +286,786 @@ func TestUpdateNmosJsonFile_InvalidJson(t *testing.T) {
     assert.Contains(t, err.Error(), "invalid character")
 }
 func TestFileExists_FileExists(t *testing.T) {
-	tempFile, err := os.CreateTemp("", "test_file_exists_*.txt")
-	assert.NoError(t, err)
-	defer os.Remove(tempFile.Name())
+    tempFile, err := os.CreateTemp("", "test_file_exists_*.txt")
+    assert.NoError(t, err)
+    defer os.Remove(tempFile.Name())
 
-	exists := FileExists(tempFile.Name())
-	assert.True(t, exists)
+    exists := FileExists(tempFile.Name())
+    assert.True(t, exists)
 }
 
 func TestFileExists_FileDoesNotExist(t *testing.T) {
-	nonExistentFile := "nonexistent_file.txt"
-	exists := FileExists(nonExistentFile)
-	assert.False(t, exists)
+    nonExistentFile := "nonexistent_file.txt"
+    exists := FileExists(nonExistentFile)
+    assert.False(t, exists)
 }
 func TestConstructContainerConfig_BcsPipelineNmosClient(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
-		Type: general.BcsPipelineNmosClient,
-		Configuration: general.ContainersConfig{
-			WorkloadConfig: workloads.WorkloadConfig{
-				NmosClient: workloads.NmosClientConfig{
+    log := testr.New(t)
+    containerInfo := &general.Containers{
+        Type: general.BcsPipelineNmosClient,
+        Configuration: general.ContainersConfig{
+            WorkloadConfig: workloads.WorkloadConfig{
+                NmosClient: workloads.NmosClientConfig{
                     Name:                 "nmos-client",
-					ImageAndTag:              "nmos-client-image:latest",
-					NmosConfigFileName:       "nmos_config.json",
-					NmosConfigPath:           "/host/config",
-					FfmpegConectionAddress:   "192.168.1.103",
-					FfmpegConnectionPort:     "8081",
-					EnvironmentVariables:     []string{"ENV_VAR=VALUE"},
-					Network: workloads.NetworkConfig{
+                    ImageAndTag:              "nmos-client-image:latest",
+                    NmosConfigFileName:       "nmos_config.json",
+                    NmosConfigPath:           "/host/config",
+                    FfmpegConectionAddress:   "192.168.1.103",
+                    FfmpegConnectionPort:     "8081",
+                    EnvironmentVariables:     []string{"ENV_VAR=VALUE"},
+                    Network: workloads.NetworkConfig{
                         Enable: true,
-						Name: "nmos-network",
-						IP:   "192.168.1.103",
-					},
-				},
-			},
-		},
-	}
+                        Name: "nmos-network",
+                        IP:   "192.168.1.103",
+                    },
+                },
+            },
+        },
+    }
 
-	// Create a temporary NMOS config file
-	tempDir := t.TempDir()
-	nmosFilePath := tempDir + "/nmos_config.json"
-	err := os.WriteFile(nmosFilePath, []byte(`{"ffmpeg_grpc_server_address": "", "ffmpeg_grpc_server_port": ""}`), 0644)
-	assert.NoError(t, err)
+    // Create a temporary NMOS config file
+    tempDir := t.TempDir()
+    nmosFilePath := tempDir + "/nmos_config.json"
+    err := os.WriteFile(nmosFilePath, []byte(`{"ffmpeg_grpc_server_address": "", "ffmpeg_grpc_server_port": ""}`), 0644)
+    assert.NoError(t, err)
 
-	// Update the container info to use the temporary file path
-	containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = tempDir
+    // Update the container info to use the temporary file path
+    containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = tempDir
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
-	assert.NotNil(t, containerConfig)
-	assert.NotNil(t, hostConfig)
-	assert.NotNil(t, networkConfig)
+    assert.NotNil(t, containerConfig)
+    assert.NotNil(t, hostConfig)
+    assert.NotNil(t, networkConfig)
 
-	assert.Equal(t, "nmos-client-image:latest", containerConfig.Image)
-	assert.ElementsMatch(t, []string{"config/nmos_config.json"}, containerConfig.Cmd)
-	assert.ElementsMatch(t, []string{"ENV_VAR=VALUE"}, containerConfig.Env)
+    assert.Equal(t, "nmos-client-image:latest", containerConfig.Image)
+    assert.ElementsMatch(t, []string{"config/nmos_config.json"}, containerConfig.Cmd)
+    assert.ElementsMatch(t, []string{"ENV_VAR=VALUE"}, containerConfig.Env)
 
-	assert.True(t, hostConfig.Privileged)
-	assert.ElementsMatch(t, []string{fmt.Sprintf("%s:/home/config/", tempDir)}, hostConfig.Binds)
+    assert.True(t, hostConfig.Privileged)
+    assert.ElementsMatch(t, []string{fmt.Sprintf("%s:/home/config/", tempDir)}, hostConfig.Binds)
 
-	assert.Equal(t, "192.168.1.103", networkConfig.EndpointsConfig["nmos-network"].IPAMConfig.IPv4Address)
-	assert.ElementsMatch(t, []string{"nmos-network"}, networkConfig.EndpointsConfig["nmos-network"].Aliases)
+    assert.Equal(t, "192.168.1.103", networkConfig.EndpointsConfig["nmos-network"].IPAMConfig.IPv4Address)
+    assert.ElementsMatch(t, []string{"nmos-network"}, networkConfig.EndpointsConfig["nmos-network"].Aliases)
 }
 
 func TestConstructContainerConfig_UnknownType(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
+    log := testr.New(t)
+    containerInfo := &general.Containers{
     Type: 7, // based on enum iota
-	}
+    }
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
-	assert.Nil(t, containerConfig)
-	assert.Nil(t, hostConfig)
-	assert.Nil(t, networkConfig)
+    assert.Nil(t, containerConfig)
+    assert.Nil(t, hostConfig)
+    assert.Nil(t, networkConfig)
 }
 func TestConstructContainerConfig_InvalidType(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
-		Type: -1, // Invalid type
-	}
+    log := testr.New(t)
+    containerInfo := &general.Containers{
+        Type: -1, // Invalid type
+    }
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
-	assert.Nil(t, containerConfig)
-	assert.Nil(t, hostConfig)
-	assert.Nil(t, networkConfig)
+    assert.Nil(t, containerConfig)
+    assert.Nil(t, hostConfig)
+    assert.Nil(t, networkConfig)
 }
 
 func TestConstructContainerConfig_MediaProxyAgent_NoNetwork(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
-		Type: general.MediaProxyAgent,
-		Configuration: general.ContainersConfig{
-			MediaProxyAgentConfig: workloads.MediaProxyAgentConfig{
-				ImageAndTag: "test-image:latest",
-				RestPort:    "8080",
-				GRPCPort:    "9090",
-				Network: workloads.NetworkConfig{
-					Enable: false, // Network disabled
-				},
-			},
-		},
-	}
+    log := testr.New(t)
+    containerInfo := &general.Containers{
+        Type: general.MediaProxyAgent,
+        Configuration: general.ContainersConfig{
+            MediaProxyAgentConfig: workloads.MediaProxyAgentConfig{
+                ImageAndTag: "test-image:latest",
+                RestPort:    "8080",
+                GRPCPort:    "9090",
+                Network: workloads.NetworkConfig{
+                    Enable: false, // Network disabled
+                },
+            },
+        },
+    }
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
-	assert.NotNil(t, containerConfig)
-	assert.NotNil(t, hostConfig)
-	assert.NotNil(t, networkConfig)
+    assert.NotNil(t, containerConfig)
+    assert.NotNil(t, hostConfig)
+    assert.NotNil(t, networkConfig)
 
-	assert.Equal(t, "test-image:latest", containerConfig.Image)
-	assert.ElementsMatch(t, strslice.StrSlice{"-c", "8080", "-p", "9090"}, containerConfig.Cmd)
+    assert.Equal(t, "test-image:latest", containerConfig.Image)
+    assert.ElementsMatch(t, strslice.StrSlice{"-c", "8080", "-p", "9090"}, containerConfig.Cmd)
 
-	assert.True(t, hostConfig.Privileged)
-	assert.Equal(t, nat.PortMap{
-		"8080/tcp": []nat.PortBinding{{HostPort: "8080"}},
-		"9090/tcp": []nat.PortBinding{{HostPort: "9090"}},
-	}, hostConfig.PortBindings)
+    assert.True(t, hostConfig.Privileged)
+    assert.Equal(t, nat.PortMap{
+        "8080/tcp": []nat.PortBinding{{HostPort: "8080"}},
+        "9090/tcp": []nat.PortBinding{{HostPort: "9090"}},
+    }, hostConfig.PortBindings)
 
-	assert.Empty(t, networkConfig.EndpointsConfig)
+    assert.Empty(t, networkConfig.EndpointsConfig)
 }
 
 
 func TestConstructContainerConfig_BcsPipelineNmosClient_MissingConfigFile(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
-		Type: general.BcsPipelineNmosClient,
-		Configuration: general.ContainersConfig{
-			WorkloadConfig: workloads.WorkloadConfig{
-				NmosClient: workloads.NmosClientConfig{
-					ImageAndTag:        "nmos-client-image:latest",
-					NmosConfigFileName: "missing_config.json",
-					NmosConfigPath:     "/nonexistent/path",
-					Network: workloads.NetworkConfig{
-						Name: "nmos-network",
-						IP:   "192.168.1.103",
-					},
-				},
-			},
-		},
-	}
+    log := testr.New(t)
+    containerInfo := &general.Containers{
+        Type: general.BcsPipelineNmosClient,
+        Configuration: general.ContainersConfig{
+            WorkloadConfig: workloads.WorkloadConfig{
+                NmosClient: workloads.NmosClientConfig{
+                    ImageAndTag:        "nmos-client-image:latest",
+                    NmosConfigFileName: "missing_config.json",
+                    NmosConfigPath:     "/nonexistent/path",
+                    Network: workloads.NetworkConfig{
+                        Name: "nmos-network",
+                        IP:   "192.168.1.103",
+                    },
+                },
+            },
+        },
+    }
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
-	assert.Nil(t, containerConfig)
-	assert.Nil(t, hostConfig)
-	assert.Nil(t, networkConfig)
+    assert.Nil(t, containerConfig)
+    assert.Nil(t, hostConfig)
+    assert.Nil(t, networkConfig)
 }
 // type ContainerControllerMock interface {
 func TestConstructContainerConfig_InvalidConfiguration(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
-		Type: general.MediaProxyAgent,
-		Configuration: general.ContainersConfig{
-			MediaProxyAgentConfig: workloads.MediaProxyAgentConfig{
-				ImageAndTag: "",
-				RestPort:    "",
-				GRPCPort:    "",
-				Network: workloads.NetworkConfig{
-					Enable: true,
-					Name:   "",
-					IP:     "",
-				},
-			},
-		},
-	}
+    log := testr.New(t)
+    containerInfo := &general.Containers{
+        Type: general.MediaProxyAgent,
+        Configuration: general.ContainersConfig{
+            MediaProxyAgentConfig: workloads.MediaProxyAgentConfig{
+                ImageAndTag: "",
+                RestPort:    "",
+                GRPCPort:    "",
+                Network: workloads.NetworkConfig{
+                    Enable: true,
+                    Name:   "",
+                    IP:     "",
+                },
+            },
+        },
+    }
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
 
-	assert.NotNil(t, containerConfig)
-	assert.NotNil(t, hostConfig)
-	assert.NotNil(t, networkConfig)
+    assert.NotNil(t, containerConfig)
+    assert.NotNil(t, hostConfig)
+    assert.NotNil(t, networkConfig)
 
-	assert.Equal(t, "", containerConfig.Image)
-	assert.ElementsMatch(t, []string{"-c", "", "-p", ""}, containerConfig.Cmd)
+    assert.Equal(t, "", containerConfig.Image)
+    assert.ElementsMatch(t, []string{"-c", "", "-p", ""}, containerConfig.Cmd)
 
-	assert.True(t, hostConfig.Privileged)
-	assert.Equal(t, nat.PortMap{
-		"/tcp": []nat.PortBinding{{HostPort: ""}},
-	}, hostConfig.PortBindings)
+    assert.True(t, hostConfig.Privileged)
+    assert.Equal(t, nat.PortMap{
+        "/tcp": []nat.PortBinding{{HostPort: ""}},
+    }, hostConfig.PortBindings)
 
-	assert.Equal(t, "", networkConfig.EndpointsConfig[""].IPAMConfig.IPv4Address)
+    assert.Equal(t, "", networkConfig.EndpointsConfig[""].IPAMConfig.IPv4Address)
 }
 
 func TestConstructContainerConfig_BcsPipelineNmosClient_InvalidJsonUpdate(t *testing.T) {
-	log := testr.New(t)
-	containerInfo := &general.Containers{
-		Type: general.BcsPipelineNmosClient,
-		Configuration: general.ContainersConfig{
-			WorkloadConfig: workloads.WorkloadConfig{
-				NmosClient: workloads.NmosClientConfig{
-					ImageAndTag:        "nmos-client-image:latest",
-					NmosConfigFileName: "invalid_config.json",
-					NmosConfigPath:     "/tmp",
-					FfmpegConectionAddress: "192.168.1.103",
-					FfmpegConnectionPort:   "8081",
-					EnvironmentVariables:   []string{"ENV_VAR=VALUE"},
-					Network: workloads.NetworkConfig{
-						Name: "nmos-network",
-						IP:   "192.168.1.103",
-					},
+    log := testr.New(t)
+    containerInfo := &general.Containers{
+        Type: general.BcsPipelineNmosClient,
+        Configuration: general.ContainersConfig{
+            WorkloadConfig: workloads.WorkloadConfig{
+                NmosClient: workloads.NmosClientConfig{
+                    ImageAndTag:        "nmos-client-image:latest",
+                    NmosConfigFileName: "invalid_config.json",
+                    NmosConfigPath:     "/tmp",
+                    FfmpegConectionAddress: "192.168.1.103",
+                    FfmpegConnectionPort:   "8081",
+                    EnvironmentVariables:   []string{"ENV_VAR=VALUE"},
+                    Network: workloads.NetworkConfig{
+                        Name: "nmos-network",
+                        IP:   "192.168.1.103",
+                    },
+                },
+            },
+        },
+    }
+
+    // Create an invalid NMOS config file
+    tempDir := t.TempDir()
+    nmosFilePath := tempDir + "/invalid_config.json"
+    err := os.WriteFile(nmosFilePath, []byte("invalid_json"), 0644)
+    assert.NoError(t, err)
+
+    // Update the container info to use the temporary file path
+    containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = tempDir
+
+    containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+
+    assert.Nil(t, containerConfig)
+    assert.Nil(t, hostConfig)
+    assert.Nil(t, networkConfig)
+}
+func TestBoolPtr_True(t *testing.T) {
+    result := boolPtr(true)
+    assert.NotNil(t, result)
+    assert.True(t, *result)
+}
+
+func TestBoolPtr_False(t *testing.T) {
+    result := boolPtr(false)
+    assert.NotNil(t, result)
+    assert.False(t, *result)
+}
+func TestCreateMeshAgentDeployment_ValidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+k8s: true
+definition:
+  meshAgent:
+    image: "mesh-agent-image:latest"
+    restPort: 8080
+    grpcPort: 9090
+`,
+        },
+    }
+
+    deployment := CreateMeshAgentDeployment(cm)
+    assert.NotNil(t, deployment)
+    assert.Equal(t, "mesh-agent-deployment", deployment.ObjectMeta.Name)
+    assert.Equal(t, "mcm", deployment.ObjectMeta.Namespace)
+    assert.Equal(t, "mesh-agent", deployment.Spec.Template.Labels["app"])
+    assert.Equal(t, "mesh-agent-image:latest", deployment.Spec.Template.Spec.Containers[0].Image)
+    assert.ElementsMatch(t, []string{"mesh-agent", "-c", "8080", "-p", "9090"}, deployment.Spec.Template.Spec.Containers[0].Command)
+    assert.Equal(t, int32(8080), deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort)
+    assert.Equal(t, int32(9090), deployment.Spec.Template.Spec.Containers[0].Ports[1].ContainerPort)
+    assert.NotNil(t, deployment.Spec.Template.Spec.Containers[0].SecurityContext)
+    assert.True(t, *deployment.Spec.Template.Spec.Containers[0].SecurityContext.Privileged)
+}
+
+func TestCreateMeshAgentDeployment_InvalidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+invalid_yaml
+`,
+        },
+    }
+
+    deployment := CreateMeshAgentDeployment(cm)
+    assert.Nil(t, deployment)
+}
+
+func TestCreateMeshAgentDeployment_MissingConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{},
+    }
+
+    deployment := CreateMeshAgentDeployment(cm)
+    assert.Equal(t,  types.UID(""), deployment.ObjectMeta.UID)
+}
+func TestCreateMeshAgentService_ValidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+k8s: true
+definition:
+  meshAgent:
+    image: "mesh-agent-image:latest"
+    restPort: 8080
+    grpcPort: 9090
+`,
+        },
+    }
+
+    service := CreateMeshAgentService(cm)
+    assert.NotNil(t, service)
+    assert.Equal(t, "mesh-agent-service", service.ObjectMeta.Name)
+    assert.Equal(t, "mcm", service.ObjectMeta.Namespace)
+    assert.Equal(t, map[string]string{"app": "mesh-agent"}, service.Spec.Selector)
+
+    assert.Len(t, service.Spec.Ports, 2)
+    assert.Equal(t, "rest", service.Spec.Ports[0].Name)
+    assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
+    assert.Equal(t, int32(8080), service.Spec.Ports[0].Port)
+    assert.Equal(t, intstr.FromInt(8080), service.Spec.Ports[0].TargetPort)
+
+    assert.Equal(t, "grpc", service.Spec.Ports[1].Name)
+    assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[1].Protocol)
+    assert.Equal(t, int32(9090), service.Spec.Ports[1].Port)
+    assert.Equal(t, intstr.FromInt(9090), service.Spec.Ports[1].TargetPort)
+}
+
+func TestCreateMeshAgentService_InvalidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+invalid_yaml
+`,
+        },
+    }
+
+    service := CreateMeshAgentService(cm)
+    assert.Nil(t, service)
+}
+
+func TestCreateMeshAgentService_MissingConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{},
+    }
+    service := CreateMeshAgentService(cm)
+    assert.Equal(t, types.UID(""), service.ObjectMeta.UID)
+}
+func TestCreateService_ValidName(t *testing.T) {
+    serviceName := "test-service"
+    service := CreateService(serviceName)
+
+    assert.NotNil(t, service)
+    assert.Equal(t, serviceName, service.ObjectMeta.Name)
+    assert.Equal(t, "default", service.ObjectMeta.Namespace)
+    assert.Equal(t, map[string]string{"app": serviceName}, service.Spec.Selector)
+
+    assert.Len(t, service.Spec.Ports, 1)
+    assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
+    assert.Equal(t, int32(80), service.Spec.Ports[0].Port)
+}
+
+func TestCreateService_EmptyName(t *testing.T) {
+    serviceName := ""
+    service := CreateService(serviceName)
+
+    assert.NotNil(t, service)
+    assert.Equal(t, serviceName, service.ObjectMeta.Name)
+    assert.Equal(t, "default", service.ObjectMeta.Namespace)
+    assert.Equal(t, map[string]string{"app": serviceName}, service.Spec.Selector)
+
+    assert.Len(t, service.Spec.Ports, 1)
+    assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
+    assert.Equal(t, int32(80), service.Spec.Ports[0].Port)
+}
+
+func TestCreateService_NamespaceDefault(t *testing.T) {
+    serviceName := "test-service"
+    service := CreateService(serviceName)
+
+    assert.NotNil(t, service)
+    assert.Equal(t, "default", service.ObjectMeta.Namespace)
+}
+func TestCreateBcsService_ValidConfig(t *testing.T) {
+    bcs := &bcsv1.BcsConfig{
+        Spec: bcsv1.BcsConfigSpec{
+            Name:      "test-bcs",
+            Namespace: "test-namespace",
+            Nmos: bcsv1.Nmos{
+                NmosApiPort:                3000,
+                NmosApiNodePort:            32000,
+                NmosAppCommunicationPort:   4000,
+                NmosAppCommunicationNodePort: 42000,
+            },
+        },
+    }
+
+    service := CreateBcsService(bcs)
+
+    assert.NotNil(t, service)
+    assert.Equal(t, "test-bcs", service.ObjectMeta.Name)
+    assert.Equal(t, "test-namespace", service.ObjectMeta.Namespace)
+    assert.Equal(t, corev1.ServiceTypeNodePort, service.Spec.Type)
+    assert.Equal(t, map[string]string{"app": "test-bcs"}, service.Spec.Selector)
+
+    assert.Len(t, service.Spec.Ports, 2)
+
+    assert.Equal(t, "nmos-node-api", service.Spec.Ports[0].Name)
+    assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
+    assert.Equal(t, int32(3000), service.Spec.Ports[0].Port)
+    assert.Equal(t, intstr.FromInt(3000), service.Spec.Ports[0].TargetPort)
+    assert.Equal(t, int32(32000), service.Spec.Ports[0].NodePort)
+
+    assert.Equal(t, "nmos-app-communication", service.Spec.Ports[1].Name)
+    assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[1].Protocol)
+    assert.Equal(t, int32(4000), service.Spec.Ports[1].Port)
+    assert.Equal(t, intstr.FromInt(4000), service.Spec.Ports[1].TargetPort)
+    assert.Equal(t, int32(42000), service.Spec.Ports[1].NodePort)
+}
+
+func TestCreateBcsService_MissingConfig(t *testing.T) {
+    bcs := &bcsv1.BcsConfig{
+        Spec: bcsv1.BcsConfigSpec{
+            Name:      "",
+            Namespace: "",
+        },
+    }
+
+    service := CreateBcsService(bcs)
+
+    assert.NotNil(t, service)
+    assert.Equal(t, "", service.ObjectMeta.Name)
+    assert.Equal(t, "", service.ObjectMeta.Namespace)
+    assert.Equal(t, corev1.ServiceTypeNodePort, service.Spec.Type)
+    assert.Equal(t, map[string]string{"app": ""}, service.Spec.Selector)
+}
+func TestCreatePersistentVolume_ValidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+k8s: true
+definition:
+  mediaProxy:
+    pvHostPath: "/mnt/data"
+    pvStorageClass: "manual"
+    pvStorage: "10Gi"
+`,
+        },
+    }
+
+    pv := CreatePersistentVolume(cm)
+    assert.NotNil(t, pv)
+    assert.Equal(t, "mtl-pv", pv.ObjectMeta.Name)
+    assert.Equal(t, v1.ResourceList{"storage": resource.MustParse("10Gi")}, pv.Spec.Capacity)
+    assert.Equal(t, corev1.PersistentVolumeFilesystem, *pv.Spec.VolumeMode)
+    assert.Equal(t, corev1.ReadWriteOnce, pv.Spec.AccessModes[0])
+    assert.Equal(t, corev1.PersistentVolumeReclaimRetain, pv.Spec.PersistentVolumeReclaimPolicy)
+    assert.Equal(t, "manual", pv.Spec.StorageClassName)
+    assert.Equal(t, "/mnt/data", pv.Spec.PersistentVolumeSource.HostPath.Path)
+}
+
+func TestCreatePersistentVolume_InvalidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+invalid_yaml
+`,
+        },
+    }
+
+    pv := CreatePersistentVolume(cm)
+    assert.Nil(t, pv)
+}
+func TestCreateConfigMap_ValidConfig(t *testing.T) {
+    bcs := &bcsv1.BcsConfig{
+        Spec: bcsv1.BcsConfigSpec{
+            Name:      "test-bcs",
+            Namespace: "test-namespace",
+            Nmos: bcsv1.Nmos{
+                NmosInputFile: bcsv1.NmosInputFile{
+                    LoggingLevel:            10,
+                    HttpPort:                8080,
+                    Label:                   "test-label",
+                    DeviceTags:              bcsv1.DeviceTags{Pipeline: []string{"rx"}},
+                    Function:                "rx",
+                    GpuHwAcceleration:       "none",
+                    Domain:                  "local",
+                    FfmpegGrpcServerAddress: "192.168.1.100",
+                    FfmpegGrpcServerPort:    "50051",
+                    SenderPayloadType:       96,
+                    Sender: []bcsv1.Sender{
+                        {
+                            StreamPayload: bcsv1.StreamPayload{
+                                Video: bcsv1.Video{
+                                    FrameWidth:  1920,
+                                    FrameHeight: 1080,
+                                    FrameRate: bcsv1.FrameRate{
+                                        Numerator:   30,
+                                        Denominator: 1,
+                                    },
+                                    PixelFormat: "yuv420p",
+                                    VideoType:   "rawvideo",
+                                },
+                                Audio: bcsv1.Audio{
+                                    Channels:   2,
+                                    SampleRate: 48000,
+                                    Format:     "pcm_s16le",
+                                    PacketTime: "1ms",
+                                },
+                            },
+                            StreamType: bcsv1.StreamType{
+                                File: &bcsv1.File{
+                                    Path:     "/videos",
+                                    Filename: "test_video.yuv",
+                                },
+                            },
+                        },
+                    },
+                    Receiver: []bcsv1.Receiver{
+                        {
+                            StreamPayload: bcsv1.StreamPayload{
+                                Video: bcsv1.Video{
+                                    FrameWidth:  1920,
+                                    FrameHeight: 1080,
+                                    FrameRate: bcsv1.FrameRate{
+                                        Numerator:   30,
+                                        Denominator: 1,
+                                    },
+                                    PixelFormat: "yuv420p",
+                                    VideoType:   "rawvideo",
+                                },
+                                Audio: bcsv1.Audio{
+                                    Channels:   2,
+                                    SampleRate: 48000,
+                                    Format:     "pcm_s16le",
+                                    PacketTime: "1ms",
+                                },
+                            },
+                            StreamType: bcsv1.StreamType{
+                                St2100: &bcsv1.St2100{
+                                    Transport:   "st2110-20",
+                                    Payload_type : 112,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+	configMap := CreateConfigMap(bcs)
+	assert.NotNil(t, configMap)
+	assert.Equal(t, "test-bcs-config", configMap.ObjectMeta.Name)
+	assert.Equal(t, "test-namespace", configMap.ObjectMeta.Namespace)
+
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(configMap.Data["config"]), &data)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(8080), data["http_port"])
+	assert.Equal(t, "rx", data["function"])
+    assert.Equal(t, "test-label", data["label"])
+    assert.Equal(t, "none", data["gpu_hw_acceleration"])
+    assert.Equal(t, "local", data["domain"])
+    assert.Equal(t, "192.168.1.100", data["ffmpeg_grpc_server_address"])
+    assert.Equal(t, "50051", data["ffmpeg_grpc_server_port"])
+    assert.Equal(t, float64(96), data["sender_payload_type"])
+
+    senders := data["sender"].([]interface{})
+    assert.Len(t, senders, 1)
+    sender := senders[0].(map[string]interface{})
+    streamPayload := sender["stream_payload"].(map[string]interface{})
+    video := streamPayload["video"].(map[string]interface{})
+    assert.Equal(t, float64(1920), video["frame_width"])
+    assert.Equal(t, float64(1080), video["frame_height"])
+    assert.Equal(t, "yuv420p", video["pixel_format"])
+    assert.Equal(t, "rawvideo", video["video_type"])
+
+    audio := streamPayload["audio"].(map[string]interface{})
+    assert.Equal(t, float64(2), audio["channels"])
+    assert.Equal(t, float64(48000), audio["sampleRate"])
+    assert.Equal(t, "pcm_s16le", audio["format"])
+
+    receivers := data["receiver"].([]interface{})
+    assert.Len(t, receivers, 1)
+    receiver := receivers[0].(map[string]interface{})
+    receiverStreamPayload := receiver["stream_payload"].(map[string]interface{})
+    receiverVideo := receiverStreamPayload["video"].(map[string]interface{})
+    assert.Equal(t, float64(1920), receiverVideo["frame_width"])
+    assert.Equal(t, float64(1080), receiverVideo["frame_height"])
+    assert.Equal(t, "yuv420p", receiverVideo["pixel_format"])
+    assert.Equal(t, "rawvideo", receiverVideo["video_type"])
+
+    receiverAudio := receiverStreamPayload["audio"].(map[string]interface{})
+    assert.Equal(t, float64(2), receiverAudio["channels"])
+    assert.Equal(t, float64(48000), receiverAudio["sampleRate"])
+    assert.Equal(t, "pcm_s16le", receiverAudio["format"])
+}
+
+func TestCreateConfigMap_InvalidJson(t *testing.T) {
+	bcs := &bcsv1.BcsConfig{
+		Spec: bcsv1.BcsConfigSpec{
+			Name:      "test-bcs",
+			Namespace: "test-namespace",
+            Nmos: bcsv1.Nmos{},
+		},
+	}
+
+	configMap := CreateConfigMap(bcs)
+	assert.Equal(t, types.UID(""), configMap.ObjectMeta.UID)
+}
+func TestCreateBcsDeployment_ValidConfig(t *testing.T) {
+	bcs := &bcsv1.BcsConfig{
+		Spec: bcsv1.BcsConfigSpec{
+			Name:      "test-bcs",
+			Namespace: "test-namespace",
+			Nmos: bcsv1.Nmos{
+				Image: "nmos-image:latest",
+				Args:  []string{"--arg1", "--arg2"},
+				EnvironmentVariables: []bcsv1.EnvVar{
+					{Name: "ENV_VAR_1", Value: "VALUE_1"},
+					{Name: "ENV_VAR_2", Value: "VALUE_2"},
+				},
+			},
+			App: bcsv1.App{
+				Image:    "app-image:latest",
+				GrpcPort: 50051,
+				Volumes: map[string]string{
+					"videos":       "/host/videos",
+					"dri":          "/host/dri",
+					"kahawaiLock":  "/host/kahawai.lock",
+					"devNull":      "/dev/null",
+					"hugepagesTmp": "/host/tmp/hugepages",
+					"hugepages":    "/host/hugepages",
+					"imtl":         "/host/imtl",
+					"shm":          "/dev/shm",
+					"vfio":         "/dev/vfio",
+					"driDev":       "/dev/dri",
+				},
+				EnvironmentVariables: []bcsv1.EnvVar{
+					{Name: "APP_ENV_VAR_1", Value: "APP_VALUE_1"},
+					{Name: "APP_ENV_VAR_2", Value: "APP_VALUE_2"},
 				},
 			},
 		},
 	}
 
-	// Create an invalid NMOS config file
-	tempDir := t.TempDir()
-	nmosFilePath := tempDir + "/invalid_config.json"
-	err := os.WriteFile(nmosFilePath, []byte("invalid_json"), 0644)
-	assert.NoError(t, err)
+	deployment := CreateBcsDeployment(bcs)
 
-	// Update the container info to use the temporary file path
-	containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = tempDir
+	assert.NotNil(t, deployment)
+	assert.Equal(t, "test-bcs", deployment.ObjectMeta.Name)
+	assert.Equal(t, "test-namespace", deployment.ObjectMeta.Namespace)
 
-	containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, log)
+	assert.Len(t, deployment.Spec.Template.Spec.Containers, 2)
 
-	assert.Nil(t, containerConfig)
-	assert.Nil(t, hostConfig)
-	assert.Nil(t, networkConfig)
+	nmosContainer := deployment.Spec.Template.Spec.Containers[0]
+	assert.Equal(t, "tiber-broadcast-suite-nmos-node", nmosContainer.Name)
+	assert.Equal(t, "nmos-image:latest", nmosContainer.Image)
+	assert.ElementsMatch(t, []string{"--arg1", "--arg2"}, nmosContainer.Args)
+	assert.ElementsMatch(t, []corev1.EnvVar{
+		{Name: "ENV_VAR_1", Value: "VALUE_1"},
+		{Name: "ENV_VAR_2", Value: "VALUE_2"},
+	}, nmosContainer.Env)
+
+	appContainer := deployment.Spec.Template.Spec.Containers[1]
+	assert.Equal(t, "tiber-broadcast-suite", appContainer.Name)
+	assert.Equal(t, "app-image:latest", appContainer.Image)
+	assert.ElementsMatch(t, []string{"localhost", "50051"}, appContainer.Args)
+	assert.ElementsMatch(t, []corev1.EnvVar{
+		{Name: "APP_ENV_VAR_1", Value: "APP_VALUE_1"},
+		{Name: "APP_ENV_VAR_2", Value: "APP_VALUE_2"},
+	}, appContainer.Env)
+
+	assert.Len(t, deployment.Spec.Template.Spec.Volumes, 11)
+	assert.Equal(t, "videos", deployment.Spec.Template.Spec.Volumes[0].Name)
+	assert.Equal(t, "/host/videos", deployment.Spec.Template.Spec.Volumes[0].VolumeSource.HostPath.Path)
 }
 
-// 	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
+func TestCreateBcsDeployment_MissingConfig(t *testing.T) {
+	bcs := &bcsv1.BcsConfig{
+		Spec: bcsv1.BcsConfigSpec{
+			Name:      "",
+			Namespace: "",
+		},
+	}
+
+	deployment := CreateBcsDeployment(bcs)
+
+	assert.NotNil(t, deployment)
+	assert.Equal(t, types.UID(""), deployment.ObjectMeta.UID)
+}
+func TestCreateDaemonSet_ValidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+k8s: true
+definition:
+  mediaProxy:
+    image: "media-proxy-image:latest"
+    command: ["media-proxy"]
+    args: ["--grpc-port", "50051", "--sdk-port", "50052"]
+    grpcPort: 50051
+    sdkPort: 50052
+    volumes:
+      memif: "/run/mcm"
+      vfio: "/dev/vfio"
+    pvHostPath: "/mnt/data"
+    pvStorageClass: "manual"
+    pvStorage: "10Gi"
+    pvcStorage: "5Gi"
+`,
+        },
+    }
+
+    daemonSet := CreateDaemonSet(cm)
+    assert.NotNil(t, daemonSet)
+    assert.Equal(t, "media-proxy", daemonSet.ObjectMeta.Name)
+    assert.Equal(t, "mcm", daemonSet.ObjectMeta.Namespace)
+    assert.Equal(t, map[string]string{"app": "media-proxy"}, daemonSet.Spec.Selector.MatchLabels)
+    assert.Equal(t, "media-proxy-image:latest", daemonSet.Spec.Template.Spec.Containers[0].Image)
+    assert.ElementsMatch(t, []string{"media-proxy"}, daemonSet.Spec.Template.Spec.Containers[0].Command)
+    assert.ElementsMatch(t, []string{"--grpc-port", "50051", "--sdk-port", "50052"}, daemonSet.Spec.Template.Spec.Containers[0].Args)
+    assert.Equal(t, int32(50051), daemonSet.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort)
+    assert.Equal(t, int32(50052), daemonSet.Spec.Template.Spec.Containers[0].Ports[1].ContainerPort)
+    assert.Equal(t, "/run/mcm", daemonSet.Spec.Template.Spec.Volumes[0].HostPath.Path)
+    assert.Equal(t, "/dev/vfio", daemonSet.Spec.Template.Spec.Volumes[1].HostPath.Path)
+}
+
+func TestCreateDaemonSet_InvalidConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{
+            "config.yaml": `
+invalid_yaml
+`,
+        },
+    }
+
+    daemonSet := CreateDaemonSet(cm)
+    assert.Nil(t, daemonSet)
+}
+
+func TestCreateDaemonSet_MissingConfig(t *testing.T) {
+    cm := &corev1.ConfigMap{
+        Data: map[string]string{},
+    }
+
+    daemonSet := CreateDaemonSet(cm)
+    assert.Equal(t,types.UID(""), daemonSet.ObjectMeta.UID)
+}
+func TestConvertEnvVars_ValidInput(t *testing.T) {
+	input := []bcsv1.EnvVar{
+		{Name: "ENV_VAR_1", Value: "VALUE_1"},
+		{Name: "ENV_VAR_2", Value: "VALUE_2"},
+	}
+
+	expected := []corev1.EnvVar{
+		{Name: "ENV_VAR_1", Value: "VALUE_1"},
+		{Name: "ENV_VAR_2", Value: "VALUE_2"},
+	}
+
+	result := convertEnvVars(input)
+	assert.ElementsMatch(t, expected, result)
+}
+
+func TestConvertEnvVars_EmptyInput(t *testing.T) {
+	input := []bcsv1.EnvVar{}
+
+	expected := []corev1.EnvVar{}
+
+	result := convertEnvVars(input)
+	assert.ElementsMatch(t, expected, result)
+}
+
+func TestConvertEnvVars_NilInput(t *testing.T) {
+	var input []bcsv1.EnvVar
+
+	expected := []corev1.EnvVar{}
+
+	result := convertEnvVars(input)
+	assert.ElementsMatch(t, expected, result)
+}
+func TestCreateNamespace_ValidName(t *testing.T) {
+	namespaceName := "test-namespace"
+	namespace := CreateNamespace(namespaceName)
+
+	assert.NotNil(t, namespace)
+	assert.Equal(t, namespaceName, namespace.ObjectMeta.Name)
+}
+
+func TestCreateNamespace_EmptyName(t *testing.T) {
+	namespaceName := ""
+	namespace := CreateNamespace(namespaceName)
+
+	assert.NotNil(t, namespace)
+	assert.Equal(t, namespaceName, namespace.ObjectMeta.Name)
+}
 // }
 
 // type DockerContainerControllerMock struct {

@@ -118,7 +118,7 @@ type BcsConfigSpec struct {
 
   type St2100 struct {
 	Transport string `json:"transport"`
-	Payload_type string `json:"payload_type"`
+	Payload_type int `json:"payload_type"`
   }
 
   type Mcm struct {
