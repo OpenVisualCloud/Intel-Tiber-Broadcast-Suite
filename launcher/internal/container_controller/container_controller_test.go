@@ -409,13 +409,12 @@ func TestPullImageIfNotExists(t *testing.T) {
 	})
 }
 func TestIsEmptyStruct(t *testing.T) {
-	controller := &DockerContainerController{}
 
 	t.Run("Empty struct", func(t *testing.T) {
 		type EmptyStruct struct{}
 		empty := EmptyStruct{}
 
-		if !controller.isEmptyStruct(empty) {
+		if !IsEmptyStruct(empty) {
 			t.Fatalf("Expected struct to be empty, but it was not")
 		}
 	})
@@ -426,12 +425,13 @@ func TestIsEmptyStruct(t *testing.T) {
 		}
 		nonEmpty := NonEmptyStruct{Field: "value"}
 
-		if controller.isEmptyStruct(nonEmpty) {
+		if IsEmptyStruct(nonEmpty) {
 			t.Fatalf("Expected struct to be non-empty, but it was empty")
 		}
 	})
 }
 // errorReader is a helper struct to simulate an error during io.Reader operations
+
 type errorReader struct {
 	err error
 }
