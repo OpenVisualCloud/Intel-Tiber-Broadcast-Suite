@@ -96,24 +96,25 @@ void CmdPassClient::AsyncCompleteRpc() {
 void CmdPassClient::WaitForAllRequests() { all_tasks_completed.wait(false); }
 
 // Function to convert Config to vector of string pairs
-std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& config) {
-    std::vector<std::pair<std::string, std::string>> result;
+std::vector<std::pair<std::string, std::string>>
+commitConfigs(const Config &config) {
+  std::vector<std::pair<std::string, std::string>> result;
 
-    if (config.receivers.empty()) {
-        std::cout<< "No receivers in config in commitConfigs" << std::endl;
-    }
+  if (config.receivers.empty()) {
+    std::cout << "No receivers in config in commitConfigs" << std::endl;
+  }
 
-    if (config.senders.empty()) {
-        std::cout<< "No senders in config in commitConfigs" << std::endl;
-    }
-    
-    std::string json_str;
-    if (serialize_config_json(config, json_str) == 0) {
-        result.push_back({"json", json_str});
-    }
-    else {
-        std::cout << "Error serializing Config to json, trying previos solution" << std::endl;
-    };
+  if (config.senders.empty()) {
+    std::cout << "No senders in config in commitConfigs" << std::endl;
+  }
 
-    return result;
+  std::string json_str;
+  if (serialize_config_json(config, json_str) == 0) {
+    result.push_back({"json", json_str});
+  } else {
+    std::cout << "Error serializing Config to json, trying previos solution"
+              << std::endl;
+  };
+
+  return result;
 }
