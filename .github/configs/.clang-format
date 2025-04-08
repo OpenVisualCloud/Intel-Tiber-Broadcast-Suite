@@ -4,9 +4,9 @@ UseTab: Never
 ColumnLimit: 100
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterClass: false
-  AfterNamespace: false
-  AfterFunction: false
+AfterClass: false
+AfterNamespace: false
+AfterFunction: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 IndentCaseLabels: false
