@@ -1,12 +1,13 @@
+---
 BasedOnStyle: LLVM
 IndentWidth: 4
 UseTab: Never
 ColumnLimit: 100
 BreakBeforeBraces: Custom
 BraceWrapping:
-AfterClass: false
-AfterNamespace: false
-AfterFunction: false
+  AfterClass: false
+  AfterNamespace: false
+  AfterFunction: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 IndentCaseLabels: false
@@ -14,7 +15,8 @@ IncludeBlocks: Preserve
 SortIncludes: false
 ReferenceAlignment: Left
 AccessModifierOffset: -4
-
+---
 # Don't format .proto files.
 Language: Proto
 DisableFormat: true
+...
