@@ -1,4 +1,3 @@
-
 name: build-binaries
 
 on:
@@ -37,6 +36,7 @@ jobs:
       run: |
         ./FFmpegPipelineGeneratorTests
         ./FFmpegWrapperServiceTests
+
     - name: "nmos unit tests"
       working-directory: "${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests"
       run: |
@@ -49,6 +49,7 @@ jobs:
           '${{ github.workspace }}/src/gRPC/build/*'
           '${{ github.workspace }}/src/nmos/nmos-node/build/*'
           '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
+
     - name: "Build: launcher"
       working-directory: "${{ github.workspace }}/launcher"
       run: 
@@ -59,3 +60,4 @@ jobs:
       with:
         name: launcher-bin
         path: '${{ github.workspace }}/launcher/manager'
+   
