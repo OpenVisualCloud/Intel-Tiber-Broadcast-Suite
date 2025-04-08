@@ -28,29 +28,27 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, senders, receivers, function,
 // TODO: move serialize_config_json and deserialize_config_json to a separate
 // file
 
-static int serialize_config_json(const Config &input_config,
-                                 std::string &output_string) {
-  try {
-    Config new_config = input_config;
-    new_config.receivers[0].payload.type = payload_type::video;
-    new_config.senders[0].payload.type = payload_type::video;
-
-    nlohmann::json config_json = new_config;
-    // Dump json to string
-    output_string = config_json.dump();
-    std::cout << "JSON output string: " << std::endl
-              << output_string << std::endl;
-  } catch (const nlohmann::json::parse_error &e) {
-    std::cout << "JSON parse error: " << e.what() << std::endl;
-    return 1;
-  } catch (const nlohmann::json::type_error &e) {
-    std::cout << "JSON type error: " << e.what() << std::endl;
-    return 1;
-  } catch (const std::exception &e) {
-    std::cout << "Exception: " << e.what() << std::endl;
-    return 1;
-  }
-  return 0;
+static int serialize_config_json(const Config &input_config, std::string &output_string){
+    try {
+        nlohmann::json config_json = input_config;
+        //Dump json to string
+        std::cout << "Starting to dump json" << std::endl;
+        output_string = config_json.dump();
+        std::cout << "JSON output string: " << std::endl << output_string << std::endl;
+    }
+    catch (const nlohmann::json::parse_error &e) {
+        std::cout << "JSON parse error: " << e.what() << std::endl;
+        return 1;
+    }
+    catch (const nlohmann::json::type_error &e) {
+        std::cout << "JSON type error: " << e.what() << std::endl;
+        return 1;
+    }
+    catch (const std::exception &e) {
+        std::cout << "Exception: " << e.what() << std::endl;
+        return 1;
+    }
+    return 0;
 }
 
 static int deserialize_config_json(Config &output_config,

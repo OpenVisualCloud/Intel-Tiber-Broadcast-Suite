@@ -63,10 +63,6 @@ const std::string json_str = R"json(
       "http_port": 95,
       "label": "intel-broadcast-suite",
       "activate_senders": false,
-      "senders": ["v"],
-      "senders_count": [0],
-      "receivers": ["v"],
-      "receivers_count": [1],
       "device_tags": {
         "pipeline": ["rx"]
       },
