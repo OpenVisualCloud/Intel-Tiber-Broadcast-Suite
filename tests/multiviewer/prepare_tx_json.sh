@@ -13,6 +13,11 @@ fi
 base_port=50090
 base_http_port=100
 
+cp -n ../intel-node-tx.json intel-node-tx-example.json
+
+jq '.ffmpeg_grpc_server_port = "50055" | .http_port=90 | .ffmpeg_grpc_server_address = "localhost"' \
+  intel-node-tx-example.json > intel-node-tx.json
+
 for ((i=1; i<=number_of_configs; i++)); do 
    new_file="1920x1080p10le_multi_${i}.yuv"
    port=\"$((base_port + i))\"
@@ -22,3 +27,9 @@ for ((i=1; i<=number_of_configs; i++)); do
     '.ffmpeg_grpc_server_port = $port_number | .http_port = $http_port | .receiver[0].stream_type.file.filename = $new_filename' \
     intel-node-tx.json > intel-node-tx-${i}.json
 done
+
+file_to_delete="intel-node-tx-example.json"
+if [ -e "$file_to_delete" ]; then
+  # If the file exists, delete it
+  rm "$file_to_delete"
+fi

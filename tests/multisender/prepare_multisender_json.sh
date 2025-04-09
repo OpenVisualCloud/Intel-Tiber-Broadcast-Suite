@@ -46,5 +46,5 @@ blocks=$(for i in $(seq 1 $number_of_senders); do echo "$json_block"; done | jq 
 
 
 jq --argjson blocks "$blocks" --argjson count "$number_of_senders" \
-   '.sender += $blocks | .senders_count = [$count]' \
+   '.sender += $blocks' \
    intel-node-multisenders_example.json > intel-node-multisenders.json

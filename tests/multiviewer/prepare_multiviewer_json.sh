@@ -47,5 +47,5 @@ blocks=$(for i in $(seq 1 $number_of_receivers); do echo "$json_block"; done | j
 
 
 jq --argjson blocks "$blocks" --argjson count "$number_of_receivers" \
-   '.receiver += $blocks | .receivers_count = [$count] | .multiviewer_columns = $count' \
+   '.receiver += $blocks | .multiviewer_columns = $count' \
    intel-node-multiviewer_example.json > intel-node-multiviewer.json

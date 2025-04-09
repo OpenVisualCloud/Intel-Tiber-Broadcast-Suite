@@ -12,6 +12,11 @@ fi
 base_port=50056
 base_http_port=100
 
+cp -n ../intel-node-rx.json intel-node-rx-example.json
+
+jq '.ffmpeg_grpc_server_port = "50056" | .ffmpeg_grpc_server_address = "localhost"' \
+  intel-node-rx-example.json > intel-node-rx.json
+
 for ((i=1; i<=number_of_configs; i++)); do 
    new_file="multisenders_${i}.yuv"
    port=\"$((base_port + i))\"
@@ -23,3 +28,9 @@ for ((i=1; i<=number_of_configs; i++)); do
     intel-node-rx.json > intel-node-rx-${i}.json
 
 done
+
+file_to_delete="intel-node-rx-example.json"
+if [ -e "$file_to_delete" ]; then
+  # If the file exists, delete it
+  rm "$file_to_delete"
+fi
