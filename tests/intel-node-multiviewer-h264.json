@@ -1,5 +1,5 @@
 {
-  "logging_level": -10,
+  "logging_level": 10,
   "http_port": 95,
   "label": "intel-broadcast-suite",
   "device_tags": {
@@ -87,8 +87,8 @@
         "frame_width": 1920,
         "frame_height": 1080,
         "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv422p10le",
-        "video_type": "rawvideo"
+        "pixel_format": "yuv420p",
+        "video_type": "h264"
       },
       "audio": {
         "channels": 2,
@@ -100,7 +100,7 @@
     "stream_type": {
       "file": {
         "path": "/videos/recv",
-        "filename": "1920x1080p10le_3.yuv"
+        "filename": "multiviewer_3.h264"
       }
     }
   }]

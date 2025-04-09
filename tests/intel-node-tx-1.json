@@ -2,10 +2,6 @@
   "logging_level": 10,
   "http_port": 100,
   "label": "intel-broadcast-suite-tx-1",
-  "senders": ["v"],
-  "senders_count": [1],
-  "receivers": ["v"],
-  "receivers_count": [0],
   "device_tags": {
     "pipeline": ["tx"]
   },

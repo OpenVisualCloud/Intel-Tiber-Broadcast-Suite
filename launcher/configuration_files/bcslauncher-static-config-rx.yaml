@@ -26,10 +26,10 @@ configuration: # Configuration should be used only for docker mode
         ip: 192.168.2.2
   workloadToBeRun:
     ffmpegPipeline:
-      name: bcs-ffmpeg-pipeline-tx
+      name: bcs-ffmpeg-pipeline-rx
       imageAndTag: tiber-broadcast-suite:latest
-      gRPCPort: 50051
-      sourcePort: 5004
+      gRPCPort: 50053
+      sourcePort: 5006
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
@@ -48,17 +48,18 @@ configuration: # Configuration should be used only for docker mode
       network: 
         enable: true
         name: my_net_801f0
-        ip: 192.168.2.4
+        ip: 192.168.2.6
     nmosClient:
-      name: bcs-ffmpeg-pipeline-nmos-client-tx
+      name: bcs-ffmpeg-pipeline-nmos-client-rx
       imageAndTag: tiber-broadcast-suite-nmos-node:latest
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
         - "VFIO_PORT_TX=0000:ca:11.0"
+        - "VFIO_PORT_RX=0000:ca:11.1"
       nmosConfigPath: /root/NMOS-FFMPEG-DEMO/refactor-nmos/tests
-      nmosConfigFileName: intel-node-tx.json
+      nmosConfigFileName: intel-node-rx.json
       network: 
         enable: true
         name: my_net_801f0
-        ip: 192.168.2.5
+        ip: 192.168.2.7

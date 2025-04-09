@@ -44,7 +44,7 @@ void CmdPassClient::FFmpegCmdExec(std::vector<std::pair<std::string, std::string
     CmdMsg *cmd_msg;
     
     for (const auto& cmd_pair : cmd_pairs) {
-        cmd_msg = req_obj.add_obj();
+        cmd_msg = req_obj.add_objs();
         cmd_msg->set_cmd_key(cmd_pair.first);
         cmd_msg->set_cmd_val(cmd_pair.second);
     }
@@ -99,6 +99,14 @@ void CmdPassClient::WaitForAllRequests() {
 std::vector<std::pair<std::string, std::string>> commitConfigs(const Config& config) {
     std::vector<std::pair<std::string, std::string>> result;
 
+    if (config.receivers.empty()) {
+        std::cout<< "No receivers in config in commitConfigs" << std::endl;
+    }
+
+    if (config.senders.empty()) {
+        std::cout<< "No senders in config in commitConfigs" << std::endl;
+    }
+    
     std::string json_str;
     if (serialize_config_json(config, json_str) == 0) {
         result.push_back({"json", json_str});

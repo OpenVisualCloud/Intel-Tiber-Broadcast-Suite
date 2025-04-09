@@ -20,10 +20,6 @@ Here is sample config `node.json` (treated as transmitter node with 1 device and
   "logging_level": 10,
   "http_port": 90,
   "label": "intel-broadcast-suite",
-  "senders": ["v"],
-  "senders_count": [1],
-  "receivers": ["v"],
-  "receivers_count": [0],
   "device_tags": {
     "pipeline": ["tx"]
   },
@@ -88,10 +84,6 @@ Curretly only video mode is supported. The audio support is under development an
 - `logging_level`: The level of logging detail.
 - `http_port`: The port number for HTTP communication (90 in this case).
 - `label`: A label or identifier for the configuration ("intel-broadcast-suite").
-- `senders`: A list of sender identifiers (["v"]).
-- `senders_count`: A list indicating the count of each sender ([1]).
-- `receivers`: A list of receiver identifiers (["v"]).
-- `receivers_count`: A list indicating the count of each receiver ([0]).
 - `color_sampling`: The color sampling format ("YCbCr-4:2:2").
 - `function`: The function of the device, here indicating the pipeline type ("tx" for transmit).
 - `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none").

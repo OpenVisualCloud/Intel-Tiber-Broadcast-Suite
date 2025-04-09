@@ -176,7 +176,7 @@ WORKDIR /tmp/Media-Transport-Library
 RUN \
   echo "**** DOWNLOAD MTL ****" && \
   curl -Lf \
-    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz | \
+    https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/heads/${MTL_VER}.tar.gz | \
   tar -zx --strip-components=1 -C /tmp/Media-Transport-Library
 
 WORKDIR /tmp/dpdk

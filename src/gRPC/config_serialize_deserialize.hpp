@@ -21,12 +21,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Config, senders, receivers, function, multivi
 
 static int serialize_config_json(const Config &input_config, std::string &output_string){
     try {
-        Config new_config = input_config;
-        new_config.receivers[0].payload.type = payload_type::video;
-        new_config.senders[0].payload.type = payload_type::video;
-
-        nlohmann::json config_json = new_config;
+        nlohmann::json config_json = input_config;
         //Dump json to string
+        std::cout << "Starting to dump json" << std::endl;
         output_string = config_json.dump();
         std::cout << "JSON output string: " << std::endl << output_string << std::endl;
     }

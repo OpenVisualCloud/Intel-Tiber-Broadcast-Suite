@@ -1,6 +1,8 @@
 name: Coverity scan
-
 on:
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
@@ -9,7 +11,6 @@ on:
         description: 'Branch to run scans on'
         default: 'main'
         type: string
-  pull_request:
 
 permissions:
   contents: read

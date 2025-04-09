@@ -42,6 +42,7 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD [ "curl", "-f", "http://localhost:8081/healthz" ] || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD [ "sh", "-c", "curl -f http://localhost:8081/healthz || exit 1" ]
 
 ENTRYPOINT ["/manager"]
