@@ -100,7 +100,7 @@ func IsEmptyStruct(s interface{}) bool {
 //   5. Creates and runs the BCS NMOS client container if its configuration is provided.
 //   6. Creates and runs the BCS FFmpeg pipeline container with predefined settings.
 
-func prepareContainerMediaProxyAgent(config *utils.Configuration)  general.Containers{
+func prepareContainerMediaProxyAgent(config *utils.Configuration) general.Containers{
 	containerApp := general.Containers{}
 	
 		containerApp.Type = general.MediaProxyAgent
@@ -184,7 +184,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 		return err
 	}
 	//pass the yaml configuration to the Contaier struct
-	if IsEmptyStruct(config.RunOnce.MediaProxyAgent) {
+	if !IsEmptyStruct(config.RunOnce.MediaProxyAgent) {
 		mcmAgentContainer := prepareContainerMediaProxyAgent(&config)
 		err := createAndRunContainer(ctx, cli, log, &mcmAgentContainer)
 		if err != nil {
@@ -195,7 +195,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 		log.Info("No information about MCM MediaProxy Agent provided. Omitting creation of MCM MediaProxy Agent container")
 	}
 
-	if IsEmptyStruct(config.RunOnce.MediaProxyMcm) {
+	if !IsEmptyStruct(config.RunOnce.MediaProxyMcm) {
 		mediaProxyContainer := prepareContainerMediaProxyMcm(&config)
 		err := createAndRunContainer(ctx, cli, log, &mediaProxyContainer)
 		if err != nil {
@@ -206,7 +206,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 		log.Info("No information about MCM MediaProxy provided. Omitting creation of MCM MediaProxy container")
 	}
 
-	if IsEmptyStruct(config.WorkloadToBeRun.NmosClient) {
+	if !IsEmptyStruct(config.WorkloadToBeRun.NmosClient) {
 		bcsNmosContainer := prepareContainerNmosClient(&config)
 		err = createAndRunContainer(ctx, cli, log, &bcsNmosContainer)
 		if err != nil {
@@ -217,7 +217,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
 	}
 
-	if IsEmptyStruct(config.WorkloadToBeRun.FfmpegPipeline) {
+	if !IsEmptyStruct(config.WorkloadToBeRun.FfmpegPipeline) {
 		bcsPipelinesContainer := prepareContainerFfmpegPipeline(&config)
 		err = createAndRunContainer(ctx, cli, log, &bcsPipelinesContainer)
 	if err != nil {
