@@ -1,4 +1,4 @@
-name: build-binaries
+name: Base Build
 
 on:
   workflow_call:
