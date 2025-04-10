@@ -1,5 +1,4 @@
 #!/bin/bash -e
-REPO=Intel-Tiber-Broadcast-Suite
 
 COV_CPP_VER="$(ls /opt/coverity/cxx)"
 COV_OTHER_VER="$(ls /opt/coverity/other)"

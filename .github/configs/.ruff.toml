@@ -1,0 +1,4 @@
+# https://docs.astral.sh/ruff/settings/
+[lint]
+# skip wildcard importss (`F403`).
+ignore = ["F403"]
