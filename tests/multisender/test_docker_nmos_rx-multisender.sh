@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Usage $0 <number_of_cotainers> <video_type>"
+echo "Usage $0 <number_of_containers> <video_type> <localhost/ip>"
 
 number_of_containers=$1
 
@@ -11,6 +11,11 @@ fi
 
 if [ -z "$2" ]; then
   echo "Usage: $0 $1 <video_type>"
+  exit 1
+fi
+
+if [ -z "$3" ]; then
+  echo "Usage: $0 $1 $2 <localhost/ip>"
   exit 1
 fi
 
@@ -31,14 +36,24 @@ case $2 in
     ;;
 esac
 
+host=$3
 config_file="intel-node-rx${format}.json"
 
 for ((i=1; i<=number_of_containers; i++)); do 
   port_rx=$(awk "NR==$((i+1))" vfio_addresses.txt)
 
+  if [[ "$host" == "localhost" ]]; then
+    ip=""
+    network=host
+  else
+    ip=$(awk "NR==${i}" IP_node.txt)
+    network=my_net_801f0
+  fi
+
   echo "Starting container $i"
   echo "Configuration file: $config_file"
   echo "VFIO address: $port_rx"
+  echo "IP: $ip"
 
   container_id=$(docker run -d \
     --user root\
@@ -56,7 +71,8 @@ for ((i=1; i<=number_of_containers; i++)); do
     -e http_proxy="" \
     -e https_proxy="" \
     -e VFIO_PORT_RX=$port_rx \
-    --network=host \
+    --network=$network \
+    --ip=$ip \
     --ipc=host \
     -v /dev/shm:/dev/shm \
     tiber-broadcast-suite-nmos-node config/$config_file)

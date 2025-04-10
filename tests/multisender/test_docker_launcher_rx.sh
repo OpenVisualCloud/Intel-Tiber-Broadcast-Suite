@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Usage $0 <host_name> <number_of_cotainers>"
+echo "Usage $0 <host_name> <number_of_containers>"
 
 if [ -z "$1" ]; then
   echo "Usage: $0 <hostname/ip> e.g. $0 192.168.2.1"
@@ -17,15 +17,29 @@ fi
 #TODO add support to use different IPs, eg. read form file as for VFIO adresses
 #add to for loop: hostname==$(awk "NR==$((i))" host_addresses.txt)
 
-HOSTNAME=$1
+host=$1
 base_port=50055
 
 for ((i=1; i<=number_of_containers; i++)); do 
   PORT=$((base_port + i))
+  if [[ "$host" == "localhost" ]]; then
+    ip=""
+    network=host
+    HOSTNAME=localhost
+  else
+    ip=$(awk "NR==$((i-1))" IP_launcher.txt)
+    HOSTNAME=$(awk "NR==$((i-1))" IP_launcher.txt)
+    if [[ "$i" -eq 1 ]]; then
+        ip=192.168.2.6
+        HOSTNAME=192.168.2.6
+    fi
+    network=my_net_801f0
+  fi
 
   echo "Starting container $i"
   echo "Host name: $HOSTNAME"
   echo "Port: $PORT"
+  echo "IP: $ip"
 
   container_id=$(docker run -d \
      --user root \
@@ -42,7 +56,8 @@ for ((i=1; i<=number_of_containers; i++)); do
      -v /var/run/imtl:/var/run/imtl \
      -e http_proxy="" \
      -e https_proxy="" \
-     --network=host \
+     --network=$network \
+     --ip=$ip \
      --ipc=host \
      -v /dev/shm:/dev/shm \
      tiber-broadcast-suite "$HOSTNAME" "$PORT")
