@@ -154,7 +154,11 @@ func updateNmosJsonFile(filePath string, ip string, port string) error {
 	}
 	defer file.Close()
 
-	byteValue, _ := io.ReadAll(file)
+	byteValue, err := io.ReadAll(file)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return err
+	}
 
 	var config nmos.Config
 	err = json.Unmarshal(byteValue, &config)
