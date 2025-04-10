@@ -1,4 +1,4 @@
-name: Coverity scan
+name: Coverity Build
 on:
   push:
     branches:
