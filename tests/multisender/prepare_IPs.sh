@@ -12,7 +12,7 @@ fi
 # Check and delete the second file
 
 file_to_delete="IP_launcher.txt"
-file_to_delete1="IP_receiver.txt"
+file_to_delete1="IP_node.txt"
 
 if [ -e "$file_to_delete" ]; then
   rm "$file_to_delete"
