@@ -1,4 +1,4 @@
-name: Linters
+name: Linter
 
 on:
   workflow_call:
@@ -7,9 +7,6 @@ on:
     branches: [ 'main' ]
   push:
     branches: [ 'main' ]
-
-env:
-  HADOLINT_RESULTS_FILE: 'hadolint.sarif'
 
 permissions:
   contents: read
@@ -21,13 +18,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  hadolint-main-dockerfile:
-    name: 'dockerfile lint'
+  linter:
+    name: 'code space lint'
     permissions:
-      actions: read
       contents: read
-      security-events: write
     runs-on: ubuntu-22.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BASH_SEVERITY: "warning"
     steps:
     - name: 'setup: harden runner'
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -36,91 +34,43 @@ jobs:
 
     - name: 'setup: checkout repo'
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with: 
+        fetch-depth: 0
 
-    - name: 'setup: sarif output folder'
-      run: mkdir -p "${{ github.workspace }}/sarif"
-
-    - name: 'scan: ./Dockerfile hadolint scan tty output'
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: docker/app/Dockerfile
-        config: .github/configs/hadolint.yaml
-        format: tty
-        no-fail: false
-        failure-threshold: info
-
-    - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: docker/app/Dockerfile
-        config: .github/configs/hadolint.yaml
-        format: sarif
-        output-file: "main-${{ env.HADOLINT_RESULTS_FILE }}"
-        no-fail: true
-        failure-threshold: info
-
-    - name: 'scan: Upload results to security tab'
-      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-      with:
-        sarif_file: "main-${{ env.HADOLINT_RESULTS_FILE }}"
-
-  hadolint-sources-dockerfile:
-    name: 'sources dockerfile lint'
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    runs-on: ubuntu-22.04
-    steps:
-    - name: 'setup: harden runner'
-      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-      with:
-        egress-policy: audit
-
-    - name: 'setup: checkout repo'
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-    - name: "scan: ./Dockerfile hadolint scan tty output"
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ".sources/Dockerfile.sources"
-        config: .github/configs/hadolint.yaml
-        format: tty
-        no-fail: false
-        failure-threshold: info
-
-    - name: 'scan: .sources/Dockerfile.sources hadolint sarif output'
-      uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-      with:
-        dockerfile: ".sources/Dockerfile.sources"
-        config: .github/configs/hadolint.yaml
-        format: sarif
-        output-file: "sources-${{ env.HADOLINT_RESULTS_FILE }}"
-        no-fail: true
-        failure-threshold: info
-
-    - name: 'scan: Upload results to security tab'
-      uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-      with:
-        sarif_file: "sources-${{ env.HADOLINT_RESULTS_FILE }}"
-
-  shellcheck:
-    name: 'shellcheck'
-    runs-on: ubuntu-22.04
-    steps:
-    - name: 'setup: harden runner'
-      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-      with:
-        egress-policy: audit
-
-    - name: 'setup: checkout repo'
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-    - name: 'run shellcheck scan'
-      uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # v2.0.0
-      with:
-        severity: warning
-        format: tty
-        ignore_paths: .github .sources
+    - name: Lint Code Base
+      uses: super-linter/super-linter/slim@e1cb86b6e8d119f789513668b4b30bf17fe1efe4 # v7.2.0 x-release-please-version
       env:
-        SHELLCHECK_OPTS: -e SC2154
+          VALIDATE_CPP: false
+          VALIDATE_JSCPD: false
+          VALIDATE_JSON: false
+          VALIDATE_JSON_PRETTIER: false
+          VALIDATE_MARKDOWN_PRETTIER: false
+          VALIDATE_MARKDOWN: false
+          VALIDATE_CHECKOV: false
+          VALIDATE_BASH_EXEC: false 
+          VALIDATE_CSS_PRETTIER: false
+          VALIDATE_ENV: false
+          VALIDATE_GIT_COMMITLINT: false
+          VALIDATE_GIT_MERGE_CONFLICT_MARKERS: false
+          VALIDATE_GITHUB_ACTIONS: false
+          VALIDATE_GITLEAKS: false
+          VALIDATE_NATURAL_LANGUAGE: false
+          VALIDATE_PYTHON: false
+          VALIDATE_PYTHON_BLACK: false
+          VALIDATE_PYTHON_FLAKE8:	false
+          VALIDATE_PYTHON_ISORT: false
+          VALIDATE_PYTHON_MYPY: false
+          VALIDATE_PYTHON_PYINK: false
+          VALIDATE_PYTHON_PYLINT: false
+          VALIDATE_KUBERNETES_KUBECONFORM: false
+          VALIDATE_SHELL_SHFMT: false
+          VALIDATE_YAML_PRETTIER: false
+          VALIDATE_YAML: false
+          VALIDATE_GO_MODULES: false
+          VALIDATE_GO: false # linter does not use config files
+          VALIDATE_CLANG_FORMAT: false # TODO:  clang still see the same errors after running formatter on code base
+          LINTER_RULES_PATH: .github/configs
+          PYTHON_RUFF_CONFIG_FILE: .ruff.toml
+          DOCKERFILE_HADOLINT_FILE_NAME: .hadolint.yaml
+          BASH_FILE_NAME: .shellcheckrc
+          CLANG_FORMAT_FILE_NAME: .clang-format

@@ -29,7 +29,11 @@ def issues_to_pandas(raw_response_data: dict) -> pd.DataFrame:
     return df
 
 
-is_grpc_record = lambda x: "gRPC" in x or "grpc" in x
-is_launcher_record = lambda x: "Go" in x
-filter_grpc_issues = lambda df: df[df["displayFile"].apply(is_grpc_record)]
-filter_launcher_issues = lambda df: df[df["fileLanguage"].apply(is_launcher_record)]
+def is_grpc_record(x):
+    return "gRPC" in x or "grpc" in x
+def is_launcher_record(x):
+    return "Go" in x
+def filter_grpc_issues(df):
+    return df[df["displayFile"].apply(is_grpc_record)]
+def filter_launcher_issues(df):
+    return df[df["fileLanguage"].apply(is_launcher_record)]

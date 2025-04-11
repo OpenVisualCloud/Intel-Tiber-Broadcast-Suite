@@ -1,5 +1,5 @@
 # Source repository: https://github.com/actions/dependency-review-action
-name: scan-dependency-review
+name: Dependency Review
 on:
   pull_request:
     branches: [ 'main' ]

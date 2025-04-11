@@ -18,7 +18,8 @@ import sys
 def git_describe_tag():
     try:
         return os.popen('git describe --tags').read().strip()
-    except:
+    except Exception as e:
+        print(f"Error getting git tag: {e}")
         return ""
 
 
