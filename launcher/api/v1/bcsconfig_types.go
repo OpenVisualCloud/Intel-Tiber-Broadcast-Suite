@@ -111,12 +111,12 @@ type BcsConfigSpec struct {
   }
 
   type StreamType struct {
-	St2100 *St2100 `json:"st2100,omitempty"`
+	St2110 *St2110 `json:"st2110,omitempty"`
 	Mcm  *Mcm  `json:"mcm,omitempty"`
 	File *File `json:"file,omitempty"`
   }
 
-  type St2100 struct {
+  type St2110 struct {
 	Transport string `json:"transport"`
 	Payload_type int `json:"payload_type"`
   }

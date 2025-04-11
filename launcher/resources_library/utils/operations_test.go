@@ -809,7 +809,7 @@ func TestCreateConfigMap_ValidConfig(t *testing.T) {
                                 },
                             },
                             StreamType: bcsv1.StreamType{
-                                St2100: &bcsv1.St2100{
+                                St2110: &bcsv1.St2110{
                                     Transport:   "st2110-20",
                                     Payload_type : 112,
                                 },

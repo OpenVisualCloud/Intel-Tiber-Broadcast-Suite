@@ -49,7 +49,7 @@ spec:
     nmosAppCommunicationNodePort: 32054
     nmosInputFile:
       logging_level: 0
-      http_port: 90
+      http_port: 84
       label: intel-broadcast-suite
       device_tags:
         pipeline:
