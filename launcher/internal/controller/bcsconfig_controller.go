@@ -99,7 +99,7 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "Failed to create resource", "resource", mcmAgentDeployment.GetObjectKind(), "named", mcmAgentDeployment.Name)
 		return ctrl.Result{}, err
 	}
-	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace:"mcm"})
+	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:"mcm"})
 	if err != nil {
 		log.Error(err, "Failed to create resource", "resource", mcmAgentService.GetObjectKind(), "named", mcmAgentService.Name)
 		return ctrl.Result{}, err
