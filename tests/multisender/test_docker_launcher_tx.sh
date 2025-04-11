@@ -38,3 +38,4 @@ docker run -it \
    --ipc=host \
    -v /dev/shm:/dev/shm \
    tiber-broadcast-suite "$HOSTNAME" "$PORT"
+   
