@@ -3,9 +3,9 @@
 3. ./prepare_multiviewer_json.sh <number_of_senders>
 
 Run tests:
-./test_docker_launcher_rx.sh localhost 50056
-./test_docker_launcher_tx.sh localhost <number_of_containers>
-./test_docker_nmos_tx-multiviewer.sh <number_of_containers> <video_type>
-./test_docker_nmos_multiviewer.sh <video_type>
+./test_docker_launcher_rx.sh <localhost/ip> 50056
+./test_docker_launcher_tx.sh localhost <number_of_containers> <localhost/ip>
+./test_docker_nmos_tx-multiviewer.sh <number_of_containers> <video_type> <localhost/ip>
+./test_docker_nmos_multiviewer.sh <video_type> <localhost/ip>
 
-./controller_multiviewer.sh <number_of_receivers> 
+./controller_multiviewer.sh <number_of_receivers> <localhost/ip>

@@ -8,7 +8,7 @@ if [ -e "$file_to_delete" ]; then
   rm "$file_to_delete"
 fi
 
-# Prepare intel-node-multisenders.json with many receivers
+# Prepare intel-node-multisenders.json with many senders
 number_of_senders=$1
 host=$2
 

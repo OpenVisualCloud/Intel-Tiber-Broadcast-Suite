@@ -8,15 +8,15 @@ fi
 host=$1
 PORT=$2
 
-  if [[ "$host" == "localhost" ]]; then
-    ip=""
-    network=host
-    HOSTNAME=localhost
-  else
-    ip=192.168.2.4
-    network=my_net_801f0
-    HOSTNAME=192.168.2.4
-  fi
+if [[ "$host" == "localhost" ]]; then
+  ip=""
+  network=host
+  HOSTNAME=localhost
+else
+  ip=192.168.2.4
+  network=my_net_801f0
+  HOSTNAME=192.168.2.4
+fi
 
 docker run -it \
    --user root \

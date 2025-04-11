@@ -1,7 +1,14 @@
 #!/bin/bash
 
+echo "Usage $0 <video_type> <localhost/ip>"
+
 if [ -z "$1" ]; then
   echo "Usage: $0 <video_type>"
+  exit 1
+fi
+
+if [ -z "$2" ]; then
+  echo "Usage: $0 $1  <localhost/ip>"
   exit 1
 fi
 
@@ -23,6 +30,20 @@ case $1 in
 esac
 
 config_file="intel-node-multiviewer${format}.json"
+host=$2
+
+if [[ "$host" == "localhost" ]]; then
+  ip=""
+  network=host
+else
+  ip=192.168.2.7
+  network=my_net_801f0
+fi
+
+echo "Starting container 1"
+echo "Configuration file: $config_file"
+echo "VFIO address: 0000:27:01.1"
+echo "IP: $ip"
 
 docker run -it \
    --user root\
@@ -40,7 +61,8 @@ docker run -it \
    -e http_proxy="" \
    -e https_proxy="" \
    -e VFIO_PORT_RX=0000:27:01.1 \
-   --network=host \
+   --network=$network \
+   --ip=$ip \
    --ipc=host \
    -v /dev/shm:/dev/shm \
       tiber-broadcast-suite-nmos-node config/$config_file

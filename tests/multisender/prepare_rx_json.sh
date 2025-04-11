@@ -1,7 +1,13 @@
 #!/bin/bash
+# Prepare intel-node-rx.json configurations intel-node-rx-2.json, intel-node-rx-3.json, ...
 echo "Usage $0 <number_of_additional_configuration_files_to_create> <localhost/ip>"
 
-# Prepare intel-node-rx.json configurations intel-node-rx-2.json, intel-node-rx-3.json, ...
+file_to_delete="intel-node-rx.json"
+if [ -e "$file_to_delete" ]; then
+  # If the file exists, delete it
+  rm "$file_to_delete"
+fi
+
 number_of_configs=$1
 host=$2
 
@@ -18,14 +24,12 @@ fi
 base_port=50056
 base_http_port=100
 
-cp -n ../intel-node-rx.json intel-node-rx-example.json
-
 if [[ "$host" == "localhost" ]]; then
   jq '.ffmpeg_grpc_server_port = "50056" | .ffmpeg_grpc_server_address = "localhost"' \
-    intel-node-rx-example.json > intel-node-rx.json
+    intel-node-rx_example.json > intel-node-rx.json
 else
-    jq '.ffmpeg_grpc_server_port = "50056"' \
-    intel-node-rx-example.json > intel-node-rx.json
+  jq '.ffmpeg_grpc_server_port = "50056"' \
+   intel-node-rx_example.json > intel-node-rx.json
 fi
 
 for ((i=1; i<=number_of_configs; i++)); do 
@@ -44,9 +48,3 @@ for ((i=1; i<=number_of_configs; i++)); do
       intel-node-rx.json > intel-node-rx-${i}.json
   fi
 done
-
-file_to_delete="intel-node-rx-example.json"
-if [ -e "$file_to_delete" ]; then
-  # If the file exists, delete it
-  rm "$file_to_delete"
-fi

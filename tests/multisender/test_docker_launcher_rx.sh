@@ -14,8 +14,6 @@ if [ -z "$2" ]; then
   exit 1
 fi
 
-#TODO add support to use different IPs, eg. read form file as for VFIO adresses
-#add to for loop: hostname==$(awk "NR==$((i))" host_addresses.txt)
 
 host=$1
 base_port=50055
