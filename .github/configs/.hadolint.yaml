@@ -1,4 +1,6 @@
+# https://docs.astral.sh/ruff/settings/
 ignored:
+
   - DL3002 # DL3002 Last user should not be root.
   - DL3006 # DL3006 Always tag the version of an image explicitly
   - DL3008 # DL3008⁠ Pin versions in apt-get install.
@@ -7,6 +9,9 @@ ignored:
   - DL3018 # DL3018 Pin versions in apk add. Instead of apk add <package> use apk add <package>=<version>.
   - DL3028 # DL3028 Pin versions in gem install. Instead of gem install <gem> use gem install <gem>:<version>
   - SC2086 # SC2086 Double quote to prevent globbing and word splitting.
+  - SC2046 # SC2046 false positive when RUN is the only command in line
+  - DL4006 # DL4006 Set the SHELL option -o pipefail before RUN with a pipe in it.
+  
 trustedRegistries:
   - docker.io
   - gcr.io

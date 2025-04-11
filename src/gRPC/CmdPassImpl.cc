@@ -65,7 +65,7 @@ void CmdPassImpl::CallData::Proceed() {
         std::string pipeline_string;
         std::vector<std::pair<std::string, std::string>> committed_config;
 
-        if (request_.obj().empty()) {
+        if (request_.objs().empty()) {
             responder_.Finish(response_,
                               Status(grpc::INVALID_ARGUMENT,
                                      FFMPEG_INVALID_COMMAND_STATUS,
@@ -76,7 +76,7 @@ void CmdPassImpl::CallData::Proceed() {
             return;
         }
 
-        for (const auto &cmd : request_.obj()) {
+        for (const auto &cmd : request_.objs()) {
             committed_config.push_back(std::make_pair(cmd.cmd_key(), cmd.cmd_val()));
         }
 

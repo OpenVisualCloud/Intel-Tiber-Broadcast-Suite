@@ -19,4 +19,4 @@ curl \
 echo " Project URL: https://scan.coverity.com/builds?project=${COVERITY_PROJECT} \n\
        Analysis branch/description:  ${DESCRIPTION} \n\
        Analysis commit/version: ${VERSION} \n\
-       submit date: $date \n" > analysis-details.txt 
+       submit date: $(date) \n" > analysis-details.txt 

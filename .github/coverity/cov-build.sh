@@ -8,14 +8,16 @@ ROOT_DIR="$(git rev-parse --show-toplevel)"
 
 function coverity_cpp_build(){
   local SCRIPT=${1}
-  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "$(pwd)/${SCRIPT}" > "$(basename $(pwd)).log"
+  PWD=$(pwd)
+  ${COVERITY_CPP_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "${PWD}/${SCRIPT}" > "$(basename ${PWD}).log"
   log_info "cov-build ${FOLDER} done"
 }
 
 function coverity_other_build(){
   local SCRIPT=${1}
   rm -rf cov/*
-  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "$(pwd)/${SCRIPT}" > "$(basename $(pwd)).log"
+  PWD=$(pwd)
+  ${COVERITY_OTHER_BIN_DIR}/cov-build "--dir" "${ROOT_DIR}/cov-int/" "--append-log" "${PWD}/${SCRIPT}" > "$(basename ${PWD}).log"
   log_info "cov-build ${FOLDER} done"
 }
 

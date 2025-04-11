@@ -1,5 +1,4 @@
 import api
-import os
 import sys
 import logging
 

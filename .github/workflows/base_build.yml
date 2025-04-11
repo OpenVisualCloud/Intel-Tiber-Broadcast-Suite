@@ -1,4 +1,4 @@
-name: build-binaries
+name: Base Build
 
 on:
   workflow_call:
@@ -60,4 +60,3 @@ jobs:
       with:
         name: launcher-bin
         path: '${{ github.workspace }}/launcher/manager'
-   
