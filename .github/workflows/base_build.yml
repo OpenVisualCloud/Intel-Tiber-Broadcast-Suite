@@ -42,6 +42,12 @@ jobs:
       working-directory: "${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests"
       run: |
         ./NmosNodeTests
+
+    - name: "list: gRPC and nmos"
+      working-directory: "${{ github.workspace }}/src"
+      run: |
+          ls -la  ${{ github.workspace }}/src/gRPC/build/
+          ls -la  ${{ github.workspace }}/src/nmos/nmos-node/build/
     - name: 'upload gRpc binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
