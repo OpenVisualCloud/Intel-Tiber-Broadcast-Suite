@@ -172,7 +172,7 @@ func updateNmosJsonFile(filePath string, ip string, port string) error {
 		return err
 	}
 
-	err = os.WriteFile(filePath, updatedJson, 0644)
+	err = os.WriteFile(filePath, updatedJson, 0600)
 	if err != nil {
 		fmt.Println("Error writing to file:", err)
 		return err
