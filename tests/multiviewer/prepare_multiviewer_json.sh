@@ -48,7 +48,7 @@ json_block='{
   }'
 
 # Construct blocks
-blocks=$(for i in $(seq 1 $number_of_receivers); do echo "$json_block"; done | jq -s '.')
+blocks=$(for _ in $(seq 1 $number_of_receivers); do echo "$json_block"; done | jq -s '.')
 
 if [[ "$host" == "localhost" ]]; then
   jq --argjson blocks "$blocks" --argjson count "$number_of_receivers" \
