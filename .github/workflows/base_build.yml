@@ -31,6 +31,7 @@ jobs:
         sudo rm /usr/local/bin/cmake
         sudo apt-get install -y git cmake=3.22* libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
         sudo ./build_local.sh -ut
+        sudo chown -R $USER:$USER .
     - name: "grpc unit tests" 
       working-directory: "${{ github.workspace }}/src/gRPC/unit_test/build"
       run: |
