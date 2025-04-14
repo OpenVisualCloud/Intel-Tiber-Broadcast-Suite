@@ -52,10 +52,10 @@ jobs:
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: grpc-nmos-bin
-        path: | 
-          '${{ github.workspace }}/src/gRPC/build/cmd_pass_client'
-          '${{ github.workspace }}/src/gRPC/build/FFmpeg_wrapper_service' 
-          '${{ github.workspace }}/src/nmos/nmos-node/build/bcs-nmos-node'
+        path: |
+          ${{ github.workspace }}/src/gRPC/build/cmd_pass_client
+          ${{ github.workspace }}/src/gRPC/build/FFmpeg_wrapper_service
+          ${{ github.workspace }}/src/nmos/nmos-node/build/bcs-nmos-node
 
     - name: "Build: launcher"
       working-directory: "${{ github.workspace }}/launcher"
