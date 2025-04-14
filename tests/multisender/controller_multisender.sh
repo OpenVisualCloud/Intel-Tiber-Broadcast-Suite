@@ -15,7 +15,7 @@ if [ -z "$host" ]; then
 fi
 
 base_http_port=100
-cd ../../src/nmos/nmos-is05-controller
+cd ../../src/nmos/nmos-is05-controller || exit
 
 for ((i=1; i<=number_of_senders; i++)); do 
   http=$((base_http_port + (i-1) * 5))
