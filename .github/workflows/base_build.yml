@@ -47,8 +47,9 @@ jobs:
       with:
         name: grpc-nmos-bin
         path: | 
-          '${{ github.workspace }}/src/gRPC/build/'
-          '${{ github.workspace }}/src/nmos/nmos-node/build/'
+          '${{ github.workspace }}/src/gRPC/build/cmd_pass_client'
+          '${{ github.workspace }}/src/gRPC/build/FFmpeg_wrapper_service' 
+          '${{ github.workspace }}/src/nmos/nmos-node/build/bcs-nmos-node'
 
     - name: "Build: launcher"
       working-directory: "${{ github.workspace }}/launcher"
