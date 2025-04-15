@@ -50,7 +50,7 @@ spec:
             cpu: 1
             memory: 100Mi
         securityContext:
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
           runAsNonRoot: false
           allowPrivilegeEscalation: false
           seccompProfile:
