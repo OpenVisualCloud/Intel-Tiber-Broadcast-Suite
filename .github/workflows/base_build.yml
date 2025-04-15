@@ -31,6 +31,7 @@ jobs:
         sudo rm /usr/local/bin/cmake
         sudo apt-get install -y git cmake=3.22* libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
         sudo ./build_local.sh -ut
+        sudo chown -R $USER:$USER .
     - name: "grpc unit tests" 
       working-directory: "${{ github.workspace }}/src/gRPC/unit_test/build"
       run: |
@@ -41,14 +42,20 @@ jobs:
       working-directory: "${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests"
       run: |
         ./NmosNodeTests
+
+    - name: "list: gRPC and nmos"
+      working-directory: "${{ github.workspace }}/src"
+      run: |
+          ls -la  ${{ github.workspace }}/src/gRPC/build/
+          ls -la  ${{ github.workspace }}/src/nmos/nmos-node/build/
     - name: 'upload gRpc binaries'
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: grpc-nmos-bin
-        path: | 
-          '${{ github.workspace }}/src/gRPC/build/*'
-          '${{ github.workspace }}/src/nmos/nmos-node/build/*'
-          '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
+        path: |
+          ${{ github.workspace }}/src/gRPC/build/cmd_pass_client
+          ${{ github.workspace }}/src/gRPC/build/FFmpeg_wrapper_service
+          ${{ github.workspace }}/src/nmos/nmos-node/build/bcs-nmos-node
 
     - name: "Build: launcher"
       working-directory: "${{ github.workspace }}/launcher"
