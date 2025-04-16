@@ -173,8 +173,7 @@ RUN \
   echo "**** DOWNLOAD and PATCH ONEVPL ****" && \
   curl -Lf \
     https://github.com/intel/vpl-gpu-rt/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/onevpl && \
-  git -C /tmp/onevpl apply /tmp/patches/onevpl/*.patch
+    tar -zx --strip-components=1 -C /tmp/onevpl
 
 RUN \
   echo "**** BUILD ONEVPL ****" && \
