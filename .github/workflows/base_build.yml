@@ -91,7 +91,7 @@ jobs:
       run: |
         source versions.env
         mkdir onevpl
-        curl -Lf https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz
+        curl -Ls https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz
         tar -zx --strip-components=1 -C onevpl
         cd onevpl
         mkdir build && cd build
