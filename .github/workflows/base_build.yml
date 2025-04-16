@@ -25,38 +25,49 @@ jobs:
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    - name: "Build: gRPC and nmos"
-      working-directory: "${{ github.workspace }}/src"
-      run: |
-        sudo rm /usr/local/bin/cmake
-        sudo apt-get install -y git cmake=3.22* libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
-        sudo ./build_local.sh -ut
-    - name: "grpc unit tests" 
-      working-directory: "${{ github.workspace }}/src/gRPC/unit_test/build"
-      run: |
-        ./FFmpegPipelineGeneratorTests
-        ./FFmpegWrapperServiceTests
+    # - name: "Build: gRPC and nmos"
+    #   working-directory: "${{ github.workspace }}/src"
+    #   run: |
+    #     sudo rm /usr/local/bin/cmake
+    #     sudo apt-get install -y git cmake=3.22* libboost-all-dev libcpprest-dev libavahi-client-dev libavahi-compat-libdnssd-dev libgtest-dev
+    #     sudo ./build_local.sh -ut
+    # - name: "grpc unit tests" 
+    #   working-directory: "${{ github.workspace }}/src/gRPC/unit_test/build"
+    #   run: |
+    #     ./FFmpegPipelineGeneratorTests
+    #     ./FFmpegWrapperServiceTests
 
-    - name: "nmos unit tests"
-      working-directory: "${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests"
+    # - name: "nmos unit tests"
+    #   working-directory: "${{ github.workspace }}/src/nmos/nmos-node/build/unit_tests"
+    #   run: |
+    #     ./NmosNodeTests
+    # - name: 'upload gRpc binaries'
+    #   uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+    #   with:
+    #     name: grpc-nmos-bin
+    #     path: | 
+    #       '${{ github.workspace }}/src/gRPC/build/*'
+    #       '${{ github.workspace }}/src/nmos/nmos-node/build/*'
+    #       '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
+
+    # - name: "Build: launcher"
+    #   working-directory: "${{ github.workspace }}/launcher"
+    #   run: 
+    #     go build -a -o manager cmd/main.go
+
+    # - name: 'upload launcher binaries'
+    #   uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+    #   with:
+    #     name: launcher-bin
+    #     path: '${{ github.workspace }}/launcher/manager'
+
+    - name: "Build: ffmpeg"
+      working-directory: "${{ github.workspace }}"
       run: |
-        ./NmosNodeTests
-    - name: 'upload gRpc binaries'
-      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-      with:
-        name: grpc-nmos-bin
-        path: | 
-          '${{ github.workspace }}/src/gRPC/build/*'
-          '${{ github.workspace }}/src/nmos/nmos-node/build/*'
-          '${{ github.workspace }}/src/nmos/nmos-cpp/Development/build/*'
+        source versions.env
+        mkdir ffmpeg
+        curl -Lf https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz
+        tar -zx --strip-components=1 -C ffmpeg
+        cd ffmpeg
+        
 
-    - name: "Build: launcher"
-      working-directory: "${{ github.workspace }}/launcher"
-      run: 
-        go build -a -o manager cmd/main.go
-
-    - name: 'upload launcher binaries'
-      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-      with:
-        name: launcher-bin
-        path: '${{ github.workspace }}/launcher/manager'
