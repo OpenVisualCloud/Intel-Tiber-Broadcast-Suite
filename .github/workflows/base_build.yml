@@ -61,14 +61,14 @@ jobs:
     #     name: launcher-bin
     #     path: '${{ github.workspace }}/launcher/manager'
 
-    - name: "Build: ffmpeg"
-      working-directory: "${{ github.workspace }}"
-      run: |
-        source versions.env
-        mkdir ffmpeg
-        curl -Lf https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz
-        tar -zx --strip-components=1 -C ffmpeg
-        cd ffmpeg
+    # - name: "Build: ffmpeg"
+    #   working-directory: "${{ github.workspace }}"
+    #   run: |
+    #     source versions.env
+    #     mkdir ffmpeg
+    #     curl -Lf https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz
+    #     tar -zx --strip-components=1 -C ffmpeg
+    #     cd ffmpeg
 
     # - name: "Build: ffmpeg with patches"
     #   working-directory: "${{ github.workspace }}"
