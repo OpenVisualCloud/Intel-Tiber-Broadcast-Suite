@@ -437,7 +437,7 @@ For a dockerized solution, please follow [instructions on this page](https://git
 
 > **Note:** first_run.sh needs to be run after every reset of the machine.
 
-> **Note:** to obtain image mtl-manager:latest, you need to build image using script `../build.sh`
+> **Note:** to obtain image mtl-manager:latest, you need to build image using script `<repo>/build.sh`
 
 From the root of the Intel® Tiber™ Broadcast Suite repository, execute the `first_run.sh` script that sets up the hugepages, locks for MTL, E810 NIC's virtual controllers, and runs the MtlManager docker container:
 
