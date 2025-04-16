@@ -143,8 +143,7 @@ RUN \
   echo "**** DOWNLOAD and ONEVPL PURE****" && \
   curl -Lf \
     https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
-    tar -zx --strip-components=1 -C /tmp/onevpl
-
+    tar -zx --strip-components=1 -C /tmp/onevpl_pure
 
 RUN \
   echo "**** BUILD ONEVPL PURE****" && \
@@ -312,7 +311,7 @@ RUN \
   echo "**** DOWNLOAD FFMPEG PURE ****" && \
   curl -Lf \
     https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz | \
-  tar -zx --strip-components=1 -C /tmp/ffmpeg-pure
+  tar -zx --strip-components=1 -C /tmp/ffmpeg_pure
 
   RUN \
     echo "**** BUILD FFMPEG PURE ****" && \
