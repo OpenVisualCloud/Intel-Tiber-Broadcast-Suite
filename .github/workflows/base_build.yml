@@ -69,5 +69,63 @@ jobs:
         curl -Lf https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz
         tar -zx --strip-components=1 -C ffmpeg
         cd ffmpeg
-        
 
+    # - name: "Build: ffmpeg with patches"
+    #   working-directory: "${{ github.workspace }}"
+    #   run: |
+    #       source versions.env
+    #       mkdir ffmpeg
+    #       curl -Lf https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz
+    #       tar -zx --strip-components=1 -C ffmpeg
+    #       cd ffmpeg
+      
+    # - name: 'upload ffmpeg '
+    #   uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+    #   with:
+    #     name: launcher-bin
+    #     path: '${{ github.workspace }}/launcher/manager'     
+
+
+    - name: "Build: onevpl"
+      working-directory: "${{ github.workspace }}"
+      run: |
+        source versions.env
+        mkdir onevpl
+        curl -Lf https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz
+        tar -zx --strip-components=1 -C onevpl
+        cd onevpl
+        mkdir build && cd build
+        cmake \
+             -DCMAKE_INSTALL_PREFIX=/usr \
+             -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu ..
+        make -j$(nproc)
+        ls .
+
+    - name: "Build: onevpl"
+      working-directory: "${{ github.workspace }}/onevpl"
+      run: |
+          source versions.env
+          git apply "${{ github.workspace }}/patches/onevpl/*.patch"
+          mkdir build_path && cd build_patch
+          cmake \
+               -DCMAKE_INSTALL_PREFIX=/usr \
+               -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu ..
+          make -j$(nproc)
+          ls .
+
+
+#         RUN \
+#   echo "**** DOWNLOAD and PATCH ONEVPL ****" && \
+#   curl -Lf \
+#     https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
+#     tar -zx --strip-components=1 -C /tmp/onevpl && \
+#   git -C /tmp/onevpl apply /tmp/patches/onevpl/*.patch
+
+# RUN \
+#   echo "**** BUILD ONEVPL ****" && \
+#   cmake \
+#     -DCMAKE_INSTALL_PREFIX=/usr \
+#     -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. && \
+#   make -j${nproc} && \
+#   make install -j${nproc} && \
+#   strip -d /usr/lib/x86_64-linux-gnu/libmfx-gen.so
