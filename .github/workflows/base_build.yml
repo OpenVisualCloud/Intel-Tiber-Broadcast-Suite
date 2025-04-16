@@ -84,17 +84,18 @@ jobs:
     #   with:
     #     name: launcher-bin
     #     path: '${{ github.workspace }}/launcher/manager'     
-
+    - name: "Build: install dependecies"
+      run: build.sh -l
 
     - name: "Build: onevpl"
       working-directory: "${{ github.workspace }}"
       run: |
         source versions.env
-        mkdir onevpl
+        mkdir onevpl_bdba
         curl -L -o onevpl.tar.gz https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz
         tar -zx --strip-components=1 -f onevpl.tar.gz -C onevpl
-        cd onevpl
-        mkdir build && cd build
+        cd onevpl_bdba
+        mkdir build_no_patch && cd build_no_patch
         cmake \
              -DCMAKE_INSTALL_PREFIX=/usr \
              -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu ..
@@ -102,7 +103,7 @@ jobs:
         ls .
 
     - name: "Build: onevpl"
-      working-directory: "${{ github.workspace }}/onevpl"
+      working-directory: "${{ github.workspace }}/onevpl_bdba"
       run: |
           source versions.env
           git apply "${{ github.workspace }}/patches/onevpl/*.patch"
