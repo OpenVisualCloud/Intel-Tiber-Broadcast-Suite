@@ -85,7 +85,7 @@ jobs:
     #     name: launcher-bin
     #     path: '${{ github.workspace }}/launcher/manager'     
     - name: "Build: install dependecies"
-      run: build.sh -l
+      run: ./build.sh -l
 
     - name: "Build: onevpl"
       working-directory: "${{ github.workspace }}"
