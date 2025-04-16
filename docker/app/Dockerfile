@@ -137,6 +137,24 @@ RUN \
   make install -j${nproc} && \
   strip -d /usr/lib/x86_64-linux-gnu/libmfx-gen.so
 
+
+WORKDIR /tmp/onevpl_pure/build
+RUN \
+  echo "**** DOWNLOAD and ONEVPL PURE****" && \
+  curl -Lf \
+    https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
+    tar -zx --strip-components=1 -C /tmp/onevpl
+
+
+RUN \
+  echo "**** BUILD ONEVPL PURE****" && \
+  cmake \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. && \
+  make -j${nproc} 
+
+
+
 WORKDIR /tmp/vmaf/libvmaf
 RUN \
   echo "**** DOWNLOAD VMAF ****" && \
@@ -288,6 +306,22 @@ RUN \
     tar -zx --strip-components=1 -C /tmp/nv-codec-headers && \
   make -j${nproc} && \
   make install -j${nproc} PREFIX=/usr
+
+WORKDIR /tmp/ffmpeg_pure
+RUN \
+  echo "**** DOWNLOAD FFMPEG PURE ****" && \
+  curl -Lf \
+    https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz | \
+  tar -zx --strip-components=1 -C /tmp/ffmpeg-pure
+
+  RUN \
+    echo "**** BUILD FFMPEG PURE ****" && \
+    ./configure \
+    --disable-debug \
+    --disable-doc \
+    --disable-shared \
+    --enable-cross-compile && \
+    make -j${nproc}
 
 WORKDIR /tmp/ffmpeg/
 RUN \
