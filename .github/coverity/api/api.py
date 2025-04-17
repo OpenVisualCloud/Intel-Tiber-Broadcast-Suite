@@ -75,7 +75,6 @@ def fetch_outstanding_view_issues(config: dict) -> dict:
         dict: A dictionary containing the list of issues for the view.
     """
     endpoint = f"{config['base_url']}/api/v2/views/viewContents/{config['outstanding_view_id']}"
-    issues = {}
     try:
         response = requests.get(
             endpoint,

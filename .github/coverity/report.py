@@ -1,7 +1,6 @@
 import api
 import sys
 import logging
-import json
 
 
 def main():
