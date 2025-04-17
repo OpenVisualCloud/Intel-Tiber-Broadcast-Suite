@@ -116,9 +116,6 @@ int main(int argc, char* argv[])
 
         // Set up the callbacks between the node server and the underlying implementation
 
-        
-
-        // auto node_implementation = make_node_implementation(node_model, config_manager, all_receivers, gate);
         auto node_implementation = make_node_implementation(node_model, config_manager, app_conn_resources, gate);
 
 
