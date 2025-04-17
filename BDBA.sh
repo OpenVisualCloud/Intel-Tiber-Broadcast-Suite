@@ -1,12 +1,35 @@
 #!/bin/bash -e
 
 
+# before the line
+# ===============================================//
+#         Tiber Suite final-stage
+# ===============================================//
+#
+echo " updating dockerfile with non patched ffmpeg and onevpl instalation steps"
+LINE_TO_INJECT=$(awk '/Tiber Suite final-stage/{print NR-2}' docker/app/Dockerfile )
+awk 'NR=='${LINE_TO_INJECT}' {
+      while(getline line < "bdba_command.txt") 
+             print line} 1' docker/app/Dockerfile > docker/app/Dockerfile.new
+
+mv docker/app/Dockerfile.new docker/app/Dockerfile
+
 echo "build modified dockerfile with patched and unpatched code"
-echo "export buidl stage as docker image"
+
+echo "export build stage as docker image"
+sed -i 's/--target final-stage/--target build_stage/' build.sh
+export IMAGE_TAG="bdba-build"
 ./build.sh
 
+
+
+
+
+
+
+
 echo "get build image ID"
-IMAGE_ID="$(docker image list | grep build-stage |  awk '{print $3}')"
+IMAGE_ID="$(docker image list | grep bdba-build |  awk '{print $3}')"
 
 echo "run image in background"
 docker run -it ${IMAGE_ID} bash &
@@ -52,3 +75,21 @@ echo "remove container"
 docker rm ${CONTAINER_ID}
 echo "remove image"
 docker rmi ${IMAGE_ID}
+echo "revoke build.sh changes"
+# revoke changes
+sed -i 's/--target build_stage/--target final-stage/' build.sh
+echo "revoke dockerfile changes"
+# # Define the file paths
+# file_a="A.txt"
+# file_b="B.txt"
+
+# # Read lines from A.txt and remove them from B.txt
+# while IFS= read -r line; do
+#     # Escape special characters in the line for use in sed
+#     escaped_line=$(printf '%s\n' "$line" | sed 's/[\/&]/\\&/g')
+    
+#     # Remove the line from B.txt
+#     sed -i "/^$escaped_line$/d" "$file_b"
+# done < "$file_a"
+
+# echo "Lines from $file_a have been removed from $file_b."
