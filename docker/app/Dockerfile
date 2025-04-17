@@ -172,7 +172,8 @@ WORKDIR /tmp/onevpl/build
 RUN \
   echo "**** DOWNLOAD and PATCH ONEVPL ****" && \
   curl -Lf \
-    https://github.com/intel/vpl-gpu-rt/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
+    https://github.com/intel/vpl-gpu-rt/archive/${ONEVPL_COMMIT}.tar.gz | \
+    #https://github.com/intel/vpl-gpu-rt/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
     tar -zx --strip-components=1 -C /tmp/onevpl
 
 RUN \
