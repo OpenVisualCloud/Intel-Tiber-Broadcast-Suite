@@ -783,6 +783,15 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:build-stage${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
+        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
+        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
+        -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:build-stage-${IMAGE_TAG}" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
+        --target build-stage \
+        "${SCRIPT_DIR}"
+
+
     docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
