@@ -7,6 +7,7 @@ import subprocess
 import json
 import requests
 import threading
+import time
 
 def fetch_data(url):
     try:
@@ -55,6 +56,7 @@ def update_json_file_receiver(file_path, sender_id,sdp_url):
     with open(file_path, 'r') as file:
         data = json.load(file)
     # Update the JSON data (PATCH receiver staged endpoint)
+    time.sleep(0.5)
     filename="fetched_sender.sdp"
     fetch_and_save_sdp(sdp_url,filename)
     with open(filename, 'r') as spd_f:

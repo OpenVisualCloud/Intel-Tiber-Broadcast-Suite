@@ -172,7 +172,7 @@ namespace impl
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
 
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
-        const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+        const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), false };
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::rational& frame_rate, uint32_t frame_height, const nmos::settings& settings);
@@ -546,13 +546,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::insert_group_hint(sender, port, index);
 
             auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
-            // add some example constraints; these should be completed fully!
-            connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
-            });
-            if (smpte2022_7) connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
-            });
 
             if (impl::fields::activate_senders(model.settings))
             {
@@ -688,13 +681,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::insert_group_hint(receiver, port, index);
 
             auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
-            // add some example constraints; these should be completed fully!
-            connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
-            });
-            if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
-            });
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
@@ -805,27 +791,33 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     return [rtp_sender_ids, rtp_receiver_ids, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-        // this code relies on the specific constraints added by node_implementation_thread
-        const auto& constraints = nmos::fields::endpoint_constraints(connection_resource.data);
 
-        // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/2.2._APIs_-_Server_Side_Implementation.html#use-of-auto
         if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
-            const bool smpte2022_7 = 1 < transport_params.size();
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
-            // lastly, apply the specification defaults for any properties not handled above
+            auto data= connection_resource.data;
+            auto source_ip = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            auto destination_ip = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::destination_ip];
+            auto source_port = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::source_port];
+            auto destination_port = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::destination_port];          
+
+            if (source_ip.is_null() || destination_ip.is_null() || source_port.is_null() || destination_port.is_null()) {
+                throw std::runtime_error("One or more transport parameters are empty: source_ip, destination_ip, source_port, destination_port when connecting sender and receiver - refer to NMOS IS-05");
+            }
+
+            std::cout << "[TX] SENDER IS-05 connection API -> source_ip: " << source_ip.serialize() << std::endl;
+            std::cout << "[TX] SENDER IS-05 connection API -> destination_ip: " << destination_ip.serialize() << std::endl;
+            std::cout << "[TX] SENDER IS-05 connection API -> source_port: " << source_port.serialize() << std::endl;
+            std::cout << "[TX] SENDER IS-05 connection API -> destination_port: " << destination_port.serialize() << std::endl;
+
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return source_ip; });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return destination_ip; });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_port, [&] { return source_port; });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_port, [&] { return destination_port; });
+
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
         else if (rtp_receiver_ids.end() != boost::range::find(rtp_receiver_ids, id_type.first))
         {
-            const bool smpte2022_7 = 1 < transport_params.size();
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
-            // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
     };
