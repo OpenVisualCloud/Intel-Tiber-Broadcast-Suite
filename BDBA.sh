@@ -42,7 +42,6 @@ function get_docker_container_binaries(){
       mkdir -p ${BDBA_BIN_FOLDER}/onevpl-unpatched/lib
 
       echo "copy binaries from running container ${CONTAINER_ID} to host"
-      sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/*_g ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
       sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/ffmpeg ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
       sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/ffplay ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
       sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/ffprobe ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
