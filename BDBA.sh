@@ -16,7 +16,7 @@ export IMAGE_TAG="bdba-build"
 export BUILD_TYPE=CI
 ./build.sh
 
-
+set -x
 echo "run tiber-broadcast-suite:bdba-build in background"
 docker run -it tiber-broadcast-suite:bdba-build bash &
 
@@ -33,7 +33,7 @@ mkdir -p ${BDBA_BIN_FOLDER}/onevpl-patched/lib
 mkdir -p ${BDBA_BIN_FOLDER}/onevpl-unpatched/bin
 mkdir -p ${BDBA_BIN_FOLDER}/onevpl-unpatched/lib
 
-echo "copy binaries from running container to host"
+echo "copy binaries from running container ${CONTAINER_ID} to host"
 sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/*_g ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
 sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/ffmpeg ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
 sudo docker cp ${CONTAINER_ID}:/tmp/ffmpeg_pure/ffplay ./${BDBA_BIN_FOLDER}/ffmpeg-unpatched
