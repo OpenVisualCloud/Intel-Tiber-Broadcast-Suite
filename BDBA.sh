@@ -17,7 +17,7 @@ export BUILD_TYPE=CI
 ./build.sh
 
 echo "get build image ID"
-IMAGE_ID="$(docker image list | grep tiber-broadcast-suite:build-stage |  awk '{print $3}')"
+IMAGE_ID="$(docker image list | grep tiber-broadcast-suite:bdba-build |  awk '{print $3}')"
 
 echo "run image ${IMAGE_ID} in background"
 docker run -it ${IMAGE_ID} bash &
