@@ -20,6 +20,7 @@ namespace nmos
 struct AppConnectionResources
 {
     std::vector<Stream> all_receivers;
+    std::vector<Stream> all_senders;
     std::vector<std::thread> threads;
 };
 

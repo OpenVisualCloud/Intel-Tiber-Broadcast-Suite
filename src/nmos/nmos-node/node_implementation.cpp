@@ -1009,10 +1009,27 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 gpu_hw_acceleration_device = configIntel.gpu_hw_acceleration_device.c_str();
             }
             // construct config for NMOS sender
-            const Config config = {{s}, ffmpeg_receiver_as_file_vector, configIntel.function, configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.stream_loop, configIntel.logging_level};
-            std::cout<<"GRPC ADDRESS PORT: "<<impl::fields::ffmpeg_grpc_server_address(model.settings)<<":"<<impl::fields::ffmpeg_grpc_server_port(model.settings)<<std::endl;
-            ffmpegThread1=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
-            app_resources.threads.push_back(std::move(ffmpegThread1));
+
+            if ( app_resources.all_senders.size() < configIntel.senders.size()) {
+                app_resources.all_senders.push_back(s);
+                slog::log<slog::severities::info>(gate, SLOG_FLF) << "New sender added to the list. Total senders: " << app_resources.all_senders.size();
+            }
+
+            const Config config = {app_resources.all_senders, ffmpeg_receiver_as_file_vector, configIntel.function, configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.stream_loop, configIntel.logging_level};
+
+            // Debug prints for the config
+            std::cout << "Number of Senders: " << config.senders.size() << std::endl;
+            std::cout << "Number of Receivers: " << config.receivers.size() << std::endl;
+
+            if ( app_resources.all_senders.size() < configIntel.senders.size()) {
+                slog::log<slog::severities::info>(gate, SLOG_FLF) <<  "Waiting for connection to all declared senders. Connected " << \
+                app_resources.all_senders.size() << " senders from declared " << configIntel.senders.size() << " senders";
+            }else{
+                std::cout<<"GRPC ADDRESS PORT: "<<impl::fields::ffmpeg_grpc_server_address(model.settings)<<":"<<impl::fields::ffmpeg_grpc_server_port(model.settings)<<std::endl;
+                ffmpegThread1=std::thread(grpc::sendDataToFfmpeg, impl::fields::ffmpeg_grpc_server_address(model.settings), impl::fields::ffmpeg_grpc_server_port(model.settings), config);
+                app_resources.threads.push_back(std::move(ffmpegThread1));
+                app_resources.all_senders.clear();
+            }
 }
         if(id_type.second == nmos::types::receiver)
         {
