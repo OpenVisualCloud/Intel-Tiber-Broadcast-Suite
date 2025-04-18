@@ -1,6 +1,41 @@
 #!/usr/bin/bash -e
 
 function update_and_build_dockerfile(){
+DOCKER_FILE_STRING='''
+
+    WORKDIR /tmp/onevpl_pure/build
+    RUN \
+    echo "**** DOWNLOAD ONEVPL PURE****" && \
+    curl -Lf \
+        https://github.com/oneapi-src/oneVPL-intel-gpu/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz | \
+        tar -zx --strip-components=1 -C /tmp/onevpl_pure
+
+    RUN \
+    echo "**** BUILD ONEVPL PURE****" && \
+    cmake \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DCMAKE_INSTALL_LIBDIR=/usr/lib/x86_64-linux-gnu .. && \
+    make -j${nproc} 
+
+
+    WORKDIR /tmp/ffmpeg_pure
+    RUN \
+    echo "**** DOWNLOAD FFMPEG PURE ****" && \
+    curl -Lf \
+        https://github.com/ffmpeg/ffmpeg/archive/${FFMPEG_COMMIT_ID}.tar.gz | \
+    tar -zx --strip-components=1 -C /tmp/ffmpeg_pure
+
+    RUN \
+    echo "**** BUILD FFMPEG PURE ****" && \
+    ./configure \
+    --disable-debug \
+    --disable-doc \
+    --disable-shared \
+    --enable-cross-compile && \
+    make -j${nproc}
+    '''
+    echo "$DOCKER_FILE_STRING" > bdba_command.txt
+
 
       echo "updating dockerfile with non patched ffmpeg and onevpl instalation steps"
       INJECTION_LINE=$(awk '/Tiber Suite final-stage/{print NR-2}' docker/app/Dockerfile )
@@ -19,7 +54,9 @@ function update_and_build_dockerfile(){
       ./build.sh
 
       # revoke changes
+
       git checkout .
+      rm bdba_command.txt
       echo "*********************************************************"
       echo "open new terminal and run:"
       echo "                          \$(sudo) docker run -it tiber-broadcast-suite:bdba-build bash"
