@@ -16,14 +16,12 @@ export IMAGE_TAG="bdba-build"
 export BUILD_TYPE=CI
 ./build.sh
 
-echo "get build image ID"
-IMAGE_ID="$(docker image list | grep tiber-broadcast-suite:bdba-build |  awk '{print $3}')"
 
-echo "run image ${IMAGE_ID} in background"
-docker run -it ${IMAGE_ID} bash &
+echo "run tiber-broadcast-suite:bdba-build in background"
+docker run -it tiber-broadcast-suite:bdba-build bash &
 
 echo "get container ID"
-CONTAINER_ID="$(docker ps -l | grep ${IMAGE_ID} | awk '{print $1}')"
+CONTAINER_ID="$(docker ps -l | grep tiber-broadcast-suite:bdba-build | awk '{print $1}')"
 
 echo "prepare directories for binaries"
 BDBA_BIN_FOLDER="bdba_bins"
