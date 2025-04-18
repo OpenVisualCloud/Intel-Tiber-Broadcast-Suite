@@ -1,9 +1,9 @@
 !/bin/bash -e
 
-function update_and_build_dockerfile() {
+function update_and_build_dockerfile(){
 
       echo " updating dockerfile with non patched ffmpeg and onevpl instalation steps"
-      INJECTION_LINE=$(awk '/Tiber Suite final-stage/{print NR-2}' docker/app/Dockerfile )
+      INJECTION_LINE=$(awk '/Tiber Suite final-stage/{print NR-2}' docker/app/Dockerfil )
       awk 'NR=='${INJECTION_LINE}' {
                   while(getline line < "bdba_command.txt") 
                         print line} 1' docker/app/Dockerfile > docker/app/Dockerfile.new
