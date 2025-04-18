@@ -11,13 +11,13 @@ mv docker/app/Dockerfile.new docker/app/Dockerfile
 echo "build modified dockerfile with patched and unpatched code"
 
 echo "export build stage as docker image"
-sed -i 's/--target final-stage/--target build_stage/' build.sh
+sed -i 's/--target final-stage/--target build-stage/' build.sh
 export IMAGE_TAG="bdba-build"
 export BUILD_TYPE=CI
 ./build.sh
 
 echo "get build image ID"
-IMAGE_ID="$(docker image list | grep bdba-build |  awk '{print $3}')"
+IMAGE_ID="$(docker image list | grep tiber-broadcast-suite:build-stage |  awk '{print $3}')"
 
 echo "run image ${IMAGE_ID} in background"
 docker run -it ${IMAGE_ID} bash &
