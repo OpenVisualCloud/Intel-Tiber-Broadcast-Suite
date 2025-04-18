@@ -19,7 +19,7 @@ export BUILD_TYPE=CI
 echo "get build image ID"
 IMAGE_ID="$(docker image list | grep bdba-build |  awk '{print $3}')"
 
-echo "run image in background"
+echo "run image ${IMAGE_ID} in background"
 docker run -it ${IMAGE_ID} bash &
 
 echo "get container ID"
