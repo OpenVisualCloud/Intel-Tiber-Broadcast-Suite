@@ -1,8 +1,8 @@
-!/bin/bash -e
+#!/usr/bin/bash -e
 
-function update_and_build_dockerfile{
+function update_and_build_dockerfile(){
 
-      echo " updating dockerfile with non patched ffmpeg and onevpl instalation steps"
+      echo "updating dockerfile with non patched ffmpeg and onevpl instalation steps"
       INJECTION_LINE=$(awk '/Tiber Suite final-stage/{print NR-2}' docker/app/Dockerfile )
       awk 'NR=='${INJECTION_LINE}' {
                   while(getline line < "bdba_command.txt") 
@@ -20,13 +20,14 @@ function update_and_build_dockerfile{
 
       # revoke changes
       git checkout .
-
-      echo "open another container and run:"
-      echo "(sudo) docker run -it tiber-broadcast-suite:bdba-build bash"
+      echo "*********************************************************"
+      echo "open new terminal and run:"
+      echo "                          \$(sudo) docker run -it tiber-broadcast-suite:bdba-build bash"
       echo "then get back to first terminal and run:"
-      echo " (sudo) ./BDBA.sh -f"
+      echo "                          \$(sudo) ./BDBA.sh -f"
+      echo "*********************************************************"
 }
-function get_docker_container_binaries{
+function get_docker_container_binaries(){
       echo "get container ID"
       CONTAINER_ID="$(docker ps | grep tiber-broadcast-suite:bdba-build | awk '{print $1}')"
 
