@@ -13,6 +13,7 @@ echo "build modified dockerfile with patched and unpatched code"
 echo "export build stage as docker image"
 sed -i 's/--target final-stage/--target build_stage/' build.sh
 export IMAGE_TAG="bdba-build"
+export BUILD_TYPE=CI
 ./build.sh
 
 echo "get build image ID"
@@ -64,13 +65,4 @@ echo "remove image"
 docker rmi ${IMAGE_ID}
 echo "revoke build.sh changes"
 # revoke changes
-sed -i 's/--target build_stage/--target final-stage/' build.sh
-echo "revoke dockerfile changes"
-
-while IFS= read -r line; do
-      # Escape special characters in the line from bdba_command.txt
-      escaped_line=$(printf '%s\n' "$line" | sed 's/[\/&]/\\&/g')
-
-      # Remove the line from Dockerfile
-      sed -i "/^$escaped_line$/d" docker/app/Dockerfile
-done < bdba_command.txt
+git checkout .
