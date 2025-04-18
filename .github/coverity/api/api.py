@@ -75,22 +75,21 @@ def fetch_outstanding_view_issues(config: dict) -> dict:
         dict: A dictionary containing the list of issues for the view.
     """
     endpoint = f"{config['base_url']}/api/v2/views/viewContents/{config['outstanding_view_id']}"
-    issues = {}
     try:
         response = requests.get(
             endpoint,
             params={"projectId": config["project_id"]},
+            headers={"Accept": "application/json"},
             auth=HTTPBasicAuth(config["user"], config["password"]),
         )
         response.raise_for_status()
-        issues = response.json()
 
     except requests.exceptions.HTTPError as http_err:
         logging.error(f"HTTP error occurred: {http_err}")
     except Exception as err:
         logging.error(f"An error occurred: {err}")
     finally:
-        return issues
+        return json.loads(response.text)
 
 
 def get_snapshot(config: dict, description: str, version: str) -> int:
