@@ -1025,6 +1025,10 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
 }
         if(id_type.second == nmos::types::receiver)
         {
+
+            // Right now only connection addresses and ports are only overidden by transport_params
+            // This means that transportfile has lower priority than transport_params data
+
             std::cout<<"Connection API activation handler --- receiver"<<std::endl;
             std::thread ffmpegThread2;
             const char* vfio_port = "VFIO_PORT_RX";
@@ -1036,17 +1040,61 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 return;
             }
             auto data = connection_resource.data;
-            auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
-            auto sender_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
-            auto sender_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
+            //interface_ip MUST be set on receiver side
+            if (data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip].is_null()) {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "interface_ip is null. Please set the interface_ip in the transport_params on receiver NMOS side.";
+                return;
+            }
 
-            std::cout << "Receiver Source IP: " << receiver_source_ip.serialize() << std::endl;
-            std::cout << "Sender Destination Port: " << sender_destination_port.serialize() << std::endl;
-            std::cout << "Sender Destination IP: " << sender_destination_ip.serialize() << std::endl;
+            // auto receiver_interface_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip];
+            // auto receiver_multicast_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::multicast_ip];
+            // auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            // auto receiver_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
+            // auto rtp_enabled = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::rtp_enabled];
+
+            // std::cout << "Receiver ID: " << id_type.first << std::endl;
+            // std::cout << "TRANSPORT PARAMS: " <<  std::endl;
+
+            // std::cout << "Receiver Interface IP: " << receiver_interface_ip.serialize() << std::endl;
+            // std::cout << "Receiver Multicast IP: " << receiver_multicast_ip.serialize() << std::endl;
+            // std::cout << "Receiver Source IP: " << receiver_source_ip.serialize() << std::endl;
+            // std::cout << "Receiver Destination Port: " << receiver_destination_port.serialize() << std::endl;
+            // std::cout << "RTP Enabled: " << rtp_enabled.serialize() << std::endl;
 
             auto trasportfile_sdp = data[nmos::fields::endpoint_active][nmos::fields::transport_file][nmos::fields::data];
             std::cout<<utility::us2s(trasportfile_sdp.as_string());
             auto session_description = sdp::parse_session_description(utility::us2s(trasportfile_sdp.as_string()));
+            auto transport_params_from_sdp = nmos::get_session_description_transport_params(session_description);
+
+            // Print the transport parameters
+            
+            std::cout << "SDP Transport Parameter: destination_port:  " << transport_params_from_sdp[0][nmos::fields::destination_port]<< std::endl;
+            std::cout << "SDP Transport Parameter: interface_ip:  " << transport_params_from_sdp[0][nmos::fields::interface_ip]<< std::endl;
+            std::cout << "SDP Transport Parameter: multicast_ip:  " << transport_params_from_sdp[0][nmos::fields::multicast_ip]<< std::endl;
+            std::cout << "SDP Transport Parameter: source_ip:  " << transport_params_from_sdp[0][nmos::fields::source_ip]<< std::endl;
+            std::cout << "SDP Transport Parameter: rtp_enabled:  " << transport_params_from_sdp[0][nmos::fields::rtp_enabled]<< std::endl;
+
+            auto rx_destination_port = transport_params_from_sdp[0][nmos::fields::destination_port];
+            auto rx_interface_ip = transport_params_from_sdp[0][nmos::fields::interface_ip];
+            auto rx_multicast_ip = transport_params_from_sdp[0][nmos::fields::multicast_ip];
+            auto rx_source_ip = transport_params_from_sdp[0][nmos::fields::source_ip];
+            // auto rx_rtp_enabled = transport_params_from_sdp[0][nmos::fields::rtp_enabled];
+            
+            if (rx_interface_ip == transport_params_from_sdp[0][nmos::fields::interface_ip] &&
+                rx_multicast_ip == transport_params_from_sdp[0][nmos::fields::multicast_ip] &&
+                rx_source_ip == transport_params_from_sdp[0][nmos::fields::source_ip] &&
+                rx_destination_port == transport_params_from_sdp[0][nmos::fields::destination_port])
+                // rtp_enabled == transport_params_from_sdp[0][nmos::fields::rtp_enabled]) 
+                {
+                std::cout << "The transport parameters from the active connection and the SDP are equal. Using parameters from SDP transportfile" << std::endl;
+            } else {
+                std::cout << "The transport parameters from the active connection and the SDP are not equal. Using parameters from REST API request transport_params" << std::endl;
+                rx_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
+                rx_interface_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip];
+                rx_multicast_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::multicast_ip];
+                rx_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            }
+
             auto& media_descriptions = sdp::fields::media_descriptions(session_description);
             auto& media_description = media_descriptions.at(0);
             auto& media = sdp::fields::media(media_description);
@@ -1055,8 +1103,31 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto& encoding_name = sdp::fields::encoding_name(sdp::fields::value(*rtpmap));
             const auto& payload_type_sdp = sdp::fields::payload_type(sdp::fields::value(*rtpmap));
             auto source_filter = sdp::find_name(attributes, sdp::attributes::source_filter);
-            auto& destination_addr=sdp::fields::destination_address(sdp::fields::value(*source_filter));
 
+            // as destination address is read from sender's SDP, we need to treat the sender source
+            // address as receiver's destination address.
+            // auto& destination_addr=sdp::fields::destination_address(sdp::fields::value(*source_filter));
+            // auto& source_addr=sdp::fields::source_addresses(sdp::fields::value(*source_filter));
+            // auto destination_port = sdp::fields::port(media);
+            // std::cout << "Destination Port: " << destination_port << std::endl;
+            // // std::cout << "Destination Port: " << destination_port << std::endl;
+
+            // if (source_addr.size() > 0) {
+            //     std::cout << "First Source Address: " << source_addr.at(0) << std::endl;
+            // } else {
+            //     std::cout << "Source Address list is empty." << std::endl;
+            // }
+            // std::cout << "Destination Address: " << destination_addr << std::endl;
+            // std::cout << "Resource Data: " << resource.data.serialize() << std::endl;
+            // std::cout << "Resource conn Data: " << connection_resource.data.serialize() << std::endl;
+
+
+            // multicast source or multicast group ip
+            // auto receiver_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::multicast_ip].is_null() 
+            //     ? sdp::fields::destination_address(sdp::fields::value(*source_filter)) 
+            //     : data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::multicast_ip];
+            // std::cout << "Receiver Destination IP - multicast source or multicast group ip: " << receiver_destination_ip.serialize() << std::endl;
+            
             auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
             auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
             auto width_param = sdp::find_name(params, U("width"));
@@ -1087,18 +1158,27 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
                 s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
                 s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-                s.stream_type.mcm.ip=destination_addr;
-                s.stream_type.mcm.port=sender_destination_port.as_integer();
+                if (rx_multicast_ip.is_null()) {
+                    s.stream_type.mcm.ip = rx_source_ip.as_string();
+                } else {
+                    s.stream_type.mcm.ip = rx_multicast_ip.as_string();
+                }
+                s.stream_type.mcm.port=rx_destination_port.as_integer();
                 s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
             }
             else if(config_by_id.stream_type.type==stream_type::st2110)
             {
                 s.stream_type.type = stream_type::st2110;
                 s.stream_type.st2110.network_interface = vfio_port_value_rx;
-                s.stream_type.st2110.local_ip = receiver_source_ip.as_string();
-                s.stream_type.st2110.remote_ip = destination_addr;
+                s.stream_type.st2110.local_ip = rx_interface_ip.as_string();
+                if (rx_multicast_ip.is_null()) {
+                    s.stream_type.st2110.remote_ip = rx_source_ip.as_string();
+                } else {
+                    s.stream_type.st2110.remote_ip = rx_multicast_ip.as_string();
+                }
+                
                 s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
-                s.stream_type.st2110.remote_port = sender_destination_port.as_integer();
+                s.stream_type.st2110.remote_port = rx_destination_port.as_integer();
                 s.stream_type.st2110.payload_type = payload_type_sdp;
             }
 

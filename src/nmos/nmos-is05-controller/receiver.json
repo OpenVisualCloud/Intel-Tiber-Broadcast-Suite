@@ -3,9 +3,14 @@
         "mode": "activate_immediate"
     },
     "master_enable": true,
-    "sender_id": "",
+    "sender_id": "b041ba30-6d79-5d24-9788-7c78b2bec48b",
     "transport_file": {
-        "data": "",
+        "data": "v=0\no=- 3954329472 3954329472 IN IP4 127.0.0.5\ns=intel-broadcast-suite/sender/v0\nt=0 0\nm=video 5005 RTP/AVP 112\nc=IN IP4 127.0.0.6\na=ts-refclk:localmac=B4-96-91-AF-B5-01\na=mediaclk:direct=0\na=source-filter: incl IN IP4 127.0.0.6 127.0.0.5\na=rtpmap:112 raw/90000\na=fmtp:112 width=1920; height=1080; exactframerate=60; sampling=YCbCr-4:2:2; depth=10; colorimetry=BT709; TCS=SDR; PM=2110GPM; SSN=ST2110-20:2017; TP=2110TPN\n",
         "type": "application/sdp"
-    }
+    },
+    "transport_params": [
+        {
+            "interface_ip": "127.0.0.6"
+        }
+    ]
 }
