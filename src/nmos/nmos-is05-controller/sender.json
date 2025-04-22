@@ -1,15 +1,15 @@
 {
     "master_enable": true,
-    "receiver_id": "",
+    "receiver_id": "c6437561-2226-5561-969a-33be7ed6555d",
     "activation": {
         "mode": "activate_immediate"
     },
     "transport_params": [
         {
-            "destination_ip": "192.168.2.1",
+            "destination_ip": "127.0.0.6",
             "destination_port": 5005,
             "rtp_enabled": true,
-            "source_ip": "192.168.2.3",
+            "source_ip": "127.0.0.5",
             "source_port": 5008
         }
     ]

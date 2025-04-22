@@ -5,7 +5,7 @@
   "device_tags": {
     "pipeline": ["tx"]
   },
-  "activate_senders": true,
+  "activate_senders": false,
   "color_sampling": "YCbCr-4:2:2",
   "stream_loop": -1,
   "function": "tx",
