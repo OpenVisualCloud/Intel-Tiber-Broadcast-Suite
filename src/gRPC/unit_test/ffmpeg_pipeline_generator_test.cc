@@ -45,6 +45,7 @@ void fill_conf_sender(Config &config) {
         s.stream_type.st2110.transport = "st2110-20";
         s.stream_type.st2110.remote_port = 20000;
         s.stream_type.st2110.payload_type = 112;
+        s.stream_type.st2110.queues_cnt = 0;
         config.senders.push_back(s);
 
         s.stream_type.st2110.remote_port = 20001;
@@ -84,6 +85,7 @@ void fill_conf_receiver(Config &config) {
         s.stream_type.st2110.transport = "st2110-20";
         s.stream_type.st2110.remote_port = 20000;
         s.stream_type.st2110.payload_type = 112;
+        s.stream_type.st2110.queues_cnt = 0;
 
         config.receivers.push_back(s);
 
@@ -332,6 +334,34 @@ TEST(FFmpegPipelineGeneratorTest, test_receiver) {
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
+TEST(FFmpegPipelineGeneratorTest, test_sender_queues_cnt) {
+    Config conf;
+    fill_conf_sender(conf);
+    conf.senders[0].stream_type.st2110.queues_cnt = 2;
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating sender pipeline" << std::endl;
+    }
+    std::string expected_string = " -stream_loop -1 -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_1.yuv -p_port 0000:4b:11.0 -p_sip 192.168.2.1 -udp_port 20000 -payload_type 112 -p_tx_ip 192.168.2.2 -tx_queues 2 -f mtl_st20p - -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /home/test/1920x1080p10le_2.yuv -p_port 0000:4b:11.0 -p_sip 192.168.2.1 -udp_port 20001 -payload_type 112 -p_tx_ip 192.168.2.2 -f mtl_st20p -";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
+TEST(FFmpegPipelineGeneratorTest, test_receiver_queues_cnt) {
+    Config conf;
+    fill_conf_receiver(conf);
+    conf.receivers[0].stream_type.st2110.queues_cnt = 4;
+
+    std::string pipeline_string;
+
+    if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
+            ASSERT_EQ(1, 0) << "Error generating receiver pipeline" << std::endl;
+    }
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -p_port 0000:4b:11.1 -p_sip 192.168.2.2 -udp_port 20000 -payload_type 112 -p_rx_ip 192.168.2.1 -rx_queues 4 -f mtl_st20p -i \"0\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /home/test/recv/1920x1080p10le_1.yuv -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -p_port 0000:4b:11.1 -p_sip 192.168.2.2 -udp_port 20001 -payload_type 112 -p_rx_ip 192.168.2.1 -f mtl_st20p -i \"1\" -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo 1920x1080p10le_2.yuv";
+    ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
+}
+
 TEST(FFmpegPipelineGeneratorTest, test_multiviewer) {
     Config conf;
     fill_conf_multiviewer(conf);
@@ -471,6 +501,35 @@ TEST(FFmpegPipelineConfigTest, serialize_deserialize_multiviewer) {
 TEST(FFmpegPipelineConfigTest, serialize_deserialize_upscale) {
     Config conf_reference;
     fill_conf_upscale(conf_reference);
+
+    std::string pipeline_string_reference;
+
+    if (ffmpeg_generate_pipeline(conf_reference, pipeline_string_reference) != 0) {
+        ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
+    }
+
+    std::string json_conf_serialized;
+    if(serialize_config_json(conf_reference, json_conf_serialized) != 0) {
+        ASSERT_EQ(1, 0) << "Error serializing config" << std::endl;
+    }
+
+    Config conf_deserialized;
+    std::string pipeline_string_deserialized;
+    if(deserialize_config_json(conf_deserialized, json_conf_serialized) != 0) {
+        ASSERT_EQ(1, 0) << "Error serializing config" << std::endl;
+    }
+    if (ffmpeg_generate_pipeline(conf_deserialized, pipeline_string_deserialized) != 0) {
+        ASSERT_EQ(1, 0) << "Error generating convert pipeline after deserialization" << std::endl;
+    }
+
+    ASSERT_EQ(pipeline_string_reference.compare(pipeline_string_deserialized) == 0, 1) << "Expected: " << std::endl << pipeline_string_reference 
+    << std::endl << " Got: " << std::endl << pipeline_string_deserialized << std::endl;
+}
+
+TEST(FFmpegPipelineConfigTest, serialize_deserialize_sender_st2110) {
+    Config conf_reference;
+    fill_conf_sender(conf_reference);
+    conf_reference.senders[0].stream_type.st2110.queues_cnt = 8;
 
     std::string pipeline_string_reference;
 

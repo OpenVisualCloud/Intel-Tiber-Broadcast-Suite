@@ -165,9 +165,15 @@ int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipe
         pipeline_string += " -payload_type " + std::to_string(s.st2110.payload_type);
         if(is_rx) {
             pipeline_string += " -p_rx_ip " + s.st2110.remote_ip;
+            if(s.st2110.queues_cnt > 0) {
+                pipeline_string += " -rx_queues " + std::to_string(s.st2110.queues_cnt);
+            }
         }
         else {
             pipeline_string += " -p_tx_ip " + s.st2110.remote_ip;
+            if(s.st2110.queues_cnt > 0) {
+                pipeline_string += " -tx_queues " + std::to_string(s.st2110.queues_cnt);
+            }
         }
 
         if(ffmpeg_append_st2110_transport(s.st2110.transport, pipeline_string) != 0){
