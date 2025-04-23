@@ -172,7 +172,7 @@ namespace impl
         const web::json::field_as_integer_or channel_count{ U("channel_count"), 4 };
 
         // smpte2022_7: controls whether senders and receivers have one leg (false) or two legs (true, default)
-        const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), true };
+        const web::json::field_as_bool_or smpte2022_7{ U("smpte2022_7"), false };
     }
 
     nmos::interlace_mode get_interlace_mode(const nmos::rational& frame_rate, uint32_t frame_height, const nmos::settings& settings);
@@ -546,13 +546,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::insert_group_hint(sender, port, index);
 
             auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
-            // add some example constraints; these should be completed fully!
-            connection_sender.data[nmos::fields::endpoint_constraints][0][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
-            });
-            if (smpte2022_7) connection_sender.data[nmos::fields::endpoint_constraints][1][nmos::fields::source_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
-            });
 
             if (impl::fields::activate_senders(model.settings))
             {
@@ -688,13 +681,6 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::insert_group_hint(receiver, port, index);
 
             auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
-            // add some example constraints; these should be completed fully!
-            connection_receiver.data[nmos::fields::endpoint_constraints][0][nmos::fields::interface_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(primary_interface.addresses) }
-            });
-            if (smpte2022_7) connection_receiver.data[nmos::fields::endpoint_constraints][1][nmos::fields::interface_ip] = value_of({
-                { nmos::fields::constraint_enum, value_from_elements(secondary_interface.addresses) }
-            });
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
@@ -805,27 +791,33 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
     return [rtp_sender_ids, rtp_receiver_ids, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
-        // this code relies on the specific constraints added by node_implementation_thread
-        const auto& constraints = nmos::fields::endpoint_constraints(connection_resource.data);
 
-        // "In some cases the behaviour is more complex, and may be determined by the vendor."
-        // See https://specs.amwa.tv/is-05/releases/v1.0.0/docs/2.2._APIs_-_Server_Side_Implementation.html#use-of-auto
         if (rtp_sender_ids.end() != boost::range::find(rtp_sender_ids, id_type.first))
         {
-            const bool smpte2022_7 = 1 < transport_params.size();
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::source_ip))); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::source_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::source_ip))); });
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 0)); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::destination_ip, [&] { return value::string(impl::make_source_specific_multicast_address_v4(id_type.first, 1)); });
-            // lastly, apply the specification defaults for any properties not handled above
+            auto data= connection_resource.data;
+            auto source_ip = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            auto destination_ip = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::destination_ip];
+            auto source_port = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::source_port];
+            auto destination_port = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::destination_port];          
+
+            if (source_ip.is_null() || destination_ip.is_null() || source_port.is_null() || destination_port.is_null()) {
+                throw std::runtime_error("One or more transport parameters are empty: source_ip, destination_ip, source_port, destination_port when connecting sender and receiver - refer to NMOS IS-05");
+            }
+
+            std::cout << "[TX] SENDER IS-05 connection API -> source_ip: " << source_ip.serialize() << std::endl;
+            std::cout << "[TX] SENDER IS-05 connection API -> destination_ip: " << destination_ip.serialize() << std::endl;
+            std::cout << "[TX] SENDER IS-05 connection API -> source_port: " << source_port.serialize() << std::endl;
+            std::cout << "[TX] SENDER IS-05 connection API -> destination_port: " << destination_port.serialize() << std::endl;
+
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return source_ip; });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return destination_ip; });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::source_port, [&] { return source_port; });
+            nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_port, [&] { return destination_port; });
+
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
         else if (rtp_receiver_ids.end() != boost::range::find(rtp_receiver_ids, id_type.first))
         {
-            const bool smpte2022_7 = 1 < transport_params.size();
-            nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return web::json::front(nmos::fields::constraint_enum(constraints.at(0).at(nmos::fields::interface_ip))); });
-            if (smpte2022_7) nmos::details::resolve_auto(transport_params[1], nmos::fields::interface_ip, [&] { return web::json::back(nmos::fields::constraint_enum(constraints.at(1).at(nmos::fields::interface_ip))); });
-            // lastly, apply the specification defaults for any properties not handled above
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
     };
@@ -934,7 +926,9 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
         const std::pair<nmos::id, nmos::type> id_type{ resource.id, resource.type };
         if(id_type.second == nmos::types::sender)
         {
-            std::cout<<"Connection API activation handler --- sender"<<std::endl;
+            std::cout<<"Connection API activation handler - sender"<<std::endl;
+
+            // name of environment variable that is set in the sender side linux/container environment
             const char* vfio_port = "VFIO_PORT_TX";
             const char* vfio_port_value_tx = std::getenv(vfio_port);
             auto config_by_id = tracker::get_stream_info(id_type.first);
@@ -1017,10 +1011,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
 
             const Config config = {app_resources.all_senders, ffmpeg_receiver_as_file_vector, configIntel.function, configIntel.multiviewer_columns, configIntel.gpu_hw_acceleration, gpu_hw_acceleration_device, configIntel.stream_loop, configIntel.logging_level};
 
-            // Debug prints for the config
-            std::cout << "Number of Senders: " << config.senders.size() << std::endl;
-            std::cout << "Number of Receivers: " << config.receivers.size() << std::endl;
-
             if ( app_resources.all_senders.size() < configIntel.senders.size()) {
                 slog::log<slog::severities::info>(gate, SLOG_FLF) <<  "Waiting for connection to all declared senders. Connected " << \
                 app_resources.all_senders.size() << " senders from declared " << configIntel.senders.size() << " senders";
@@ -1033,28 +1023,75 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
 }
         if(id_type.second == nmos::types::receiver)
         {
-            std::cout<<"Connection API activation handler --- receiver"<<std::endl;
+
+            // Right now only connection IP addresses (interface_ip, multicast_ip and source_ip)
+            // and destination_port are only overidden by transport_params.
+            // This means that transportfile SDP has lower priority than transport_params data.
+
+            std::cout<<"Connection API activation handler - receiver"<<std::endl;
             std::thread ffmpegThread2;
+
+            // name of environment variable that is set in the receiver side linux/container environment
             const char* vfio_port = "VFIO_PORT_RX";
             const char* vfio_port_value_rx = std::getenv(vfio_port);
+
+            // get the stream type
             auto config_by_id = tracker::get_stream_info(id_type.first);
             if (!vfio_port_value_rx && config_by_id.stream_type.type != stream_type::mcm) {
                 // if the stream type is not mcm, then vfio_port_value_rx should be set
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "VFIO_PORT_RX environment variable is not set. You should export one of the virtual function interface port values.";
                 return;
             }
-            auto data = connection_resource.data;
-            auto receiver_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
-            auto sender_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
-            auto sender_destination_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip];
 
-            std::cout << "Receiver Source IP: " << receiver_source_ip.serialize() << std::endl;
-            std::cout << "Sender Destination Port: " << sender_destination_port.serialize() << std::endl;
-            std::cout << "Sender Destination IP: " << sender_destination_ip.serialize() << std::endl;
+            //retrieve the receiver configuration data
+            auto data = connection_resource.data;
+
+            //interface_ip MUST be set on receiver side
+            if (data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip].is_null()) {
+                slog::log<slog::severities::error>(gate, SLOG_FLF) << "interface_ip is null. Please set the interface_ip in the transport_params on receiver NMOS side.";
+                return;
+            }
+
+            // Print the transport parameters that are parsed based on REST API request
+            // std::cout << "Receiver ID: " << id_type.first << std::endl;
+            // std::cout << "TRANSPORT PARAMS: " <<  std::endl;
+            // std::cout << "Receiver Interface IP: " << data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip].serialize() << std::endl;
+            // std::cout << "Receiver Multicast IP: " << data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::multicast_ip].serialize() << std::endl;
+            // std::cout << "Receiver Source IP: " << data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip].serialize() << std::endl;
+            // std::cout << "Receiver Destination Port: " << data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port].serialize() << std::endl;
+            // std::cout << "RTP Enabled: " << data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::rtp_enabled].serialize() << std::endl;
 
             auto trasportfile_sdp = data[nmos::fields::endpoint_active][nmos::fields::transport_file][nmos::fields::data];
             std::cout<<utility::us2s(trasportfile_sdp.as_string());
             auto session_description = sdp::parse_session_description(utility::us2s(trasportfile_sdp.as_string()));
+            auto transport_params_from_sdp = nmos::get_session_description_transport_params(session_description);
+
+            // Print the transport parameters that are parsed based on SDP file
+            // std::cout << "SDP Transport Parameter: destination_port:  " << transport_params_from_sdp[0][nmos::fields::destination_port]<< std::endl;
+            // std::cout << "SDP Transport Parameter: interface_ip:  " << transport_params_from_sdp[0][nmos::fields::interface_ip]<< std::endl;
+            // std::cout << "SDP Transport Parameter: multicast_ip:  " << transport_params_from_sdp[0][nmos::fields::multicast_ip]<< std::endl;
+            // std::cout << "SDP Transport Parameter: source_ip:  " << transport_params_from_sdp[0][nmos::fields::source_ip]<< std::endl;
+            // std::cout << "SDP Transport Parameter: rtp_enabled:  " << transport_params_from_sdp[0][nmos::fields::rtp_enabled]<< std::endl;
+
+            auto rx_destination_port = transport_params_from_sdp[0][nmos::fields::destination_port];
+            auto rx_interface_ip = transport_params_from_sdp[0][nmos::fields::interface_ip];
+            auto rx_multicast_ip = transport_params_from_sdp[0][nmos::fields::multicast_ip];
+            auto rx_source_ip = transport_params_from_sdp[0][nmos::fields::source_ip];
+            
+            if (rx_interface_ip == transport_params_from_sdp[0][nmos::fields::interface_ip] &&
+                rx_multicast_ip == transport_params_from_sdp[0][nmos::fields::multicast_ip] &&
+                rx_source_ip == transport_params_from_sdp[0][nmos::fields::source_ip] &&
+                rx_destination_port == transport_params_from_sdp[0][nmos::fields::destination_port])
+                {
+                std::cout << "The transport parameters from the active connection and the SDP are equal. Using parameters from SDP transportfile" << std::endl;
+            } else {
+                std::cout << "The transport parameters from the active connection and the SDP are not equal. Using parameters from REST API request transport_params" << std::endl;
+                rx_destination_port = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port];
+                rx_interface_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip];
+                rx_multicast_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::multicast_ip];
+                rx_source_ip = data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip];
+            }
+
             auto& media_descriptions = sdp::fields::media_descriptions(session_description);
             auto& media_description = media_descriptions.at(0);
             auto& media = sdp::fields::media(media_description);
@@ -1063,8 +1100,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto& encoding_name = sdp::fields::encoding_name(sdp::fields::value(*rtpmap));
             const auto& payload_type_sdp = sdp::fields::payload_type(sdp::fields::value(*rtpmap));
             auto source_filter = sdp::find_name(attributes, sdp::attributes::source_filter);
-            auto& destination_addr=sdp::fields::destination_address(sdp::fields::value(*source_filter));
-
             auto fmtp = sdp::find_name(attributes, sdp::attributes::fmtp);
             auto& params = sdp::fields::format_specific_parameters(sdp::fields::value(*fmtp));
             auto width_param = sdp::find_name(params, U("width"));
@@ -1095,18 +1130,27 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.mcm.conn_type=config_by_id.stream_type.mcm.conn_type;
                 s.stream_type.mcm.transport=config_by_id.stream_type.mcm.transport;
                 s.stream_type.mcm.transport_pixel_format=config_by_id.stream_type.mcm.transport_pixel_format;
-                s.stream_type.mcm.ip=destination_addr;
-                s.stream_type.mcm.port=sender_destination_port.as_integer();
+                if (rx_multicast_ip.is_null()) {
+                    s.stream_type.mcm.ip = rx_source_ip.as_string();
+                } else {
+                    s.stream_type.mcm.ip = rx_multicast_ip.as_string();
+                }
+                s.stream_type.mcm.port=rx_destination_port.as_integer();
                 s.stream_type.mcm.urn=config_by_id.stream_type.mcm.urn;
             }
             else if(config_by_id.stream_type.type==stream_type::st2110)
             {
                 s.stream_type.type = stream_type::st2110;
                 s.stream_type.st2110.network_interface = vfio_port_value_rx;
-                s.stream_type.st2110.local_ip = receiver_source_ip.as_string();
-                s.stream_type.st2110.remote_ip = destination_addr;
+                s.stream_type.st2110.local_ip = rx_interface_ip.as_string();
+                if (rx_multicast_ip.is_null()) {
+                    s.stream_type.st2110.remote_ip = rx_source_ip.as_string();
+                } else {
+                    s.stream_type.st2110.remote_ip = rx_multicast_ip.as_string();
+                }
+                
                 s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
-                s.stream_type.st2110.remote_port = sender_destination_port.as_integer();
+                s.stream_type.st2110.remote_port = rx_destination_port.as_integer();
                 s.stream_type.st2110.payload_type = payload_type_sdp;
             }
 
@@ -1122,7 +1166,6 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             auto ffmpeg_sender_as_file_vector = tracker::get_file_streams_senders(configIntel);
             for (auto& stream_sender : ffmpeg_sender_as_file_vector) {
                 stream_sender.payload.type = payload_type::video;
-                std::cout<<"Ffmpeg TX file -> frame_width: "<<stream_sender.payload.video.frame_width<<std::endl;
             }
             if (ffmpeg_sender_as_file_vector.empty()) {
                 slog::log<slog::severities::error>(gate, SLOG_FLF) << "No ffmpeg senders of stream_type::File found.";

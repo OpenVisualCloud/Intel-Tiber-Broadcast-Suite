@@ -6,6 +6,7 @@
     "pipeline": ["rx"]
   },
   "function": "multiviewer",
+  "activate_senders": false,
   "multiviewer_columns": 3,
   "gpu_hw_acceleration": "intel",
   "gpu_hw_acceleration_device": "/dev/dri/renderD128",

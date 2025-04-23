@@ -7,6 +7,7 @@ import subprocess
 import json
 import requests
 import threading
+import time
 
 def fetch_data(url):
     try:
@@ -25,11 +26,23 @@ def fetch_data(url):
         return ""
 
 def fetch_and_save_sdp(sdp_url, filename):
-    response = requests.get(sdp_url)
-    response.raise_for_status()
-    content = response.text
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write(content)
+    retry = 10
+    for attempt in range(retry):
+        try:
+            response = requests.get(sdp_url, timeout=5)
+            if response.status_code == 200:
+                response.raise_for_status()
+                content = response.text
+                with open(filename, 'w', encoding='utf-8') as file:
+                    file.write(content)
+                break  # Exit the loop if the request is successful
+            else:
+                print(f"Attempt {attempt + 1}/{retry} to fetch SDP transportfile when it is ready")
+        except requests.exceptions.RequestException as e:
+            print(f"Attempt {attempt + 1}/{retry}: Error occurred - {e}")
+        time.sleep(0.5)
+    else:
+        raise Exception(f"Failed to fetch SDP data from {sdp_url} after {retry} attempts")
 
 def parse_json(data):
     try:

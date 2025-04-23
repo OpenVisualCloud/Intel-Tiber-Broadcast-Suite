@@ -7,5 +7,10 @@
     "transport_file": {
         "data": "",
         "type": "application/sdp"
-    }
+    },
+    "transport_params": [
+        {
+            "interface_ip": "127.0.0.6"
+        }
+    ]
 }

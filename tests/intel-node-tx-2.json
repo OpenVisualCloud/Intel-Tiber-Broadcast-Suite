@@ -6,6 +6,7 @@
     "pipeline": ["tx"]
   },
   "function": "tx",
+  "activate_senders": false,
   "stream_loop":-1,
   "gpu_hw_acceleration": "none",
   "domain": "local",

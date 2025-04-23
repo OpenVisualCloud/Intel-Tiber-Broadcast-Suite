@@ -7,6 +7,7 @@
   },
   "function": "rx",
   "stream_loop": 0,
+  "activate_senders": false,
   "gpu_hw_acceleration": "intel",
   "gpu_hw_acceleration_device": "/dev/dri/renderD128",
   "domain": "local",
