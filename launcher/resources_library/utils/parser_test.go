@@ -213,7 +213,7 @@ configuration:
 //     name: "pipeline"
 //     imageAndTag: "pipeline:latest"
 //     gRPCPort: 9000
-//     sourcePort: 8000
+//     nmosPort: 8000
 //     environmentVariables:
 //     - "ENV_VAR1=value1"
 //     - "ENV_VAR2=value2"

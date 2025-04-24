@@ -85,9 +85,16 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		mcmAgentContainer.Configuration.MediaProxyAgentConfig.ImageAndTag = config.RunOnce.MediaProxyAgent.ImageAndTag
 		mcmAgentContainer.Configuration.MediaProxyAgentConfig.GRPCPort = config.RunOnce.MediaProxyAgent.GRPCPort
 		mcmAgentContainer.Configuration.MediaProxyAgentConfig.RestPort = config.RunOnce.MediaProxyAgent.RestPort
+
 		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Enable = config.RunOnce.MediaProxyAgent.Network.Enable
-		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = config.RunOnce.MediaProxyAgent.Network.Name
-		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.IP = config.RunOnce.MediaProxyAgent.Network.IP
+		if config.RunOnce.MediaProxyAgent.Network.Enable {
+			mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = config.RunOnce.MediaProxyAgent.Network.Name
+		    mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.IP = config.RunOnce.MediaProxyAgent.Network.IP
+		} else{
+			mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = "host"
+			// Note - When you use the host network mode in Docker, the container shares
+			// the host machine's network stack.
+		}
 
 		err := utils.CreateAndRunContainer(ctx, d.cli, log, &mcmAgentContainer)
 		if err != nil {
@@ -106,10 +113,16 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.ImageAndTag = config.RunOnce.MediaProxyMcm.ImageAndTag
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.InterfaceName = config.RunOnce.MediaProxyMcm.InterfaceName
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Volumes = config.RunOnce.MediaProxyMcm.Volumes
+		
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Enable = config.RunOnce.MediaProxyMcm.Network.Enable
+		if config.RunOnce.MediaProxyMcm.Network.Enable {
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Name = config.RunOnce.MediaProxyMcm.Network.Name
 		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.IP = config.RunOnce.MediaProxyMcm.Network.IP
-		
+		} else{
+		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Name = "host"
+		// Note - When you use the host network mode in Docker, the container shares
+		// the host machine's network stack.
+		}
 		err := utils.CreateAndRunContainer(ctx, d.cli, log, &mediaProxyContainer)
 		if err != nil {
 			log.Error(err, "Failed to create contianer MCM MediaProxy!")
@@ -129,8 +142,14 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName = config.WorkloadToBeRun.NmosClient.NmosConfigFileName
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
+		if config.WorkloadToBeRun.NmosClient.Network.Enable {
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
+		} else{
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = "host"
+			// Note - When you use the host network mode in Docker, the container shares
+			// the host machine's network stack.
+		}
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConectionAddress = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
 		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort = strconv.Itoa(config.WorkloadToBeRun.FfmpegPipeline.GRPCPort)
 
@@ -150,7 +169,7 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Name = config.WorkloadToBeRun.FfmpegPipeline.Name
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.ImageAndTag = config.WorkloadToBeRun.FfmpegPipeline.ImageAndTag
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort = config.WorkloadToBeRun.FfmpegPipeline.GRPCPort
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.SourcePort = config.WorkloadToBeRun.FfmpegPipeline.SourcePort
+	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.NmosPort = config.WorkloadToBeRun.FfmpegPipeline.NmosPort
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.EnvironmentVariables = config.WorkloadToBeRun.FfmpegPipeline.EnvironmentVariables
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Devnull = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Devnull
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Dri
@@ -163,9 +182,14 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Dri = config.WorkloadToBeRun.FfmpegPipeline.Devices.Dri
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio = config.WorkloadToBeRun.FfmpegPipeline.Devices.Vfio
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable = config.WorkloadToBeRun.FfmpegPipeline.Network.Enable
+	if config.WorkloadToBeRun.FfmpegPipeline.Network.Enable {
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name = config.WorkloadToBeRun.FfmpegPipeline.Network.Name
 	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
-
+	} else{
+		bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name = "host"
+		// Note - When you use the host network mode in Docker, the container shares
+		// the host machine's network stack.
+	}
 	err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsPipelinesContainer)
 	if err != nil {
 		log.Error(err, "Failed to create contianer!")

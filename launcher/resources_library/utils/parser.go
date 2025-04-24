@@ -53,7 +53,7 @@ type MediaProxyAgentConfig struct {
 	Name                string            `yaml:"name"`
 	ImageAndTag         string            `yaml:"imageAndTag"`
 	GRPCPort            int               `yaml:"gRPCPort"`
-	SourcePort          int               `yaml:"sourcePort"`
+	NmosPort          int               `yaml:"nmosPort"`
 	EnvironmentVariables []string          `yaml:"environmentVariables"`
 	Volumes             Volumes            `yaml:"volumes"`
 	Devices             Devices            `yaml:"devices"`

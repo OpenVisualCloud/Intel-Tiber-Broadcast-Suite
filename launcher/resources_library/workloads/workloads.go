@@ -10,14 +10,14 @@ type MediaProxyAgentConfig struct {
 	ImageAndTag string       `yaml:"imageAndTag"`
 	GRPCPort    string          `yaml:"gRPCPort"`
 	RestPort    string          `yaml:"restPort"`
-	Network     NetworkConfig `yaml:"network"`
+	Network     NetworkConfig `yaml:"custom_network"`
   }
 
   type MediaProxyMcmConfig struct {
 	ImageAndTag   string       `yaml:"imageAndTag"`
 	InterfaceName string       `yaml:"interfaceName"`
 	Volumes       []string     `yaml:"volumes"`
-	Network       NetworkConfig `yaml:"network"`
+	Network       NetworkConfig `yaml:"custom_network"`
   }
 
   type WorkloadConfig struct {
@@ -42,14 +42,14 @@ type MediaProxyAgentConfig struct {
   }
 
   type FfmpegPipelineConfig struct {
-	Name                string            `yaml:"name"`
-	ImageAndTag         string            `yaml:"imageAndTag"`
-	GRPCPort            int               `yaml:"gRPCPort"`
-	SourcePort          int               `yaml:"sourcePort"`
+	Name                string             `yaml:"name"`
+	ImageAndTag         string             `yaml:"imageAndTag"`
+	GRPCPort            int                `yaml:"gRPCPort"`
+	NmosPort            int                `yaml:"nmosPort"`
 	EnvironmentVariables []string          `yaml:"environmentVariables"`
 	Volumes             Volumes            `yaml:"volumes"`
 	Devices             Devices            `yaml:"devices"`
-	Network             NetworkConfig     `yaml:"network"`
+	Network             NetworkConfig      `yaml:"custom_network"`
   }
 
   type NmosClientConfig struct {
@@ -58,13 +58,13 @@ type MediaProxyAgentConfig struct {
 	EnvironmentVariables []string          `yaml:"environmentVariables"`
 	NmosConfigPath      string            `yaml:"nmosConfigPath"`
 	NmosConfigFileName  string            `yaml:"nmosConfigFileName"`
-	Network             NetworkConfig     `yaml:"network"`
+	Network             NetworkConfig     `yaml:"custom_network"`
 	FfmpegConectionAddress string		  `yaml:"ffmpegConectionAddress"`
 	FfmpegConnectionPort  string		  `yaml:"ffmpegConnectionPort"`
   }
 
   type NetworkConfig struct {
 	Enable bool   `yaml:"enable"`
-	Name   string `yaml:"name"`
-	IP     string `yaml:"ip"`
+	Name   string `yaml:"name,omitempty"`
+	IP     string `yaml:"ip,omitempty"`
   }
