@@ -140,6 +140,7 @@ def main():
     receiver_thread = threading.Thread(target=process_receiver, args=(file_path, staged_receiver_url, sender_id,sdp_url,))
 
     sender_thread.start()
+    time.sleep(2)
     receiver_thread.start()
     sender_thread.join()
     receiver_thread.join()

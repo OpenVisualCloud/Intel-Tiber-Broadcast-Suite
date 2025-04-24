@@ -116,7 +116,8 @@ const std::string json_str = R"json(
         "stream_type": {
           "st2110": {
             "transport": "st2110-20",
-            "payloadType": 112
+            "payloadType": 112,
+            "queues_cnt": 0
           }
         }
       }]

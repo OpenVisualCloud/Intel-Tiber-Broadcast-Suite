@@ -976,6 +976,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
                 s.stream_type.st2110.remote_port = receiver_destination_port.as_integer();
                 s.stream_type.st2110.payload_type = impl::fields::sender_payload_type(model.settings);
+                s.stream_type.st2110.queues_cnt = config_by_id.stream_type.st2110.queues_cnt;
             }
 
             Payload payload;
@@ -1152,6 +1153,7 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
                 s.stream_type.st2110.transport = config_by_id.stream_type.st2110.transport;
                 s.stream_type.st2110.remote_port = rx_destination_port.as_integer();
                 s.stream_type.st2110.payload_type = payload_type_sdp;
+                s.stream_type.st2110.queues_cnt = config_by_id.stream_type.st2110.queues_cnt;
             }
 
             Payload payload;

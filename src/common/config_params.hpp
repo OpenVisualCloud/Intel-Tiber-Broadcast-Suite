@@ -45,6 +45,7 @@ struct ST2110 {
     std::string transport;
     int remote_port; // ffmpeg param name: -udp_port
     int payload_type;
+    int queues_cnt; // ffmpeg param name: -rx_queues / -tx_queues ; 0 mean use default ffmpeg plugin value
 };
 
 struct MCM {
