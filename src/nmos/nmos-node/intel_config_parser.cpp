@@ -93,6 +93,7 @@ void ConfigManager::print_config() const {
             std::cout<<"Sender Stream type: st2110"<<std::endl;
             std::cout << "|_ Transport: " << sender.stream_type.st2110.transport << std::endl;
             std::cout << "|_ Payload Type: " << sender.stream_type.st2110.payload_type << std::endl;
+            std::cout << "|_ Queues count: " << sender.stream_type.st2110.queues_cnt << std::endl;
         } else if (sender.stream_type.type == stream_type::mcm) {
             std::cout<<"Sender Stream type: mcm"<<std::endl;
             std::cout << "|_ Connection Type: " << sender.stream_type.mcm.conn_type << std::endl;
@@ -116,6 +117,7 @@ void ConfigManager::print_config() const {
             std::cout<<"Receiver Stream type: st2110"<<std::endl;
             std::cout << "|_ Transport: " << receiver.stream_type.st2110.transport << std::endl;
             std::cout << "|_ Payload Type: " << receiver.stream_type.st2110.payload_type << std::endl;
+            std::cout << "|_ Queues count: " << receiver.stream_type.st2110.queues_cnt << std::endl;
         } else if (receiver.stream_type.type == stream_type::mcm) {
             std::cout<<"Receiver Stream type: mcm"<<std::endl;
             std::cout << "|_ Connection Type: " << receiver.stream_type.mcm.conn_type << std::endl;
@@ -156,6 +158,7 @@ StreamType ConfigManager::parse_stream_type(const web::json::value& stream_type_
         stream_type.type = stream_type::st2110;
         stream_type.st2110.transport = stream_type_data.at(U("st2110")).at(U("transport")).as_string();
         stream_type.st2110.payload_type = stream_type_data.at(U("st2110")).at(U("payloadType")).as_integer();
+        stream_type.st2110.queues_cnt = stream_type_data.at(U("st2110")).at(U("queues_cnt")).as_integer();
     } else if (stream_type_data.has_field(U("mcm"))) {
         stream_type.type = stream_type::mcm;
         stream_type.mcm.conn_type = stream_type_data.at(U("mcm")).at(U("conn_type")).as_string();
