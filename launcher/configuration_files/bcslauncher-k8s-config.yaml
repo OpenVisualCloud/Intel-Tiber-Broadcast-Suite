@@ -20,7 +20,7 @@ data:
       mediaProxy:
         image: mcm/media-proxy:latest
         command: ["media-proxy"]
-        args: ["-d", "kernel:eth0", "-i", "$(POD_IP)"]
+        args: ["-d", "kernel:eth0", "-i", "localhost"]
         grpcPort: 8001
         sdkPort: 8002
         volumes:

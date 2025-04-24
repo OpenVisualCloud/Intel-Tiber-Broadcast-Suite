@@ -73,7 +73,7 @@ configuration: # Configuration should be used only for docker mode
       name: bcs-ffmpeg-pipeline
       imageAndTag: tiber-broadcast-suite:latest
       gRPCPort: 50051
-      sourcePort: 5004
+      nmosPort: 5004
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
@@ -125,8 +125,8 @@ Remember to export RX and TX vfio ports (consequently TX port for sender and RX 
 
 cd <repo>/launcher/cmd/
 go build main.go
-./main <pass path to file ./launcher/configuration_files/bcslauncher-k8s-config.yaml>
-# Alternatively instead of go build main.go && ./main, you can type: go run main.go <pass path to file ./launcher/configuration_files/bcslauncher-k8s-config.yaml>
+./main --bcs-config-path=<pass path to file ./launcher/configuration_files/bcslauncher-k8s-config.yaml>
+# Alternatively instead of go build main.go && ./main, you can type: go run main.go --bcs-config-path=<pass path to file ./launcher/configuration_files/bcslauncher-k8s-config.yaml>
 ```
 
 ### To Deploy on the cluster
@@ -136,7 +136,9 @@ Follow instructions to build minikube cluster: [here](https://github.com/OpenVis
 
 Modify `./launcher/configuration_files/bcslauncher-k8s-config.yaml`. `k8s: true` should be set. Resources for media proxy and msh agent are only configured once.
 
-`docker build -t controller:bcs_pod_launcher .`
+`docker build -t bcs_pod_launcher:controller .`
+
+> NOTE! If you have issues with building, try to add proxy environment variables. `--build-arg http_proxy=<proxy>` and `--build-arg https_proxy=<proxy>`
 
 Modify `./launcher/configuration_files/bcsconfig-example.yaml` to prepare information for bcs pipeline and nmos node. There may be many custom resources that specifies diffrent `workloads` with nmos node.
 

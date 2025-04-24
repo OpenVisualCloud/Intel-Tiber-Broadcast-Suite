@@ -56,40 +56,16 @@ func init() {
 
 func main() {
 	ctx := ctrl.SetupSignalHandler()
-
-	if len(os.Args) < 2 {
-		fmt.Println("No argument provided. Please pass path to the configuration file bcslauncher-static-config.yaml.")
-		fmt.Println("Example: go run main.go ../configuration_files/bcslauncher-static-config.yaml")
-		fmt.Println("   or")
-		fmt.Println("Example: ./main ../configuration_files/bcslauncher-static-config.yaml")
-		os.Exit(1)
-	}
-
-	launcherStartupConfig := os.Args[1]
-	fmt.Println("Argument passed:", launcherStartupConfig)
-	_, err := os.Stat(launcherStartupConfig)
-
-	if os.IsNotExist(err) {
-		setupLog.Error(err, "File does not exist", "file", launcherStartupConfig)
-		os.Exit(1)
-	}
-
-	fmt.Println("Launcher configuration file exists: ../configuration_files/bcslauncher-static-config.yaml")
-	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)
-	fmt.Println("Launcher mode: ", isKubernetesMode)
-	if err != nil {
-		fmt.Println("Launcher mode: ", err)
-		setupLog.Error(err, "Failed to parse launcher mode")
-		os.Exit(1)
-	}
 	
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
+	var configPath string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&configPath, "bcs-config-path", "/etc/config/config.yaml", "The path to provide BCS config about mode and MCM objects.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -104,6 +80,24 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	launcherStartupConfig := configPath
+
+	fmt.Println("Argument passed:", launcherStartupConfig)
+	if _, err := os.Stat(launcherStartupConfig); err != nil {
+		setupLog.Error(err, "Error checking file", "file", launcherStartupConfig)
+		os.Exit(1)
+	}
+
+	fmt.Println("Launcher configuration file exists")
+
+	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)
+	fmt.Println("Launcher mode: ", isKubernetesMode)
+	if err != nil {
+		fmt.Println("Launcher mode: ", err)
+		setupLog.Error(err, "Failed to parse launcher mode")
+		os.Exit(1)
+	}
 
 	if !isKubernetesMode {
 		controller, err := containercontroller.NewDockerContainerController()

@@ -4,32 +4,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 
+# CONFIGURATION FOR mediaProxyAgent AND mediaProxyMcm MUST BE THE SAME WITHIN THE SAME NETWORK/SETUP
+# CONFIGURATION FOR mediaProxyAgent AND mediaProxyMcm IS FOR ONE NODE SCENARIO ONLY
 k8s: false # use in both modes: k8s | docker
 configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
       imageAndTag: mcm/mesh-agent:latest
-      gRPCPort: 50051
+      gRPCPort: 50051 # this is the port used by the agent
       restPort: 8100
-      network: 
+      custom_network: # custom network = false means that the container will be run in the host docker network
         enable: false
-        name: my_net_801f0
-        ip: 192.168.2.1
     mediaProxyMcm:
       imageAndTag: mcm/media-proxy:latest
       interfaceName: eth0
       volumes:
         - /dev/vfio:/dev/vfio
-      network: 
+      custom_network: # custom network = false means that the container will be run in the host docker network
         enable: false
-        name: my_net_801f0
-        ip: 192.168.2.2
   workloadToBeRun:
     ffmpegPipeline:
       name: bcs-ffmpeg-pipeline-rx
       imageAndTag: tiber-broadcast-suite:latest
-      gRPCPort: 50053
-      sourcePort: 5006
+      gRPCPort: 50044 # this is the port used by the nmos container to communicate with ffmpeg pipeline
+      nmosPort: 5006 # this is the port used by the nmos container to manage node via REST API
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
@@ -45,21 +43,16 @@ configuration: # Configuration should be used only for docker mode
       devices:
         vfio: /dev/vfio
         dri: /dev/dri
-      network: 
-        enable: true
-        name: my_net_801f0
-        ip: 192.168.2.6
+      custom_network:  # custom network = false means that the container will be run in the host docker network
+        enable: false
     nmosClient:
       name: bcs-ffmpeg-pipeline-nmos-client-rx
       imageAndTag: tiber-broadcast-suite-nmos-node:latest
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
-        - "VFIO_PORT_TX=0000:ca:11.0"
-        - "VFIO_PORT_RX=0000:ca:11.1"
-      nmosConfigPath: /root/NMOS-FFMPEG-DEMO/refactor-nmos/tests
+        - "VFIO_PORT_RX=0000:ca:11.1" # this is the PCI address of the vfio device - MENDATORY!
+      nmosConfigPath: /root/path/to/intel-node-rx/json/file
       nmosConfigFileName: intel-node-rx.json
-      network: 
-        enable: true
-        name: my_net_801f0
-        ip: 192.168.2.7
+      custom_network:  # custom network = false means that the container will be run in the host docker network
+        enable: false
