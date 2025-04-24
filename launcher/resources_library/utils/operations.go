@@ -213,6 +213,7 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			},
 		}
 	    if containerInfo.Configuration.MediaProxyAgentConfig.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.MediaProxyAgentConfig.Network.Name)
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
 					containerInfo.Configuration.MediaProxyAgentConfig.Network.Name: {
@@ -224,6 +225,7 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			}
 		}else{
 			networkConfig = &network.NetworkingConfig{}
+			hostConfig.NetworkMode = "host"
 		}
 	case general.MediaProxyMCM:
 		fmt.Printf(">> MediaProxyMcmConfig: %+v\n", containerInfo.Configuration.MediaProxyMcmConfig)
@@ -238,6 +240,8 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 		}
 	
 	    if containerInfo.Configuration.MediaProxyMcmConfig.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.MediaProxyMcmConfig.Network.Name)
+
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
 					containerInfo.Configuration.MediaProxyMcmConfig.Network.Name: {
@@ -249,6 +253,7 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			}
 		}else{
 			networkConfig = &network.NetworkingConfig{}
+			hostConfig.NetworkMode = "host"
 		}
     case general.BcsPipelineFfmpeg:
 		fmt.Printf(">> BcsPipelineFfmpeg: %+v\n", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline)
@@ -256,12 +261,17 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 		containerConfig = &container.Config{
 			User:       "root",
 			Image: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.ImageAndTag,
-			Cmd:   []string{containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP, fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)},
 			Env: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.EnvironmentVariables,
 			ExposedPorts: nat.PortSet{
 				"20000/tcp": struct{}{},
 				"20170/tcp": struct{}{},
 			},
+		}
+
+		if containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable {
+			containerConfig.Cmd = []string{containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP, fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)}
+		}else{
+			containerConfig.Cmd = []string{"localhost", fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)}
 		}
 	
 		hostConfig = &container.HostConfig{
@@ -284,8 +294,9 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio, PathInContainer: "/dev/vfio"},
 			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Dri, PathInContainer: "/dev/dri"},
 		}
-	
-		networkConfig = &network.NetworkingConfig{
+		if containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name)
+		    networkConfig = &network.NetworkingConfig{
 			EndpointsConfig: map[string]*network.EndpointSettings{
 				containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name: {
 					IPAMConfig: &network.EndpointIPAMConfig{
@@ -293,6 +304,10 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 					},
 				},
 			},
+		}
+		} else {
+			networkConfig = &network.NetworkingConfig{}
+			hostConfig.NetworkMode = "host"
 		}
 	case general.BcsPipelineNmosClient:
 		nmosFileNameJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName
@@ -320,7 +335,9 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			Privileged: true,
 			Binds:      []string{fmt.Sprintf("%s:/home/config/", containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath)},
 		}
-	
+
+		if containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name)
 		networkConfig = &network.NetworkingConfig{
 			EndpointsConfig: map[string]*network.EndpointSettings{
 				containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name: {
@@ -331,6 +348,10 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 				},
 			},
 		}
+	} else{
+		networkConfig = &network.NetworkingConfig{}
+			hostConfig.NetworkMode = "host"
+	}
 	default:
 		containerConfig, hostConfig, networkConfig = nil, nil, nil
 	}
@@ -373,8 +394,6 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 		return err
 	}
 	// Define the container configuration
-	fmt.Println("--------------------------------------------------------------", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)
-
 	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
 
 	if containerConfig == nil || hostConfig == nil || networkConfig == nil {
