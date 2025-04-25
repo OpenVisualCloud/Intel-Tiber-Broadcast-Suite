@@ -1,0 +1,50 @@
+name: CIS Benchmark
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted, kubernetes
+    steps:
+      - name: "CIS Benchmark: Checkout code"
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: "CIS Benchmark: Install kubectl"
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+          echo "$(cat kubectl.sha256) kubectl" | sha256sum --check
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+          kubectl version --client
+
+      - name: "CIS Benchmark: Deploy CIS Benchmark to Kubernetes"
+        run: |
+          kubectl apply -f .github/configs/cis-benchmark-job.yaml
+        env:
+          KUBECONFIG: /home/runner/.kube/config
+
+      - name: "CIS Benchmark: Wait for benchmark and get logs"
+        shell: bash
+        run: |
+          . scripts/common.sh
+          kubernetes_wait_job_complete
+          kubernetes_get_job_logs
+        env:
+          KUBECONFIG: /home/runner/.kube/config
+
+      - name: "CIS Benchmark: Upload results artifact"
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: "CIS Benchmark logs"
+          path: "logs.log"
+          retention-days: 5

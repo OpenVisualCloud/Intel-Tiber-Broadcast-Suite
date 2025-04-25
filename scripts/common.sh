@@ -534,3 +534,52 @@ function get_cpu_arch() {
     esac
     return 0
 }
+
+# Function to check job status
+function kubernetes_check_job_status()
+{
+  JOB_NAME="${1:-kube-bench}"
+  NAMESPACE="${2:-default}"
+  kubectl get job "$JOB_NAME" -n "$NAMESPACE" -o jsonpath='{.status.conditions[?(@.type=="Complete")].status}'
+}
+
+function kubernetes_get_job_pods()
+{
+  JOB_NAME="${1:-kube-bench}"
+  kubectl get pods "--selector=job-name=${JOB_NAME}" -o jsonpath='{.items[*].metadata.name}'
+}
+
+function kubernetes_get_job_logs()
+{
+  PODS=$(kubernetes_get_job_pods "kube-bench")
+  LOGS_FILE_NAME="${1:-logs.log}"
+  echo "Starting logs collection" > "${LOGS_FILE_NAME}"
+
+  for POD in ${PODS}; do
+    echo "Logs for pod ${POD}:" | tee -a "${LOGS_FILE_NAME}"
+    kubectl logs "${POD}" | tee -a "${LOGS_FILE_NAME}"
+    echo "----------------------" | tee -a "${LOGS_FILE_NAME}"
+  done
+}
+
+function kubernetes_wait_job_complete()
+{
+  JOB_NAME="${1:-kube-bench}"
+  NAMESPACE="${2:-default}"
+  echo "Waiting for job $JOB_NAME to complete..."
+
+  while true; do
+    STATUS=$(check_job_status kube-bench default)
+    if [ "$STATUS" == "True" ]; then
+      echo "Job $JOB_NAME completed successfully."
+      break
+    fi
+    FAILED=$(kubectl get job "$JOB_NAME" -n "$NAMESPACE" -o jsonpath='{.status.conditions[?(@.type=="Failed")].status}')
+    if [ "$FAILED" == "True" ]; then
+      echo "Job $JOB_NAME failed."
+      exit 1
+    fi
+    echo ". "
+    sleep 5
+  done
+}
