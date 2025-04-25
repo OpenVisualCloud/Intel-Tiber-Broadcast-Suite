@@ -109,9 +109,9 @@ jobs:
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
       if: always()
        with:
-        name: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
-        path: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
-        retention-days: 5
+         name: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+         path: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+         retention-days: 5
   trivy-config-scan:
     name: "trivy config scans"
     runs-on: ubuntu-22.04
