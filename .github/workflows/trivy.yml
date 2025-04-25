@@ -200,7 +200,7 @@ jobs:
     - name: "Trivy: Upload scan results as artifacts (out=table)"
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
       if: always()
-       with:
+      with:
         name: "trivy-fs-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
         path: "trivy-fs-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
         retention-days: 5
