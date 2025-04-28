@@ -14,9 +14,10 @@ data:
     k8s: true
     definition:
       meshAgent:
-        image: "mesh-agent:latest"
+        image: "mcm/mesh-agent:latest"
         restPort: 8100
         grpcPort: 50051
+        scheduleOnNode: ["kubernetes.io/os=linux"]
       mediaProxy:
         image: mcm/media-proxy:latest
         command: ["media-proxy"]
@@ -26,7 +27,10 @@ data:
         volumes:
           memif: /tmp/mcm/memif
           vfio: /dev/vfio
+          cache-size: 4Gi
         pvHostPath: /var/run/imtl
         pvStorageClass: manual
         pvStorage: 1Gi
+        pvcAssignedName: mtl-pvc
         pvcStorage: 1Gi
+        scheduleOnNode: ["kubernetes.io/os=linux"]

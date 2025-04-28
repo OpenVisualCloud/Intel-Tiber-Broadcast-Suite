@@ -428,6 +428,8 @@ type K8sConfig struct {
 			Image    string `yaml:"image"`
 			RestPort int    `yaml:"restPort"`
 			GrpcPort int    `yaml:"grpcPort"`
+			ScheduleOnNode []string `yaml:"scheduleOnNode,omitempty"`
+			DoNotScheduleOnNode []string `yaml:"doNotScheduleOnNode,omitempty"`
 		} `yaml:"meshAgent"`
 		MediaProxy struct {
 			Image       string   `yaml:"image"`
@@ -438,11 +440,15 @@ type K8sConfig struct {
 			Volumes     struct {
 				Memif string `yaml:"memif"`
 				Vfio  string `yaml:"vfio"`
+				CacheSize string `yaml:"cache-size"`
 			} `yaml:"volumes"`
 			PvHostPath     string `yaml:"pvHostPath"`
 			PvStorageClass string `yaml:"pvStorageClass"`
 			PvStorage      string `yaml:"pvStorage"`
 			PvcStorage     string `yaml:"pvcStorage"`
+			PvcAssignedName string `yaml:"pvcAssignedName"`
+			ScheduleOnNode []string `yaml:"scheduleOnNode,omitempty"`
+			DoNotScheduleOnNode []string `yaml:"doNotScheduleOnNode,omitempty"`
 		} `yaml:"mediaProxy"`
 	} `yaml:"definition"`
 }
@@ -463,7 +469,7 @@ func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 		 return nil
 	 }
 	 fmt.Printf("Data: %+v\n", data)
-	 return &appsv1.Deployment{
+	 deploy :=  &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mesh-agent-deployment",
 			Namespace: "mcm",
@@ -506,6 +512,9 @@ func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 			},
 		},
 	}
+	AssignNodeAffinityFromConfig(deploy.Spec.Template.Spec.Affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	AssignNodeAntiAffinityFromConfig(deploy.Spec.Template.Spec.Affinity.PodAntiAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	return deploy
 }
 
 func CreateMeshAgentService(cm *corev1.ConfigMap) *corev1.Service {
@@ -627,7 +636,7 @@ func CreatePersistentVolumeClaim(cm *corev1.ConfigMap) *corev1.PersistentVolumeC
 	 }
 	return &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mtl-pvc",
+			Name:      data.Definition.MediaProxy.PvcAssignedName,
 			Namespace: "mcm",
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
@@ -740,7 +749,7 @@ func CreateBcsDeployment(bcs *bcsv1.BcsConfig) *appsv1.Deployment {
                     {Name: "hugepages", MountPath: "/hugepages"},
                     {Name: "imtl", MountPath: "/var/run/imtl"},
                     {Name: "shm", MountPath: "/dev/shm"},
-                    {Name: "driDev", MountPath: "/dev/dri"},
+                    {Name: "dri-dev", MountPath: "/dev/dri"},
                     {Name: "vfio", MountPath: "/dev/vfio"},
                   },
                   Env: convertEnvVars(bcs.Spec.App.EnvironmentVariables),
@@ -770,7 +779,7 @@ func CreateBcsDeployment(bcs *bcsv1.BcsConfig) *appsv1.Deployment {
                 {Name: "imtl", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["imtl"]}}},
                 {Name: "shm", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["shm"]}}},
                 {Name: "vfio", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["vfio"]}}},
-                {Name: "driDev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["driDev"]}}},
+                {Name: "dri-dev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["dri-dev"]}}},
 				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: bcs.Spec.Name+"-config"}}}},
               },
             },
@@ -785,7 +794,7 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 		 fmt.Println("Error unmarshalling K8s config:", err)
 		 return nil
 	 }
-	return &appsv1.DaemonSet{
+	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "media-proxy",
 			Namespace: "mcm",
@@ -803,9 +812,6 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 					},
 				},
 				Spec: corev1.PodSpec{
-					NodeSelector: map[string]string{
-						"node-role.kubernetes.io/worker": "true",
-					},
 					Containers: []corev1.Container{
 						{
 							Name:    "media-proxy",
@@ -938,7 +944,7 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
 									Medium:    corev1.StorageMediumMemory,
-									SizeLimit: resource.NewQuantity(4*1024*1024*1024, resource.BinarySI),
+									SizeLimit: func(q resource.Quantity) *resource.Quantity { return &q }(resource.MustParse(data.Definition.MediaProxy.Volumes.CacheSize)),
 								},
 							},
 						},
@@ -946,7 +952,7 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 							Name: "mtl-mgr",
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-									ClaimName: "mtl-pvc",
+									ClaimName: data.Definition.MediaProxy.PvcAssignedName,
 								},
 							},
 						},
@@ -954,6 +960,72 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 				},
 			},
 		},
+	}
+
+	AssignNodeAffinityFromConfig(ds.Spec.Template.Spec.Affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	AssignNodeAntiAffinityFromConfig(ds.Spec.Template.Spec.Affinity.PodAntiAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	return ds
+}
+
+
+func AssignNodeAffinityFromConfig( affinity *corev1.Affinity, scheduleOnNode []string) {
+	if len(scheduleOnNode) > 0 {
+		var nodeSelectorTerms []corev1.NodeSelectorTerm
+		for _, keyValue := range scheduleOnNode {
+			parts := strings.SplitN(keyValue, "=", 2)
+			if len(parts) == 2 {
+				key := parts[0]
+				value := parts[1]
+				nodeSelectorTerms = append(nodeSelectorTerms, corev1.NodeSelectorTerm{
+					MatchExpressions: []corev1.NodeSelectorRequirement{
+						{
+							Key:      key,
+							Operator: corev1.NodeSelectorOpIn,
+							Values:   []string{value},
+						},
+					},
+				})
+			}
+		}
+		affinity.NodeAffinity = &corev1.NodeAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+				NodeSelectorTerms: nodeSelectorTerms,
+			},
+		}
+	}
+}
+
+func AssignNodeAntiAffinityFromConfig(antiAffinity *corev1.PodAntiAffinity, doNotScheduleOnNode []string) {
+	if len(doNotScheduleOnNode) > 0 {
+		var nodeSelectorTerms []corev1.NodeSelectorTerm
+		for _, keyValue := range doNotScheduleOnNode {
+			parts := strings.SplitN(keyValue, "=", 2)
+			if len(parts) == 2 {
+				key := parts[0]
+				value := parts[1]
+				nodeSelectorTerms = append(nodeSelectorTerms, corev1.NodeSelectorTerm{
+					MatchExpressions: []corev1.NodeSelectorRequirement{
+						{
+							Key:      key,
+							Operator: corev1.NodeSelectorOpNotIn,
+							Values:   []string{value},
+						},
+					},
+				})
+			}
+		}
+
+	antiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(antiAffinity.RequiredDuringSchedulingIgnoredDuringExecution, corev1.PodAffinityTerm{
+		LabelSelector: &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      nodeSelectorTerms[0].MatchExpressions[0].Key,
+					Operator: metav1.LabelSelectorOperator(nodeSelectorTerms[0].MatchExpressions[0].Operator),
+					Values:   nodeSelectorTerms[0].MatchExpressions[0].Values,
+				},
+			},
+		},
+	})
 	}
 }
 

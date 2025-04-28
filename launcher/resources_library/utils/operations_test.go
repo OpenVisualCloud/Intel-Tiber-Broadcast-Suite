@@ -290,7 +290,7 @@ func TestConvertEnvVars_NilInput(t *testing.T) {
 // 					"imtl":         "/host/imtl",
 // 					"shm":          "/dev/shm",
 // 					"vfio":         "/dev/vfio",
-// 					"driDev":       "/dev/dri",
+// 					"dri-dev":       "/dev/dri",
 // 				},
 // 				EnvironmentVariables: []bcsv1.EnvVar{
 // 					{Name: "APP_ENV_VAR1", Value: "APP_VALUE1"},

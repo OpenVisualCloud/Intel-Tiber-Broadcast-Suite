@@ -64,12 +64,22 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
 		err := r.Get(ctx, namespacedName, resource)
 		if err != nil {
-			err = r.Create(ctx, resource)
-			if err != nil {
-				log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+			if errors.IsNotFound(err) {
+				// Create the resource if it doesn't exist
+				err = r.Create(ctx, resource)
+				if err != nil {
+					log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+					return err
+				}
+				log.Info("Resource created successfully", "resource", resource.GetObjectKind(), "name", namespacedName)
+			} else {
+				// Log and return any other error
+				log.Error(err, "Failed to get resource", "resource", resource.GetObjectKind(), "named", namespacedName)
 				return err
 			}
-			log.Info("MCM resource is created", "resource", resource.GetObjectKind(), "name", namespacedName)
+		} else {
+			// Log if the resource already exists
+			log.Info("Resource already exists", "resource", resource.GetObjectKind(), "name", namespacedName)
 		}
 		return nil
 	}
@@ -80,7 +90,6 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "Failed to get resource", "resource", mcmCmInfo.GetObjectKind(), "named", "k8s-bcs-config")
 		return ctrl.Result{}, err
 	}
-	// fmt.Printf("MCM ConfigMap: %+v\n", mcmCmInfo)
 
 	mcmNamespace := utils.CreateNamespace("mcm")
 	mcmAgentDeployment := utils.CreateMeshAgentDeployment(mcmCmInfo)
@@ -120,32 +129,32 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 	
-	// Lookup the BcsConfig instance for this reconcile request
-	bcsConf := &bcsv1.BcsConfig{}
-	err = r.Get(ctx, req.NamespacedName, bcsConf)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("BcsConfig resource not found. Ignoring since object must be deleted")
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "Error reading the object; Failed to get BcsConfig. \n ...Requeue...")
-		return ctrl.Result{}, err
-	}
-	log.Info("Reconciling", "app", bcsConf.Spec.Name)
-	// fmt.Printf("BcsConfig: %+v\n", bcsConf)
+	// // Lookup the BcsConfig instance for this reconcile request
+	// bcsConf := &bcsv1.BcsConfig{}
+	// err = r.Get(ctx, req.NamespacedName, bcsConf)
+	// if err != nil {
+	// 	if errors.IsNotFound(err) {
+	// 		log.Info("BcsConfig resource not found. Ignoring since object must be deleted")
+	// 		return ctrl.Result{}, nil
+	// 	}
+	// 	log.Error(err, "Error reading the object; Failed to get BcsConfig. \n ...Requeue...")
+	// 	return ctrl.Result{}, err
+	// }
+	// log.Info("Reconciling", "app", bcsConf.Spec.Name)
+	// fmt.Println("************-----BcsConfig details", "bcsConf", bcsConf.Spec.App)
 
-	// Run all k8s resources for BCS pipeline and NMOS
-	err = r.reconcileResources(ctx, bcsConf, log)
-	if err != nil {
-		log.Error(err, "Failed to reconcile resources for this custom resource")
-		return ctrl.Result{}, err
-	}
+	// // Run all k8s resources for BCS pipeline and NMOS
+	// err = r.reconcileResources(ctx, bcsConf, log)
+	// if err != nil {
+	// 	log.Error(err, "Failed to reconcile resources for this custom resource")
+	// 	return ctrl.Result{}, err
+	// }
 
-	err = r.waitForPodsRunning(ctx, "default", "tiber-broadcast-suite", 1*time.Minute, log)
-	if err != nil {
-		log.Error(err, "Error waiting for pod to be running.")
-		return ctrl.Result{}, err
-	}
+	// err = r.waitForPodsRunning(ctx, "default", "tiber-broadcast-suite", 1*time.Minute, log)
+	// if err != nil {
+	// 	log.Error(err, "Error waiting for pod to be running.")
+	// 	return ctrl.Result{}, err
+	// }
 
 	return ctrl.Result{}, nil
 }
@@ -157,19 +166,22 @@ func (r *BcsConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, bcs *bcsv1.BcsConfig, log logr.Logger) error {
-
+	fmt.Println("***********BcsConfig details", "bcs", bcs)
 	// Reconcile ConfigMap
 	if err := r.reconcileConfigMap(ctx, bcs , log); err != nil {
+		log.Error(err, "Failed to reconcile ConfigMap")
 		return err
 	}
 
 	// Reconcile Deployment
 	if err := r.reconcileDeployment(ctx, bcs, log); err != nil {
+		log.Error(err, "Failed to reconcile Deployment")
 		return err
 	}
 
 	// Reconcile Service
 	if err := r.reconcileService(ctx, bcs , log); err != nil {
+		log.Error(err, "Failed to reconcile Service")
 		return err
 	}
 
@@ -178,24 +190,49 @@ func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, bcs *bcsv1
 
 func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, bcs *bcsv1.BcsConfig, log logr.Logger) error {
 	bcsConfigMap := &corev1.ConfigMap{}
-	err := r.Get(ctx, types.NamespacedName{Name: bcs.Spec.Name, Namespace: bcs.Spec.Namespace}, bcsConfigMap)
-	if errors.IsNotFound(err) {
+	// log.Info("*******Reconciling ConfigMap", "name", bcs.Spec.Name, "namespace", bcs.Spec.Namespace)
+	configMapName := bcs.Spec.Name+"-config"
+
+	err := r.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: bcs.Spec.Namespace}, bcsConfigMap)
+	fmt.Println("***********BcsConfig-- details", bcsConfigMap)
+	fmt.Println("***********BcsConfig-- details", err)
+	if err != nil && errors.IsNotFound(err) {
 		bcsConfigMap = utils.CreateConfigMap(bcs)
 		if err := r.Create(ctx, bcsConfigMap); err != nil {
 			log.Error(err, "Failed to create ConfigMap")
 			return err
 		}
-		log.Info("ConfigMap is created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
-	} else if err != nil  {
-		log.Error(err, "Failed to create/update ConfigMap. Check your either cluster or bcs launcher configuration")
+		log.Info("ConfigMap created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+	} else if err != nil {
+		log.Error(err, "Failed to get ConfigMap")
 		return err
 	} else {
+		updatedConfigMap := utils.CreateConfigMap(bcs)
+		bcsConfigMap.Data = updatedConfigMap.Data
 		if err := r.Update(ctx, bcsConfigMap); err != nil {
 			log.Error(err, "Failed to update ConfigMap")
 			return err
 		}
-		log.Info("ConfigMap is updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+		log.Info("ConfigMap updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
 	}
+
+	// if errors.IsNotFound(err) {
+	// 	bcsConfigMap = utils.CreateConfigMap(bcs)
+	// 	if err := r.Create(ctx, bcsConfigMap); err != nil {
+	// 		log.Error(err, "Failed to create ConfigMap")
+	// 		return err
+	// 	}
+	// 	log.Info("ConfigMap is created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+	// } else if err != nil  {
+	// 	log.Error(err, "Failed to create/update ConfigMap. Check your either cluster or bcs launcher configuration")
+	// 	return err
+	// } else {
+	// 	if err := r.Update(ctx, bcsConfigMap); err != nil {
+	// 		log.Error(err, "Failed to update ConfigMap")
+	// 		return err
+	// 	}
+	// 	log.Info("ConfigMap is updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+	// }
 	return nil
 }
 
