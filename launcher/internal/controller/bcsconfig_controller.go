@@ -97,6 +97,7 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	mcmMediaProxyPv := utils.CreatePersistentVolume(mcmCmInfo)
 	mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim(mcmCmInfo)
 	mcmMediaProxyDs := utils.CreateDaemonSet(mcmCmInfo)
+	mtlManagerDeployment := utils.CreateMtlManagerDeployment(mcmCmInfo)
 
 	err = createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
 	if err != nil {
@@ -126,6 +127,11 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
     if err != nil {
 		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyDs.GetObjectKind(), "named", mcmMediaProxyDs.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mtlManagerDeployment, types.NamespacedName{Name: mtlManagerDeployment.Name, Namespace: "mcm"})
+	if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mtlManagerDeployment.GetObjectKind(), "named", mtlManagerDeployment.Name)
 		return ctrl.Result{}, err
 	}
 	

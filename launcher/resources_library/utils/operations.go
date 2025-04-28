@@ -450,6 +450,15 @@ type K8sConfig struct {
 			ScheduleOnNode []string `yaml:"scheduleOnNode,omitempty"`
 			DoNotScheduleOnNode []string `yaml:"doNotScheduleOnNode,omitempty"`
 		} `yaml:"mediaProxy"`
+		MtlManager struct {
+			Image string `yaml:"image"`
+			VolumesMtl struct {
+				ImtlHostPath string `yaml:"imtlHostPath"`
+				BpfPath string `yaml:"bpfPath"`
+			} `yaml:"volumes"`
+			ScheduleOnNode []string `yaml:"scheduleOnNode,omitempty"`
+			DoNotScheduleOnNode []string `yaml:"doNotScheduleOnNode,omitempty"`
+		} `yaml:"mtlManager"`
 	} `yaml:"definition"`
 }
 
@@ -460,6 +469,88 @@ func UnmarshalK8sConfig(yamlData []byte) (*K8sConfig, error) {
 		return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
 	}
 	return &config, nil
+}
+
+func CreateMtlManagerDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
+	data, err := UnmarshalK8sConfig([]byte(cm.Data["config.yaml"]))
+	if err != nil {
+		fmt.Println("Error unmarshalling K8s config:", err)
+		return nil
+	}
+	depl :=  &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mtl-manager",
+			Namespace: "mcm",
+			Labels: map[string]string{
+				"app": "mtl-manager",
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: int32Ptr(1),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "mtl-manager",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "mtl-manager",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:  "mtl-manager",
+							Image: data.Definition.MtlManager.Image,
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: boolPtr(true),
+								Capabilities: &corev1.Capabilities{
+									Add: []corev1.Capability{"ALL"},
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "imtl",
+									MountPath: "/var/run/imtl",
+								},
+								{
+									Name:      "bpf",
+									MountPath: "/sys/fs/bpf",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "imtl",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: data.Definition.MtlManager.VolumesMtl.ImtlHostPath,
+								},
+							},
+						},
+						{
+							Name: "bpf",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: data.Definition.MtlManager.VolumesMtl.BpfPath,
+								},
+							},
+						},
+					},
+					HostNetwork: true,
+				},
+			},
+		},
+	}
+	affinity:=&v1.Affinity{}
+	AssignNodeAffinityFromConfig(affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	depl.Spec.Template.Spec.Affinity = affinity
+	noAffinity := &v1.PodAntiAffinity{}
+	AssignNodeAntiAffinityFromConfig(noAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	depl.Spec.Template.Spec.Affinity.PodAntiAffinity = noAffinity
+	return depl
 }
 
 func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
@@ -515,7 +606,9 @@ func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 	affinity:=&v1.Affinity{}
 	AssignNodeAffinityFromConfig(affinity, data.Definition.MediaProxy.ScheduleOnNode)
 	deploy.Spec.Template.Spec.Affinity = affinity
-	AssignNodeAntiAffinityFromConfig(deploy.Spec.Template.Spec.Affinity.PodAntiAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	noAffinity := &v1.PodAntiAffinity{}
+	AssignNodeAntiAffinityFromConfig(noAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	deploy.Spec.Template.Spec.Affinity.PodAntiAffinity = noAffinity
 	return deploy
 }
 
@@ -967,7 +1060,9 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 	affinity:=&v1.Affinity{}
 	AssignNodeAffinityFromConfig(affinity, data.Definition.MediaProxy.ScheduleOnNode)
 	ds.Spec.Template.Spec.Affinity = affinity
-	AssignNodeAntiAffinityFromConfig(ds.Spec.Template.Spec.Affinity.PodAntiAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	noAffinity := &v1.PodAntiAffinity{}
+	AssignNodeAntiAffinityFromConfig(noAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	ds.Spec.Template.Spec.Affinity.PodAntiAffinity = noAffinity
 	return ds
 }
 
