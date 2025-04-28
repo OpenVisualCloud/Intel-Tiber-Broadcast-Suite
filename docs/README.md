@@ -113,3 +113,6 @@ find ./ -name "*.md" -exec markdownlint {} \;
 find ./ -name "*.md" -exec textlint {} \;
 # find ./ -name "*.md" -exec textlint {} --fix \;
 ```
+## Note
+ This project is under development.
+ All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
