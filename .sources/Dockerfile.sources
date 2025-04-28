@@ -29,6 +29,14 @@ WORKDIR /root
 RUN \
   source /root/versions.env && \
   export WGET="wget --progress=dot:giga" && \
+  echo "**** DOWNLOAD LIBVA ****" && \
+  $WGET  https://github.com/intel/libva/archive/${LIBVA}.tar.gz -O libva.tar.gz && \
+  echo "**** DOWNLOAD GMMLIB ****" && \
+  $WGET  https://github.com/intel/gmmlib/archive/refs/tags/intel-gmmlib-${GMMLIB}.tar.gz -O gmmlib.tar.gz && \
+  echo "**** DOWNLOAD IHD ****" && \
+  $WGET  https://github.com/intel/media-driver/archive/refs/tags/intel-media-${IHD}.tar.gz -O ihd.tar.gz && \
+  echo "**** DOWNLOAD LIBVPL ****" && \
+  $WGET  https://github.com/intel/libvpl/archive/refs/tags/v${LIBVPL}.tar.gz -O libvpl.tar.gz && \
   echo "**** DOWNLOAD ONEVPL ****" && \
   $WGET  https://github.com/intel/vpl-gpu-rt/archive/refs/tags/intel-onevpl-${ONEVPL}.tar.gz -O oneVPL-intel-gpu.tar.gz && \
   echo "**** DOWNLOAD VMAF ****" && \
@@ -38,7 +46,7 @@ RUN \
   echo "**** DOWNLOAD VULKAN HEADERS ****" && \
   $WGET  https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/${VULKANSDK}.tar.gz -O Vulkan-Headers.tar.gz && \
   echo "**** DOWNLOAD MTL ****" && \
-  $WGET  https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/tags/${MTL_VER}.tar.gz -O Media-Transport-Library.tar.gz && \
+  $WGET  https://github.com/OpenVisualCloud/Media-Transport-Library/archive/refs/heads/${MTL_VER}.tar.gz -O Media-Transport-Library.tar.gz && \
   echo "**** DOWNLOAD DPDK ****" && \
   $WGET  https://github.com/DPDK/dpdk/archive/refs/tags/v${DPDK_VER}.tar.gz -O dpdk.tar.gz && \
   echo "**** DOWNLOAD XDP-TOOLS ****" && \
@@ -58,6 +66,17 @@ RUN \
   $WGET  https://github.com/FFmpeg/nv-codec-headers/archive/${FFNVCODED_VER}.tar.gz -O nv-codec-headers.tar.gz && \
   echo "**** DOWNLOAD IPP ****" && \
   export no_proxy="" && wget --progress=dot:giga https://registrationcenter-download.intel.com/akdlm/IRC_NAS/046b1402-c5b8-4753-9500-33ffb665123f/l_ipp_oneapi_p_2021.10.1.16_offline.sh
+
+  RUN \
+  source /root/versions.env && \
+  export WGET="wget --progress=dot:giga" && \
+  echo "**** DOWNLOAD gRPC ****" && \
+  $WGET  https://github.com/grpc/grpc/archive/refs/tags/v${GRPC}.tar.gz -O grpc.tar.gz && \
+  echo "**** DOWNLOAD nmos ****" && \
+  $WGET  https://codeload.github.com/sony/nmos-cpp/tar.gz/${NMOS_CPP_VERSION} -O nmos.tar.gz && \
+  echo "**** DOWNLOAD mDNSResponder ****" && \
+  $WGET  https://codeload.github.com/apple-oss-distributions/mDNSResponder/tar.gz/mDNSResponder-${mDNSResponder} -O mDNSResponder.tar.gz
+
 
 RUN \
   groupadd -g 2110 vfio && \

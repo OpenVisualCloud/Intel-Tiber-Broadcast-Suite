@@ -14,13 +14,16 @@ USER root
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 
 ARG nproc
+ARG VERSIONS_ENVIRONMENT_FILE="versions.env"
+
+COPY "${VERSIONS_ENVIRONMENT_FILE}" "/tmp/versions.env"
+RUN echo -e "nproc=${nproc:-$(nproc)}" >> "/tmp/versions.env"
+ENV BASH_ENV=/tmp/versions.env
 
 # Commit f5497129 corresponds to Conan package nmos-cpp/cci.20240223
 ENV \
   TZ="Europe/Warsaw" \
-  DEBIAN_FRONTEND="noninteractive" \
-  nproc=${nproc:-$(nproc)} \
-  NMOS_CPP_VERSION=f54971298c47a633969e9e9adac824b56fc08da7
+  DEBIAN_FRONTEND="noninteractive"
 
 RUN \
     apt-get update --fix-missing && \
@@ -40,8 +43,8 @@ RUN \
     rm -rf /var/lib/apt/lists/*
 
 RUN \
-    echo "**** DOWNLOAD AND INSTALL gRPC v1.58 ****" && \
-    git clone --branch "v1.58.0" --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc-source && \
+    echo "**** DOWNLOAD AND INSTALL gRPC ****" && \
+    git clone --branch "v${GRPC}" --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc-source && \
     mkdir -p "/tmp/grpc-source/cmake/build" && \
     cmake -S "/tmp/grpc-source" -B "/tmp/grpc-source/cmake/build" -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON && \
     make -C "/tmp/grpc-source/cmake/build" -j$(nproc) && \
@@ -53,7 +56,7 @@ COPY src /tmp
 ## Get source for Sony nmos-cpp library
 WORKDIR /tmp
 RUN \
-    curl --output - -s -k https://codeload.github.com/sony/nmos-cpp/tar.gz/$NMOS_CPP_VERSION | tar zxvf - -C . && \
+    curl --output - -s -k https://codeload.github.com/sony/nmos-cpp/tar.gz/${NMOS_CPP_VERSION} | tar zxvf - -C . && \
     mv ./nmos-cpp-${NMOS_CPP_VERSION} ./nmos-cpp
 
 WORKDIR /tmp/nmos-cpp/Development/build
@@ -65,11 +68,11 @@ RUN \
     make -j$(nproc) && \
     make install
 
-## mDNSResponder 878.260.1 Build and install
+## mDNSResponder Build and install
 WORKDIR /home
 RUN \
-    curl --output - -s -k https://codeload.github.com/apple-oss-distributions/mDNSResponder/tar.gz/mDNSResponder-878.260.1 | tar zxvf - -C . && \
-    mv ./mDNSResponder-mDNSResponder-878.260.1 /home/mDNSResponder && \
+    curl --output - -s -k https://codeload.github.com/apple-oss-distributions/mDNSResponder/tar.gz/mDNSResponder-${mDNSResponder} | tar zxvf - -C . && \
+    mv ./mDNSResponder-mDNSResponder-${mDNSResponder} /home/mDNSResponder && \
     patch -d mDNSResponder/ -p1 </tmp/nmos-cpp/Development/third_party/mDNSResponder/unicast.patch && \
     patch -d mDNSResponder/ -p1 </tmp/nmos-cpp/Development/third_party/mDNSResponder/permit-over-long-service-types.patch && \
     patch -d mDNSResponder/ -p1 </tmp/nmos-cpp/Development/third_party/mDNSResponder/poll-rather-than-select.patch
