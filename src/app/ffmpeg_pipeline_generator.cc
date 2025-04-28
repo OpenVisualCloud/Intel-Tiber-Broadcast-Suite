@@ -320,7 +320,7 @@ int ffmpeg_append_split_process(std::vector<Stream> &senders, uint32_t intel_gpu
     pipeline_string += ";";
     for (int i = 0; i < senders.size(); i++) {
         if(intel_gpu){
-            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + ",hwdownload,format=" + senders[i].payload.video.pixel_format + "[out_tmp" + std::to_string(i) + "];";
+            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + ",hwdownload,format=" + senders[i].payload.video.pixel_format + "[out" + std::to_string(i) + "];";
         }
         else{
             pipeline_string += "[in" + std::to_string(i) + "]scale=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
