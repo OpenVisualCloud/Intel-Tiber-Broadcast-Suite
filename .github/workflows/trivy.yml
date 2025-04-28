@@ -91,12 +91,27 @@ jobs:
         output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
         format: "sarif"
 
+    - name: "Validation: Run Trivy vulnerability scanner on image(out=table)"
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      continue-on-error: true
+      with:
+        image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        format: "table"
+
     - name: "Finish: Upload Trivy scan results to GitHub Security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       continue-on-error: true
       with:
         sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
+        
+    - name: "Trivy: Upload scan results as artifacts (out=table)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      if: always()
+      with:
+        name: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        path: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        retention-days: 5
   trivy-config-scan:
     name: "trivy config scans"
     runs-on: ubuntu-22.04
@@ -112,7 +127,7 @@ jobs:
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    - name: Run Trivy 'config' type vulnerability scan.
+    - name: Run Trivy 'config' type vulnerability scan(out=sarif).
       uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
       with:
         scan-type: 'config'
@@ -122,6 +137,24 @@ jobs:
         output: 'trivy-config-scan-tiber.sarif'
         severity: 'CRITICAL,HIGH,MEDIUM'
         skip-dirs: 'tests'
+        
+    - name: Run Trivy 'config' type vulnerability scan(out=table).
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      with:
+        scan-type: 'config'
+        hide-progress: false
+        ignore-unfixed: true
+        format: 'table'
+        output: "trivy-config-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        skip-dirs: 'tests'
+    - name: "Trivy: Upload scan results as artifacts (out=table)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      if: always()
+      with:
+        name: "trivy-config-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        path: "trivy-config-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        retention-days: 5
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
@@ -144,7 +177,7 @@ jobs:
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    - name: Run Trivy 'fs' type vulnerability scanner.
+    - name: Run Trivy 'fs' type vulnerability scanner(out=sarif).
       uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
       with:
         scan-type: 'fs'
@@ -153,7 +186,24 @@ jobs:
         output: 'trivy-fs-scan-tiber.sarif'
         severity: 'CRITICAL,HIGH,MEDIUM'
         skip-dirs: 'tests'
-
+  
+    - name: Run Trivy 'fs' type vulnerability scanner (out=table).
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      with:
+        scan-type: 'fs'
+        ignore-unfixed: true
+        format: 'table'
+        output: 'trivy-fs-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        skip-dirs: 'tests'
+        
+    - name: "Trivy: Upload scan results as artifacts (out=table)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      if: always()
+      with:
+        name: "trivy-fs-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        path: "trivy-fs-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.txt"
+        retention-days: 5
     - name: Upload Trivy scan results to GitHub Security tab
       if: always()
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
