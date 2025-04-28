@@ -512,7 +512,9 @@ func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 			},
 		},
 	}
-	AssignNodeAffinityFromConfig(deploy.Spec.Template.Spec.Affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	affinity:=&v1.Affinity{}
+	AssignNodeAffinityFromConfig(affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	deploy.Spec.Template.Spec.Affinity = affinity
 	AssignNodeAntiAffinityFromConfig(deploy.Spec.Template.Spec.Affinity.PodAntiAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
 	return deploy
 }
@@ -962,70 +964,78 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 		},
 	}
 
-	AssignNodeAffinityFromConfig(ds.Spec.Template.Spec.Affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	affinity:=&v1.Affinity{}
+	AssignNodeAffinityFromConfig(affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	ds.Spec.Template.Spec.Affinity = affinity
 	AssignNodeAntiAffinityFromConfig(ds.Spec.Template.Spec.Affinity.PodAntiAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
 	return ds
 }
 
 
-func AssignNodeAffinityFromConfig( affinity *corev1.Affinity, scheduleOnNode []string) {
-	if len(scheduleOnNode) > 0 {
-		var nodeSelectorTerms []corev1.NodeSelectorTerm
-		for _, keyValue := range scheduleOnNode {
-			parts := strings.SplitN(keyValue, "=", 2)
-			if len(parts) == 2 {
-				key := parts[0]
-				value := parts[1]
-				nodeSelectorTerms = append(nodeSelectorTerms, corev1.NodeSelectorTerm{
-					MatchExpressions: []corev1.NodeSelectorRequirement{
-						{
-							Key:      key,
-							Operator: corev1.NodeSelectorOpIn,
-							Values:   []string{value},
-						},
-					},
-				})
-			}
+func AssignNodeAffinityFromConfig(affinity *corev1.Affinity, scheduleOnNode []string) {
+	if len(scheduleOnNode) == 0 {
+		return
+	}
+
+	var nodeSelectorTerms []corev1.NodeSelectorTerm
+	for _, keyValue := range scheduleOnNode {
+		parts := strings.SplitN(keyValue, "=", 2)
+		if len(parts) != 2 {
+			continue
 		}
-		affinity.NodeAffinity = &corev1.NodeAffinity{
-			RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-				NodeSelectorTerms: nodeSelectorTerms,
+		key, value := parts[0], parts[1]
+		nodeSelectorTerms = append(nodeSelectorTerms, corev1.NodeSelectorTerm{
+			MatchExpressions: []corev1.NodeSelectorRequirement{
+				{
+					Key:      key,
+					Operator: corev1.NodeSelectorOpIn,
+					Values:   []string{value},
+				},
 			},
+		})
+	}
+
+	if len(nodeSelectorTerms) > 0 {
+		if affinity.NodeAffinity == nil {
+			affinity.NodeAffinity = &corev1.NodeAffinity{}
+		}
+		affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &corev1.NodeSelector{
+			NodeSelectorTerms: nodeSelectorTerms,
 		}
 	}
 }
 
 func AssignNodeAntiAffinityFromConfig(antiAffinity *corev1.PodAntiAffinity, doNotScheduleOnNode []string) {
-	if len(doNotScheduleOnNode) > 0 {
-		var nodeSelectorTerms []corev1.NodeSelectorTerm
-		for _, keyValue := range doNotScheduleOnNode {
-			parts := strings.SplitN(keyValue, "=", 2)
-			if len(parts) == 2 {
-				key := parts[0]
-				value := parts[1]
-				nodeSelectorTerms = append(nodeSelectorTerms, corev1.NodeSelectorTerm{
-					MatchExpressions: []corev1.NodeSelectorRequirement{
-						{
-							Key:      key,
-							Operator: corev1.NodeSelectorOpNotIn,
-							Values:   []string{value},
-						},
-					},
-				})
-			}
-		}
+	if len(doNotScheduleOnNode) == 0 {
+		return
+	}
 
-	antiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(antiAffinity.RequiredDuringSchedulingIgnoredDuringExecution, corev1.PodAffinityTerm{
-		LabelSelector: &metav1.LabelSelector{
-			MatchExpressions: []metav1.LabelSelectorRequirement{
-				{
-					Key:      nodeSelectorTerms[0].MatchExpressions[0].Key,
-					Operator: metav1.LabelSelectorOperator(nodeSelectorTerms[0].MatchExpressions[0].Operator),
-					Values:   nodeSelectorTerms[0].MatchExpressions[0].Values,
+	var podAffinityTerms []corev1.PodAffinityTerm
+	for _, keyValue := range doNotScheduleOnNode {
+		parts := strings.SplitN(keyValue, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key, value := parts[0], parts[1]
+		podAffinityTerms = append(podAffinityTerms, corev1.PodAffinityTerm{
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      key,
+						Operator: metav1.LabelSelectorOpNotIn,
+						Values:   []string{value},
+					},
 				},
 			},
-		},
-	})
+			TopologyKey: "kubernetes.io/hostname",
+		})
+	}
+
+	if len(podAffinityTerms) > 0 {
+		if antiAffinity == nil {
+			antiAffinity = &corev1.PodAntiAffinity{}
+		}
+		antiAffinity.RequiredDuringSchedulingIgnoredDuringExecution = append(antiAffinity.RequiredDuringSchedulingIgnoredDuringExecution, podAffinityTerms...)
 	}
 }
 
