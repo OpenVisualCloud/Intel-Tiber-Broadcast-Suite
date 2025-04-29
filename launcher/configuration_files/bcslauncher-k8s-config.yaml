@@ -17,13 +17,29 @@ data:
         image: "mcm/mesh-agent:latest"
         restPort: 8100
         grpcPort: 50051
-        scheduleOnNode: ["kubernetes.io/os=linux"]
+        requests:
+          cpu: "500m"
+          memory: "256Mi"
+        limits:
+          cpu: "1000m"
+          memory: "512Mi"
+        scheduleOnNode: ["node-role.kubernetes.io/worker=true"]
       mediaProxy:
         image: mcm/media-proxy:latest
         command: ["media-proxy"]
-        args: ["-d", "kernel:eth0", "-i", "localhost"]
+        args: ["-d", "0000:ca:11.0", "-i", $(POD_IP)]
         grpcPort: 8001
         sdkPort: 8002
+        requests:
+          cpu: "2"
+          memory: "8Gi"
+          hugepages-1Gi: "1Gi"
+          hugepages-2Mi: "2Gi"
+        limits:
+          cpu: "2"
+          memory: "8Gi"
+          hugepages-1Gi: "1Gi"
+          hugepages-2Mi: "2Gi"
         volumes:
           memif: /tmp/mcm/memif
           vfio: /dev/vfio
@@ -33,15 +49,15 @@ data:
         pvStorage: 1Gi
         pvcAssignedName: mtl-pvc
         pvcStorage: 1Gi
-        scheduleOnNode: ["kubernetes.io/os=linux"]
+        scheduleOnNode: ["node-role.kubernetes.io/worker=true"]
       mtlManager:
-        image: mtl-manager:latest
+        image:  mtl-manager:latest
+        requests:
+          cpu: "500m"
+          memory: "256Mi"
+        limits:
+          cpu: "1000m"
+          memory: "512Mi"
         volumes:
           imtlHostPath: /var/run/imtl
           bpfPath: /sys/fs/bpf
-
-        #  --name mtl-manager \
-        #       --privileged --net=host \
-        #       -v /var/run/imtl:/var/run/imtl \
-        #       -v /sys/fs/bpf:/sys/fs/bpf \
-        

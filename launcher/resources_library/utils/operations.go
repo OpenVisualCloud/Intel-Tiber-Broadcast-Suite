@@ -13,9 +13,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
+	"bcs.pod.launcher.intel/resources_library/resources/bcs"
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/resources/nmos"
 	"github.com/docker/docker/api/types/container"
@@ -421,6 +423,8 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 
 func boolPtr(b bool) *bool    { return &b }
 
+
+
 type K8sConfig struct {
 	K8s        bool `yaml:"k8s"`
 	Definition struct {
@@ -428,6 +432,7 @@ type K8sConfig struct {
 			Image    string `yaml:"image"`
 			RestPort int    `yaml:"restPort"`
 			GrpcPort int    `yaml:"grpcPort"`
+			Resources bcs.HwResources `yaml:"resources"`
 			ScheduleOnNode []string `yaml:"scheduleOnNode,omitempty"`
 			DoNotScheduleOnNode []string `yaml:"doNotScheduleOnNode,omitempty"`
 		} `yaml:"meshAgent"`
@@ -437,6 +442,7 @@ type K8sConfig struct {
 			Args        []string `yaml:"args"`
 			GrpcPort    int      `yaml:"grpcPort"`
 			SdkPort     int      `yaml:"sdkPort"`
+			Resources bcs.HwResources `yaml:"resources"`
 			Volumes     struct {
 				Memif string `yaml:"memif"`
 				Vfio  string `yaml:"vfio"`
@@ -452,6 +458,7 @@ type K8sConfig struct {
 		} `yaml:"mediaProxy"`
 		MtlManager struct {
 			Image string `yaml:"image"`
+			Resources bcs.HwResources `yaml:"resources"`
 			VolumesMtl struct {
 				ImtlHostPath string `yaml:"imtlHostPath"`
 				BpfPath string `yaml:"bpfPath"`
@@ -477,6 +484,20 @@ func CreateMtlManagerDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 		fmt.Println("Error unmarshalling K8s config:", err)
 		return nil
 	}
+	// Assign default values if CPU or Memory requests/limits are empty
+	if data.Definition.MtlManager.Resources.Requests.CPU == "" {
+		data.Definition.MtlManager.Resources.Requests.CPU = "500m"
+	}
+	if data.Definition.MtlManager.Resources.Requests.Memory == "" {
+		data.Definition.MtlManager.Resources.Requests.Memory = "256Mi"
+	}
+	if data.Definition.MtlManager.Resources.Limits.CPU == "" {
+		data.Definition.MtlManager.Resources.Limits.CPU = "1000m"
+	}
+	if data.Definition.MtlManager.Resources.Limits.Memory == "" {
+		data.Definition.MtlManager.Resources.Limits.Memory = "512Mi"
+	}
+
 	depl :=  &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mtl-manager",
@@ -507,6 +528,16 @@ func CreateMtlManagerDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 								Privileged: boolPtr(true),
 								Capabilities: &corev1.Capabilities{
 									Add: []corev1.Capability{"ALL"},
+								},
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse(data.Definition.MtlManager.Resources.Requests.CPU),
+									corev1.ResourceMemory: resource.MustParse(data.Definition.MtlManager.Resources.Requests.Memory),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse(data.Definition.MtlManager.Resources.Limits.CPU),
+									corev1.ResourceMemory: resource.MustParse(data.Definition.MtlManager.Resources.Limits.Memory),
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{
@@ -545,10 +576,10 @@ func CreateMtlManagerDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 		},
 	}
 	affinity:=&v1.Affinity{}
-	AssignNodeAffinityFromConfig(affinity, data.Definition.MediaProxy.ScheduleOnNode)
+	AssignNodeAffinityFromConfig(affinity, data.Definition.MtlManager.ScheduleOnNode)
 	depl.Spec.Template.Spec.Affinity = affinity
 	noAffinity := &v1.PodAntiAffinity{}
-	AssignNodeAntiAffinityFromConfig(noAffinity, data.Definition.MediaProxy.DoNotScheduleOnNode)
+	AssignNodeAntiAffinityFromConfig(noAffinity, data.Definition.MtlManager.DoNotScheduleOnNode)
 	depl.Spec.Template.Spec.Affinity.PodAntiAffinity = noAffinity
 	return depl
 }
@@ -559,6 +590,18 @@ func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 		 fmt.Println("Error unmarshalling K8s config:", err)
 		 return nil
 	 }
+	 if data.Definition.MeshAgent.Resources.Requests.CPU == "" {
+		data.Definition.MeshAgent.Resources.Requests.CPU = "500m"
+	}
+	if data.Definition.MeshAgent.Resources.Requests.Memory == "" {
+		data.Definition.MeshAgent.Resources.Requests.Memory = "256Mi"
+	}
+	if data.Definition.MeshAgent.Resources.Limits.CPU == "" {
+		data.Definition.MeshAgent.Resources.Limits.CPU = "1000m"
+	}
+	if data.Definition.MeshAgent.Resources.Limits.Memory == "" {
+		data.Definition.MeshAgent.Resources.Limits.Memory = "512Mi"
+	}
 	 fmt.Printf("Data: %+v\n", data)
 	 deploy :=  &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -589,6 +632,16 @@ func CreateMeshAgentDeployment(cm *corev1.ConfigMap) *appsv1.Deployment {
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Command: []string{
 								"mesh-agent", "-c", fmt.Sprintf("%d", data.Definition.MeshAgent.RestPort), "-p", fmt.Sprintf("%d", data.Definition.MeshAgent.GrpcPort),
+							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse(data.Definition.MeshAgent.Resources.Requests.CPU),
+									corev1.ResourceMemory: resource.MustParse(data.Definition.MeshAgent.Resources.Requests.Memory),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse(data.Definition.MeshAgent.Resources.Limits.CPU),
+									corev1.ResourceMemory: resource.MustParse(data.Definition.MeshAgent.Resources.Limits.Memory),
+								},
 							},
 							Ports: []corev1.ContainerPort{
 								{ContainerPort: int32(data.Definition.MeshAgent.RestPort)},
@@ -664,6 +717,11 @@ func CreateService(name string) *corev1.Service {
 }
 
 func CreateBcsService(bcs * bcsv1.BcsConfig) *corev1.Service {
+	grpcPort, err := strconv.Atoi(bcs.Spec.Nmos.NmosInputFile.FfmpegGrpcServerPort)
+	if err != nil {
+		  fmt.Println("Error converting FfmpegGrpcServerPort to int:", err)
+		  return &corev1.Service{} // Default value in case of error
+	}
 	return &corev1.Service{
         ObjectMeta: metav1.ObjectMeta{
           Name: bcs.Spec.Name,
@@ -678,15 +736,15 @@ func CreateBcsService(bcs * bcsv1.BcsConfig) *corev1.Service {
             {
               Protocol:   corev1.ProtocolTCP,
 			  Name: "nmos-node-api",
-              Port:       int32(bcs.Spec.Nmos.NmosApiPort),
-			  TargetPort: intstr.FromInt(int(bcs.Spec.Nmos.NmosApiPort)),
+              Port:       int32(bcs.Spec.Nmos.NmosInputFile.HttpPort),
+			  TargetPort: intstr.FromInt(int(bcs.Spec.Nmos.NmosInputFile.HttpPort)),
 			  NodePort:   int32(bcs.Spec.Nmos.NmosApiNodePort),
             },
             {
               Protocol:   corev1.ProtocolTCP,
 			  Name: "nmos-app-communication",
-              Port:       int32(bcs.Spec.Nmos.NmosAppCommunicationPort),
-			  TargetPort: intstr.FromInt(int(bcs.Spec.Nmos.NmosAppCommunicationPort)),
+			  Port: int32(grpcPort),
+			  TargetPort: intstr.FromInt(grpcPort),
 			  NodePort:   int32(bcs.Spec.Nmos.NmosAppCommunicationNodePort),
             },
           },
@@ -750,7 +808,9 @@ func CreatePersistentVolumeClaim(cm *corev1.ConfigMap) *corev1.PersistentVolumeC
 }
 
 func CreateConfigMap(bcs *bcsv1.BcsConfig) *corev1.ConfigMap {
-	
+	//Override the config that is necessary for the deployment of the NMOS node
+	bcs.Spec.Nmos.NmosInputFile.FfmpegGrpcServerPort = strconv.Itoa(bcs.Spec.App.GrpcPort)
+	bcs.Spec.Nmos.NmosInputFile.FfmpegGrpcServerAddress = "localhost"
 	data, err := json.Marshal(bcs.Spec.Nmos.NmosInputFile)
 	if err != nil {
 		fmt.Println("Error marshalling NMOS input file:", err)
@@ -763,124 +823,182 @@ func CreateConfigMap(bcs *bcsv1.BcsConfig) *corev1.ConfigMap {
 			Namespace: bcs.Spec.Namespace,
 		},
 		Data: map[string]string{
-			"config": string(data),
+			"config.json": string(data),
 		},
 	}
 }
 
 func CreateBcsDeployment(bcs *bcsv1.BcsConfig) *appsv1.Deployment {
-	return &appsv1.Deployment{
-        ObjectMeta: metav1.ObjectMeta{
-          Name:      bcs.Spec.Name,
-          Namespace: bcs.Spec.Namespace,
-        },
-        Spec: appsv1.DeploymentSpec{
-          Replicas: int32Ptr(1),
-          Selector: &metav1.LabelSelector{
-            MatchLabels: map[string]string{
-              "app": bcs.Spec.Name,
-            },
-          },
-          Template: corev1.PodTemplateSpec{
-            ObjectMeta: metav1.ObjectMeta{
-              Labels: map[string]string{
-                "app": bcs.Spec.Name,
-              },
-            },
-            Spec: corev1.PodSpec{
-              Containers: []corev1.Container{
-                {
-                  Name:  "tiber-broadcast-suite-nmos-node",
-                  Image: bcs.Spec.Nmos.Image,
+
+	// Assign default values if CPU or Memory requests/limits are empty for containers
+	if bcs.Spec.Nmos.Resources.Requests.CPU == "" {
+		bcs.Spec.Nmos.Resources.Requests.CPU = "200m"
+	}
+	if bcs.Spec.Nmos.Resources.Requests.Memory == "" {
+		bcs.Spec.Nmos.Resources.Requests.Memory = "256Mi"
+	}
+	if bcs.Spec.Nmos.Resources.Limits.CPU == "" {
+		bcs.Spec.Nmos.Resources.Limits.CPU = "1000m"
+	}
+	if bcs.Spec.Nmos.Resources.Limits.Memory == "" {
+		bcs.Spec.Nmos.Resources.Limits.Memory = "512Mi"
+	}
+	if bcs.Spec.App.Resources.Requests.CPU == "" {
+		bcs.Spec.App.Resources.Requests.CPU = "500m"
+	}
+	if bcs.Spec.App.Resources.Requests.Memory == "" {
+		bcs.Spec.App.Resources.Requests.Memory = "256Mi"
+	}
+	if bcs.Spec.App.Resources.Limits.CPU == "" {
+		bcs.Spec.App.Resources.Limits.CPU = "1000m"
+	}
+	if bcs.Spec.App.Resources.Limits.Memory == "" {
+		bcs.Spec.App.Resources.Limits.Memory = "512Mi"
+	}
+	
+
+	bcsDeploy :=  &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+		  Name:      bcs.Spec.Name,
+		  Namespace: bcs.Spec.Namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+		  Replicas: int32Ptr(1),
+		  Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+			  "app": bcs.Spec.Name,
+			},
+		  },
+		  Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+			  Labels: map[string]string{
+				"app": bcs.Spec.Name,
+			  },
+			},
+			Spec: corev1.PodSpec{
+			  Containers: []corev1.Container{
+				{
+				  Name:  "tiber-broadcast-suite-nmos-node",
+				  Image: bcs.Spec.Nmos.Image,
 				  ImagePullPolicy: corev1.PullIfNotPresent,
-                  Args:  bcs.Spec.Nmos.Args,
-                  SecurityContext: &corev1.SecurityContext{
-                    RunAsUser:  int64Ptr(0),
-                    Privileged: boolPtr(true),
-                    Capabilities: &corev1.Capabilities{
-                      Add: []corev1.Capability{"ALL"},
-                    },
-                  },
-                  VolumeMounts: []corev1.VolumeMount{
-                    {
-                      Name:      "config",
-                      MountPath: "/home/config",
-                    },
-                  },
+				  Args:  bcs.Spec.Nmos.Args,
+				  SecurityContext: &corev1.SecurityContext{
+					RunAsUser:  int64Ptr(0),
+					Privileged: boolPtr(true),
+					Capabilities: &corev1.Capabilities{
+					  Add: []corev1.Capability{"ALL"},
+					},
+				  },
+				  VolumeMounts: []corev1.VolumeMount{
+					{
+					  Name:      "config",
+					  MountPath: "/home/config",
+					},
+				  },
 				  Env: convertEnvVars(bcs.Spec.Nmos.EnvironmentVariables),
-                  Ports: []corev1.ContainerPort{
-                    {ContainerPort: 20000},
-                    {ContainerPort: 20170},
-                  },
-                  Resources: corev1.ResourceRequirements{
-                    Requests: corev1.ResourceList{
-                      corev1.ResourceMemory: resource.MustParse("64Mi"),
-                      corev1.ResourceCPU:    resource.MustParse("250m"),
-                    },
-                    Limits: corev1.ResourceList{
-                      corev1.ResourceMemory: resource.MustParse("128Mi"),
-                      corev1.ResourceCPU:    resource.MustParse("500m"),
-                    },
-                  },
-                },
-                {
-                  Name:  "tiber-broadcast-suite",
-                  Image: bcs.Spec.App.Image,
+				  Ports: []corev1.ContainerPort{
+					{ContainerPort: 20000},
+					{ContainerPort: 20170},
+				  },
+				  Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+					  corev1.ResourceMemory: resource.MustParse(bcs.Spec.Nmos.Resources.Requests.Memory),
+					  corev1.ResourceCPU:    resource.MustParse(bcs.Spec.Nmos.Resources.Requests.CPU),
+					},
+					Limits: corev1.ResourceList{
+					  corev1.ResourceMemory: resource.MustParse(bcs.Spec.Nmos.Resources.Limits.Memory),
+					  corev1.ResourceCPU:    resource.MustParse(bcs.Spec.Nmos.Resources.Limits.CPU),
+					},
+				  },
+				},
+				{
+				  Name:  "tiber-broadcast-suite",
+				  Image: bcs.Spec.App.Image,
 				  ImagePullPolicy: corev1.PullIfNotPresent,
 				  Args:  []string{"localhost", fmt.Sprintf("%d", bcs.Spec.App.GrpcPort)},
-                  SecurityContext: &corev1.SecurityContext{
-                    RunAsUser:  int64Ptr(0),
-                    Privileged: boolPtr(true),
-                    Capabilities: &corev1.Capabilities{
-                      Add: []corev1.Capability{"ALL"},
-                    },
-                  },
-                  VolumeMounts: []corev1.VolumeMount{
-                    {Name: "videos", MountPath: "/videos"},
-                    {Name: "dri", MountPath: "/usr/local/lib/x86_64-linux-gnu/dri"},
-                    {Name: "kahawai-lock", MountPath: "/tmp/kahawai_lcore.lock"},
-                    {Name: "dev-null", MountPath: "/dev/null"},
-                    {Name: "hugepages-tmp", MountPath: "/tmp/hugepages"},
-                    {Name: "hugepages", MountPath: "/hugepages"},
-                    {Name: "imtl", MountPath: "/var/run/imtl"},
-                    {Name: "shm", MountPath: "/dev/shm"},
-                    {Name: "dri-dev", MountPath: "/dev/dri"},
-                    {Name: "vfio", MountPath: "/dev/vfio"},
-                  },
-                  Env: convertEnvVars(bcs.Spec.App.EnvironmentVariables),
-                  Ports: []corev1.ContainerPort{
-                    {ContainerPort: 20000},
-                    {ContainerPort: 20170},
-                  },
-                  Resources: corev1.ResourceRequirements{
-                    Requests: corev1.ResourceList{
-                      corev1.ResourceMemory: resource.MustParse("64Mi"),
-                      corev1.ResourceCPU:    resource.MustParse("250m"),
-                    },
-                    Limits: corev1.ResourceList{
-                      corev1.ResourceMemory: resource.MustParse("128Mi"),
-                      corev1.ResourceCPU:    resource.MustParse("500m"),
-                    },
-                  },
-                },
-              },
-              Volumes: []corev1.Volume{
-                {Name: "videos", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["videos"]}}},
-                {Name: "dri", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["dri"]}}},
-                {Name: "kahawai-lock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["kahawaiLock"]}}},
-                {Name: "dev-null", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["devNull"]}}},
-                {Name: "hugepages-tmp", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["hugepagesTmp"]}}},
-                {Name: "hugepages", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["hugepages"]}}},
-                {Name: "imtl", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["imtl"]}}},
-                {Name: "shm", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["shm"]}}},
-                {Name: "vfio", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["vfio"]}}},
-                {Name: "dri-dev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["dri-dev"]}}},
+				  SecurityContext: &corev1.SecurityContext{
+					RunAsUser:  int64Ptr(0),
+					Privileged: boolPtr(true),
+					Capabilities: &corev1.Capabilities{
+					  Add: []corev1.Capability{"ALL"},
+					},
+				  },
+				  VolumeMounts: []corev1.VolumeMount{
+					{Name: "videos", MountPath: "/videos"},
+					{Name: "dri", MountPath: "/usr/local/lib/x86_64-linux-gnu/dri"},
+					{Name: "kahawai-lock", MountPath: "/tmp/kahawai_lcore.lock"},
+					{Name: "dev-null", MountPath: "/dev/null"},
+					{Name: "hugepages-2mi", MountPath: "/tmp/hugepages"},
+					{Name: "hugepages-1gi", MountPath: "/hugepages"},
+					{Name: "imtl", MountPath: "/var/run/imtl"},
+					{Name: "shm", MountPath: "/dev/shm"},
+					{Name: "dri-dev", MountPath: "/dev/dri"},
+					{Name: "vfio", MountPath: "/dev/vfio"},
+				  },
+				  Env: convertEnvVars(bcs.Spec.App.EnvironmentVariables),
+				  Ports: []corev1.ContainerPort{
+					{ContainerPort: 20000},
+					{ContainerPort: 20170},
+				  },
+				  Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+					  corev1.ResourceMemory: resource.MustParse(bcs.Spec.App.Resources.Requests.Memory),
+					  corev1.ResourceCPU:    resource.MustParse(bcs.Spec.App.Resources.Requests.CPU),
+					},
+					Limits: corev1.ResourceList{
+					  corev1.ResourceMemory: resource.MustParse(bcs.Spec.App.Resources.Limits.Memory),
+					  corev1.ResourceCPU:    resource.MustParse(bcs.Spec.App.Resources.Limits.CPU),
+					},
+				  },
+				},
+			  },
+			  Volumes: []corev1.Volume{
+				{Name: "videos", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["videos"]}}},
+				{Name: "dri", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["dri"]}}},
+				{Name: "kahawai-lock", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["kahawaiLock"]}}},
+				{Name: "dev-null", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["devNull"]}}},
+				{Name: "hugepages-2mi", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages-2Mi",},},},
+				{Name: "hugepages-1gi", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "HugePages-1Gi",},},},
+				{Name: "imtl", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["imtl"]}}},
+				{Name: "shm", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["shm"]}}},
+				{Name: "vfio", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["vfio"]}}},
+				{Name: "dri-dev", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: bcs.Spec.App.Volumes["dri-dev"]}}},
 				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{LocalObjectReference: corev1.LocalObjectReference{Name: bcs.Spec.Name+"-config"}}}},
-              },
-            },
-          },
-        },
-      }
+			  },
+			},
+		  },
+		},
+	  }
+
+	// Assign huge pages if they are not empty
+	if bcs.Spec.App.Resources.Requests.Hugepages1Gi != "" {
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Requests[corev1.ResourceHugePagesPrefix+"1Gi"] = resource.MustParse(bcs.Spec.App.Resources.Requests.Hugepages1Gi)
+	} else {
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Requests[corev1.ResourceHugePagesPrefix+"1Gi"] = resource.MustParse("1Gi")
+	}
+	if bcs.Spec.App.Resources.Requests.Hugepages2Mi != "" {
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Requests[corev1.ResourceHugePagesPrefix+"2Mi"] = resource.MustParse(bcs.Spec.App.Resources.Requests.Hugepages2Mi)
+	} else{
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Requests[corev1.ResourceHugePagesPrefix+"2Mi"] = resource.MustParse("2Mi")
+	}
+	if bcs.Spec.App.Resources.Limits.Hugepages1Gi != "" {
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Limits[corev1.ResourceHugePagesPrefix+"1Gi"] = resource.MustParse(bcs.Spec.App.Resources.Limits.Hugepages1Gi)
+	} else{
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Limits[corev1.ResourceHugePagesPrefix+"1Gi"] = resource.MustParse("1Gi")
+	}
+	if bcs.Spec.App.Resources.Limits.Hugepages2Mi != "" {
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Limits[corev1.ResourceHugePagesPrefix+"2Mi"] = resource.MustParse(bcs.Spec.App.Resources.Limits.Hugepages2Mi)
+	} else{
+		bcsDeploy.Spec.Template.Spec.Containers[1].Resources.Limits[corev1.ResourceHugePagesPrefix+"2Mi"] = resource.MustParse("2Mi")
+	}
+
+	affinity:=&v1.Affinity{}
+	AssignNodeAffinityFromConfig(affinity, bcs.Spec.ScheduleOnNode)
+	bcsDeploy.Spec.Template.Spec.Affinity = affinity
+	noAffinity := &v1.PodAntiAffinity{}
+	AssignNodeAntiAffinityFromConfig(noAffinity, bcs.Spec.DoNotScheduleOnNode)
+	bcsDeploy.Spec.Template.Spec.Affinity.PodAntiAffinity = noAffinity
+	return bcsDeploy
 }
 
 func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
@@ -889,6 +1007,31 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 		 fmt.Println("Error unmarshalling K8s config:", err)
 		 return nil
 	 }
+	// Assign default values if any of the resource requests or limits are empty
+	if data.Definition.MediaProxy.Resources.Requests.CPU == "" {
+		data.Definition.MediaProxy.Resources.Requests.CPU = "2"
+	}
+	if data.Definition.MediaProxy.Resources.Requests.Memory == "" {
+		data.Definition.MediaProxy.Resources.Requests.Memory = "8Gi"
+	}
+	if data.Definition.MediaProxy.Resources.Requests.Hugepages1Gi == "" {
+		data.Definition.MediaProxy.Resources.Requests.Hugepages1Gi = "1Gi"
+	}
+	if data.Definition.MediaProxy.Resources.Requests.Hugepages2Mi == "" {
+		data.Definition.MediaProxy.Resources.Requests.Hugepages2Mi = "2Gi"
+	}
+	if data.Definition.MediaProxy.Resources.Limits.CPU == "" {
+		data.Definition.MediaProxy.Resources.Limits.CPU = "2"
+	}
+	if data.Definition.MediaProxy.Resources.Limits.Memory == "" {
+		data.Definition.MediaProxy.Resources.Limits.Memory = "8Gi"
+	}
+	if data.Definition.MediaProxy.Resources.Limits.Hugepages1Gi == "" {
+		data.Definition.MediaProxy.Resources.Limits.Hugepages1Gi = "1Gi"
+	}
+	if data.Definition.MediaProxy.Resources.Limits.Hugepages2Mi == "" {
+		data.Definition.MediaProxy.Resources.Limits.Hugepages2Mi = "2Gi"
+	}
 	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "media-proxy",
@@ -916,16 +1059,16 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 							Args:    data.Definition.MediaProxy.Args,
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:              resource.MustParse("2"),
-									corev1.ResourceMemory:           resource.MustParse("8Gi"),
-									corev1.ResourceHugePagesPrefix + "2Mi": resource.MustParse("1Gi"),
-									corev1.ResourceHugePagesPrefix + "1Gi": resource.MustParse("2Gi"),
+									corev1.ResourceCPU:              resource.MustParse(data.Definition.MediaProxy.Resources.Requests.CPU),
+									corev1.ResourceMemory:           resource.MustParse(data.Definition.MediaProxy.Resources.Requests.Memory),
+									corev1.ResourceHugePagesPrefix + "2Mi": resource.MustParse(data.Definition.MediaProxy.Resources.Requests.Hugepages2Mi),
+									corev1.ResourceHugePagesPrefix + "1Gi": resource.MustParse(data.Definition.MediaProxy.Resources.Requests.Hugepages1Gi),
 								},
 								Limits: corev1.ResourceList{
-									corev1.ResourceCPU:              resource.MustParse("2"),
-									corev1.ResourceMemory:           resource.MustParse("8Gi"),
-									corev1.ResourceHugePagesPrefix + "2Mi": resource.MustParse("1Gi"),
-									corev1.ResourceHugePagesPrefix + "1Gi": resource.MustParse("2Gi"),
+									corev1.ResourceCPU:              resource.MustParse(data.Definition.MediaProxy.Resources.Limits.CPU),
+									corev1.ResourceMemory:           resource.MustParse(data.Definition.MediaProxy.Resources.Limits.Memory),
+									corev1.ResourceHugePagesPrefix + "2Mi": resource.MustParse(data.Definition.MediaProxy.Resources.Limits.Hugepages2Mi),
+									corev1.ResourceHugePagesPrefix + "1Gi": resource.MustParse(data.Definition.MediaProxy.Resources.Limits.Hugepages1Gi),
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
@@ -1022,7 +1165,7 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 							Name: "hugepage-2mi",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
-									Medium: corev1.StorageMediumHugePages,
+									Medium: "HugePages-2Mi",
 								},
 							},
 						},
@@ -1030,7 +1173,7 @@ func CreateDaemonSet(cm *corev1.ConfigMap) *appsv1.DaemonSet {
 							Name: "hugepage-1gi",
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{
-									Medium: corev1.StorageMediumHugePages,
+									Medium: "HugePages-1Gi",
 								},
 							},
 						},

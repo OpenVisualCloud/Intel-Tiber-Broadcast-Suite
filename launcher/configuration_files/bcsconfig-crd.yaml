@@ -59,6 +59,14 @@ spec:
                 type: string
               namespace:
                 type: string
+              scheduleOnNode:
+                type: array
+                items:
+                  type: string
+              doNotScheduleOnNode:
+                type: array
+                items:
+                  type: string
               app:
                 type: object
                 properties:
@@ -79,6 +87,31 @@ spec:
                     type: object
                     additionalProperties:
                       type: string
+                  resources:
+                    type: object
+                    properties:
+                      requests:
+                        type: object
+                        properties:
+                          cpu:
+                            type: string
+                          memory: 
+                            type: string
+                          hugepages-1Gi:
+                            type: string
+                          hugepages-2Mi:
+                            type: string
+                      limits:
+                        type: object
+                        properties:
+                          cpu:
+                            type: string
+                          memory: 
+                            type: string
+                          hugepages-1Gi:
+                            type: string
+                          hugepages-2Mi:
+                            type: string
               nmos:
                 type: object
                 properties:
@@ -97,14 +130,35 @@ spec:
                           type: string
                         value:
                           type: string
-                  nmosApiPort:
-                    type: integer
                   nmosApiNodePort:
-                    type: integer
-                  nmosAppCommunicationPort:
                     type: integer
                   nmosAppCommunicationNodePort:
                     type: integer
+                  resources:
+                    type: object
+                    properties:
+                      requests:
+                        type: object
+                        properties:
+                          cpu:
+                            type: string
+                          memory: 
+                            type: string
+                          hugepages-1Gi:
+                            type: string
+                          hugepages-2Mi:
+                            type: string
+                      limits:
+                        type: object
+                        properties:
+                          cpu:
+                            type: string
+                          memory: 
+                            type: string
+                          hugepages-1Gi:
+                            type: string
+                          hugepages-2Mi:
+                            type: string
                   nmosInputFile:
                     type: object
                     properties:
@@ -123,7 +177,15 @@ spec:
                               type: string
                       function:
                         type: string
+                      multiviewer_columns:
+                        type: integer
+                      stream_loop:
+                        type: integer
+                      activate_senders:
+                        type: boolean
                       gpu_hw_acceleration:
+                        type: string
+                      gpu_hw_acceleration_device:
                         type: string
                       domain:
                         type: string
@@ -178,8 +240,10 @@ spec:
                                   properties:
                                     transport:
                                       type: string
-                                    payload_type:
-                                      type: string
+                                    payloadType:
+                                      type: integer
+                                    queues_cnt:
+                                      type: integer
                                 file:
                                   type: object
                                   properties:
@@ -250,8 +314,10 @@ spec:
                                   properties:
                                     transport:
                                       type: string
-                                    payload_type:
-                                      type: string
+                                    payloadType:
+                                      type: integer
+                                    queues_cnt:
+                                      type: integer
                                 mcm:
                                   type: object
                                   properties:

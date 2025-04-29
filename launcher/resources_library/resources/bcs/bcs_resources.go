@@ -13,3 +13,18 @@ type BcsApp struct {
 	Namespace  string
 	Containers general.Containers
 }
+
+type HwResources struct {
+	Requests struct {
+		CPU    string `yaml:"cpu"`
+		Memory string `yaml:"memory"`
+		Hugepages1Gi string `yaml:"hugepages-1Gi,omitempty"`
+	    Hugepages2Mi string `yaml:"hugepages-2Mi,omitempty"`
+	} `yaml:"requests"`
+	Limits struct {
+		CPU    string `yaml:"cpu"`
+		Memory string `yaml:"memory"`
+		Hugepages1Gi string `yaml:"hugepages-1Gi,omitempty"`
+	    Hugepages2Mi string `yaml:"hugepages-2Mi,omitempty"`
+	} `yaml:"limits"`
+}
