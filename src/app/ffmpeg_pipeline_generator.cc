@@ -448,6 +448,11 @@ int ffmpeg_append_upscale(Config &config, std::string &pipeline_string) {
         return 1;
     }
     pipeline_string += " -vf \"format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le\"";
+    if(ffmpeg_append_payload(config.senders[0].payload,  pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending upscale tx payload" << std::endl;
+        return 1;
+    }
     if(ffmpeg_append_stream_type(config.senders[0], false /*is_rx*/, 0, pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending upscale tx stream" << std::endl;
