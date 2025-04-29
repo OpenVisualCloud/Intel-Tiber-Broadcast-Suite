@@ -55,7 +55,6 @@ type BcsConfigSpec struct {
 	Args                      []string `json:"args"`
 	EnvironmentVariables      []EnvVar `json:"environmentVariables"`
 	NmosApiNodePort           int `json:"nmosApiNodePort"`
-	NmosAppCommunicationNodePort int `json:"nmosAppCommunicationNodePort"`
 	NmosInputFile             nmos.Config `json:"nmosInputFile"`
 	Resources bcs.HwResources `json:"resources,omitempty"`
   }

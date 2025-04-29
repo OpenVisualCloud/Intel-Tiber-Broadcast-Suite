@@ -53,7 +53,6 @@ spec:
       - name: "VFIO_PORT_TX"
         value: "0000:ca:11.0"
     nmosApiNodePort: 30084 #node port for nmosInputFile.http_port
-    nmosAppCommunicationNodePort: 32054 #node port for nmosInputFile.ffmpeg_grpc_server_port
     resources:
       requests:
         cpu: "500m"

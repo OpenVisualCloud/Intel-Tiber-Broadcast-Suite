@@ -740,13 +740,6 @@ func CreateBcsService(bcs * bcsv1.BcsConfig) *corev1.Service {
 			  TargetPort: intstr.FromInt(int(bcs.Spec.Nmos.NmosInputFile.HttpPort)),
 			  NodePort:   int32(bcs.Spec.Nmos.NmosApiNodePort),
             },
-            {
-              Protocol:   corev1.ProtocolTCP,
-			  Name: "nmos-app-communication",
-			  Port: int32(grpcPort),
-			  TargetPort: intstr.FromInt(grpcPort),
-			  NodePort:   int32(bcs.Spec.Nmos.NmosAppCommunicationNodePort),
-            },
           },
         },
       }

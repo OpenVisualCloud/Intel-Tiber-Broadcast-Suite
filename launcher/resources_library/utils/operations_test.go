@@ -344,7 +344,6 @@ func TestCreateBcsService(t *testing.T) {
 			Namespace: "test-namespace",
 			Nmos: bcsv1.Nmos{
 				NmosApiNodePort:            30080,
-				NmosAppCommunicationNodePort: 30090,
 			},
 		},
 	}
