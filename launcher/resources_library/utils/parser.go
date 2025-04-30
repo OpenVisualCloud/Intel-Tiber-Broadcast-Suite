@@ -18,14 +18,14 @@ type MediaProxyAgentConfig struct {
 	ImageAndTag string       `yaml:"imageAndTag"`
 	GRPCPort    string          `yaml:"gRPCPort"`
 	RestPort    string          `yaml:"restPort"`
-	Network     NetworkConfig `yaml:"network"`
+	Network     NetworkConfig `yaml:"custom_network"`
   }
 
   type MediaProxyMcmConfig struct {
 	ImageAndTag   string       `yaml:"imageAndTag"`
 	InterfaceName string       `yaml:"interfaceName"`
 	Volumes       []string     `yaml:"volumes"`
-	Network       NetworkConfig `yaml:"network"`
+	Network       NetworkConfig `yaml:"custom_network"`
   }
 
   type WorkloadConfig struct {
@@ -57,7 +57,7 @@ type MediaProxyAgentConfig struct {
 	EnvironmentVariables []string          `yaml:"environmentVariables"`
 	Volumes             Volumes            `yaml:"volumes"`
 	Devices             Devices            `yaml:"devices"`
-	Network             NetworkConfig     `yaml:"network"`
+	Network             NetworkConfig     `yaml:"custom_network"`
   }
 
   type NmosClientConfig struct {
@@ -66,7 +66,7 @@ type MediaProxyAgentConfig struct {
 	EnvironmentVariables []string          `yaml:"environmentVariables"`
 	NmosConfigPath      string            `yaml:"nmosConfigPath"`
 	NmosConfigFileName  string            `yaml:"nmosConfigFileName"`
-	Network             NetworkConfig     `yaml:"network"`
+	Network             NetworkConfig     `yaml:"custom_network"`
 	FfmpegConectionAddress string		  `yaml:"ffmpegConectionAddress"`
 	FfmpegConnectionPort  string		  `yaml:"ffmpegConnectionPort"`
   }

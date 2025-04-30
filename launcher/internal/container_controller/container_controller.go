@@ -132,36 +132,6 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 		log.Info("No information about MCM MediaProxy provided. Omitting creation of MCM MediaProxy container")
 	}
 
-	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
-		bcsNmosContainer := general.Containers{}
-		bcsNmosContainer.Type = general.BcsPipelineNmosClient
-		bcsNmosContainer.ContainerName = config.WorkloadToBeRun.NmosClient.Name
-		bcsNmosContainer.Image = config.WorkloadToBeRun.NmosClient.ImageAndTag
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.ImageAndTag = config.WorkloadToBeRun.NmosClient.ImageAndTag
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables = config.WorkloadToBeRun.NmosClient.EnvironmentVariables
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName = config.WorkloadToBeRun.NmosClient.NmosConfigFileName
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
-		if config.WorkloadToBeRun.NmosClient.Network.Enable {
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
-		} else{
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = "host"
-			// Note - When you use the host network mode in Docker, the container shares
-			// the host machine's network stack.
-		}
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConectionAddress = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort = strconv.Itoa(config.WorkloadToBeRun.FfmpegPipeline.GRPCPort)
-
-		err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsNmosContainer)
-		if err != nil {
-			log.Error(err, "Failed to create contianer!")
-			return err
-		}
-	} else {
-		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
-	}
-
 	bcsPipelinesContainer := general.Containers{}
 	bcsPipelinesContainer.Type = general.BcsPipelineFfmpeg
 	bcsPipelinesContainer.ContainerName = config.WorkloadToBeRun.FfmpegPipeline.Name
@@ -194,6 +164,36 @@ func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, 
 	if err != nil {
 		log.Error(err, "Failed to create contianer!")
 		return err
+	}
+	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
+		bcsNmosContainer := general.Containers{}
+		bcsNmosContainer.Type = general.BcsPipelineNmosClient
+		bcsNmosContainer.ContainerName = config.WorkloadToBeRun.NmosClient.Name
+		bcsNmosContainer.Image = config.WorkloadToBeRun.NmosClient.ImageAndTag
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.ImageAndTag = config.WorkloadToBeRun.NmosClient.ImageAndTag
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables = config.WorkloadToBeRun.NmosClient.EnvironmentVariables
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName = config.WorkloadToBeRun.NmosClient.NmosConfigFileName
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
+		if config.WorkloadToBeRun.NmosClient.Network.Enable {
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
+		} else{
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = "host"
+			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
+			// Note - When you use the host network mode in Docker, the container shares
+			// the host machine's network stack.
+		}
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConectionAddress = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
+		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort = strconv.Itoa(config.WorkloadToBeRun.FfmpegPipeline.GRPCPort)
+
+		err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsNmosContainer)
+		if err != nil {
+			log.Error(err, "Failed to create contianer!")
+			return err
+		}
+	} else {
+		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
 	}
 	return nil
 }
