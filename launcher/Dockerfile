@@ -14,7 +14,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # Build the manager binary
-FROM golang:1.23 AS builder
+FROM golang:1.23@sha256:ec5612bbd9e96d5b80a8b968cea06a4a9b985fe200ff6da784bf607063273c59 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
