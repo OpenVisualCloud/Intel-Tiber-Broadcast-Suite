@@ -717,11 +717,6 @@ func CreateService(name string) *corev1.Service {
 }
 
 func CreateBcsService(bcs * bcsv1.BcsConfig) *corev1.Service {
-	grpcPort, err := strconv.Atoi(bcs.Spec.Nmos.NmosInputFile.FfmpegGrpcServerPort)
-	if err != nil {
-		  fmt.Println("Error converting FfmpegGrpcServerPort to int:", err)
-		  return &corev1.Service{} // Default value in case of error
-	}
 	return &corev1.Service{
         ObjectMeta: metav1.ObjectMeta{
           Name: bcs.Spec.Name,
