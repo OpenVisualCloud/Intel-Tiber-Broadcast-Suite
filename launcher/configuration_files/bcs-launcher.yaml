@@ -40,14 +40,6 @@ metadata:
   namespace: bcs
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - create
-  - update
-- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
