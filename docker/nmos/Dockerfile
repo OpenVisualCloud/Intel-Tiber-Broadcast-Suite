@@ -7,7 +7,7 @@
 #
 # build stage
 
-FROM ubuntu:24.04 AS build-stage
+FROM ubuntu:24.04@sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02 AS build-stage
 
 USER root
 
@@ -97,7 +97,7 @@ RUN \
     cp ./bcs-nmos-node /tmp/buildout
 
 ## Re-build container for optimised runtime environment using clean Ubuntu Bionic release
-FROM ubuntu:24.04 AS final-stage
+FROM ubuntu:24.04@sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02 AS final-stage
 
 ENV \
   DEBIAN_FRONTEND="noninteractive"
