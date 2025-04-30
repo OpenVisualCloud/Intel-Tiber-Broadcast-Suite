@@ -320,11 +320,12 @@ int ffmpeg_append_split_process(std::vector<Stream> &senders, uint32_t intel_gpu
     pipeline_string += ";";
     for (int i = 0; i < senders.size(); i++) {
         if(intel_gpu){
-            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + ",hwdownload,format=" + senders[i].payload.video.pixel_format + "[out_tmp" + std::to_string(i) + "];";
+            pipeline_string += "[in" + std::to_string(i) + "]hwupload,scale_qsv=";
         }
         else{
-            pipeline_string += "[in" + std::to_string(i) + "]scale=" + std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
+            pipeline_string += "[in" + std::to_string(i) + "]scale=";
         }
+        pipeline_string += std::to_string(senders[i].payload.video.frame_width) + ":" + std::to_string(senders[i].payload.video.frame_height) + "[out" + std::to_string(i) + "];";
     }
     pipeline_string += "\"";
 
@@ -448,6 +449,11 @@ int ffmpeg_append_upscale(Config &config, std::string &pipeline_string) {
         return 1;
     }
     pipeline_string += " -vf \"format=yuv420p,hwupload,raisr_opencl,hwdownload,format=yuv420p,format=yuv422p10le\"";
+    if(ffmpeg_append_payload(config.senders[0].payload,  pipeline_string) != 0){
+        pipeline_string.clear();
+        std::cout << "Error appending upscale tx payload" << std::endl;
+        return 1;
+    }
     if(ffmpeg_append_stream_type(config.senders[0], false /*is_rx*/, 0, pipeline_string) != 0){
         pipeline_string.clear();
         std::cout << "Error appending upscale tx stream" << std::endl;
