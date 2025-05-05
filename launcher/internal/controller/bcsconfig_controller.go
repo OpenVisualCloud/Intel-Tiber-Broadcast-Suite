@@ -59,83 +59,83 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	log := log.FromContext(ctx)
 
 	// MCM silent start up
-	// createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
-	// 	err := r.Get(ctx, namespacedName, resource)
-	// 	if err != nil {
-	// 		if errors.IsNotFound(err) {
-	// 			// Create the resource if it doesn't exist
-	// 			err = r.Create(ctx, resource)
-	// 			if err != nil {
-	// 				log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
-	// 				return err
-	// 			}
-	// 			log.Info("Resource created successfully", "resource", resource.GetObjectKind(), "name", namespacedName)
-	// 		} else {
-	// 			// Log and return any other error
-	// 			log.Error(err, "Failed to get resource", "resource", resource.GetObjectKind(), "named", namespacedName)
-	// 			return err
-	// 		}
-	// 	} else {
-	// 		// Log if the resource already exists
-	// 		log.Info("Resource already exists", "resource", resource.GetObjectKind(), "name", namespacedName)
-	// 	}
-	// 	return nil
-	// }
+	createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
+		err := r.Get(ctx, namespacedName, resource)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				// Create the resource if it doesn't exist
+				err = r.Create(ctx, resource)
+				if err != nil {
+					log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+					return err
+				}
+				log.Info("Resource created successfully", "resource", resource.GetObjectKind(), "name", namespacedName)
+			} else {
+				// Log and return any other error
+				log.Error(err, "Failed to get resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+				return err
+			}
+		} else {
+			// Log if the resource already exists
+			log.Info("Resource already exists", "resource", resource.GetObjectKind(), "name", namespacedName)
+		}
+		return nil
+	}
 
-	// mcmCmInfo:= &corev1.ConfigMap{}
-	// err := r.Get(ctx, types.NamespacedName{Name: "k8s-bcs-config", Namespace: "bcs"}, mcmCmInfo)
-	// if err != nil {
-	// 	log.Error(err, "Failed to get resource", "resource", mcmCmInfo.GetObjectKind(), "named", "k8s-bcs-config")
-	// 	return ctrl.Result{}, err
-	// }
+	mcmCmInfo:= &corev1.ConfigMap{}
+	err := r.Get(ctx, types.NamespacedName{Name: "k8s-bcs-config", Namespace: "bcs"}, mcmCmInfo)
+	if err != nil {
+		log.Error(err, "Failed to get resource", "resource", mcmCmInfo.GetObjectKind(), "named", "k8s-bcs-config")
+		return ctrl.Result{}, err
+	}
 
-	// mcmNamespace := utils.CreateNamespace("mcm")
-	// mcmAgentDeployment := utils.CreateMeshAgentDeployment(mcmCmInfo)
-	// mcmAgentService := utils.CreateMeshAgentService(mcmCmInfo)
-	// mcmMediaProxyPv := utils.CreatePersistentVolume(mcmCmInfo)
-	// mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim(mcmCmInfo)
-	// mcmMediaProxyDs := utils.CreateDaemonSet(mcmCmInfo)
-	// mtlManagerDeployment := utils.CreateMtlManagerDeployment(mcmCmInfo)
+	mcmNamespace := utils.CreateNamespace("mcm")
+	mcmAgentDeployment := utils.CreateMeshAgentDeployment(mcmCmInfo)
+	mcmAgentService := utils.CreateMeshAgentService(mcmCmInfo)
+	mcmMediaProxyPv := utils.CreatePersistentVolume(mcmCmInfo)
+	mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim(mcmCmInfo)
+	mcmMediaProxyDs := utils.CreateDaemonSet(mcmCmInfo)
+	mtlManagerDeployment := utils.CreateMtlManagerDeployment(mcmCmInfo)
 
-	// err = createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
-	// if err != nil {
-	// 	log.Error(err, "Failed to create resource", "resource", mcmNamespace.GetObjectKind(), "named", mcmNamespace.Name)
-	// 	return ctrl.Result{}, err
-	// }
-	// err = createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: "mcm"})
-	// if err != nil {
-	// 	log.Error(err, "Failed to create resource", "resource", mcmAgentDeployment.GetObjectKind(), "named", mcmAgentDeployment.Name)
-	// 	return ctrl.Result{}, err
-	// }
-	// err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:"mcm"})
-	// if err != nil {
-	// 	log.Error(err, "Failed to create resource", "resource", mcmAgentService.GetObjectKind(), "named", mcmAgentService.Name)
-	// 	return ctrl.Result{}, err
-	// }
-	// err = createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: "mcm"})
-	// if err != nil {	
-	// 	log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPv.GetObjectKind(), "named", mcmMediaProxyPv.Name)
-	// 	return ctrl.Result{}, err
-	// }
-	// err = createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: "mcm"})
-	// if err != nil {
-	// 	log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPvc.GetObjectKind(), "named", mcmMediaProxyPvc.Name)
-	// 	return ctrl.Result{}, err
-	// }
-	// err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
-    // if err != nil {
-	// 	log.Error(err, "Failed to create resource", "resource", mcmMediaProxyDs.GetObjectKind(), "named", mcmMediaProxyDs.Name)
-	// 	return ctrl.Result{}, err
-	// }
-	// err = createResourceIfNotExists(mtlManagerDeployment, types.NamespacedName{Name: mtlManagerDeployment.Name, Namespace: "mcm"})
-	// if err != nil {
-	// 	log.Error(err, "Failed to create resource", "resource", mtlManagerDeployment.GetObjectKind(), "named", mtlManagerDeployment.Name)
-	// 	return ctrl.Result{}, err
-	// }
+	err = createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
+	if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mcmNamespace.GetObjectKind(), "named", mcmNamespace.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: "mcm"})
+	if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mcmAgentDeployment.GetObjectKind(), "named", mcmAgentDeployment.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:"mcm"})
+	if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mcmAgentService.GetObjectKind(), "named", mcmAgentService.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: "mcm"})
+	if err != nil {	
+		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPv.GetObjectKind(), "named", mcmMediaProxyPv.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: "mcm"})
+	if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPvc.GetObjectKind(), "named", mcmMediaProxyPvc.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
+    if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyDs.GetObjectKind(), "named", mcmMediaProxyDs.Name)
+		return ctrl.Result{}, err
+	}
+	err = createResourceIfNotExists(mtlManagerDeployment, types.NamespacedName{Name: mtlManagerDeployment.Name, Namespace: "mcm"})
+	if err != nil {
+		log.Error(err, "Failed to create resource", "resource", mtlManagerDeployment.GetObjectKind(), "named", mtlManagerDeployment.Name)
+		return ctrl.Result{}, err
+	}
 	
 	// Lookup the BcsConfig instance for this reconcile request
 	bcsConf := &bcsv1.BcsConfig{}
-	err := r.Get(ctx, req.NamespacedName, bcsConf)
+	err = r.Get(ctx, req.NamespacedName, bcsConf)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("BcsConfig resource not found. Ignoring since object must be deleted")
