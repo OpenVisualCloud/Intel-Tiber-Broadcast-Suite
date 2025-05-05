@@ -44,7 +44,7 @@ configuration: # Configuration should be used only for docker mode
         dri: /dev/dri
       custom_network:  # custom network = false means that the container will be run in the host docker network
         enable: false
-        ip: 10.123.235.34 #this ip is crucial to e exposed explicitly to the nmos client. It should be the same as host IP address or localhost
+        ip: 10.123.x.x #this ip is crucial to e exposed explicitly to the nmos client. It should be the same as host IP address or localhost
     nmosClient:
       name: bcs-ffmpeg-pipeline-nmos-client-tx
       imageAndTag: tiber-broadcast-suite-nmos-node:latest

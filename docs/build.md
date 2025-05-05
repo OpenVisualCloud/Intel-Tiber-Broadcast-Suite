@@ -26,9 +26,10 @@ To successfully build the Intel® Tiber™ Broadcast Suite, you need to follow a
     - [Option #1: (Recommended) Dockerized Installation](#option-1-recommended-dockerized-installation)
     - [Option #2: Local Installation](#option-2-local-installation)
   - [4. Preparation to Run Intel® Tiber™ Broadcast Suite](#4-preparation-to-run-intel®-tiber™-broadcast-suite)
-    - [4.1. First Run Script](#41-first-run-script)
-    - [4.2. Test Docker Installation](#42-test-docker-installation)
-    - [4.3. Test Local Installation](#43-test-local-installation)
+    - [4.1  Use BCS Launcher app](#41-use-bcs-launcher-app)
+    - [4.2. First Run Script](#42-first-run-script)
+    - [4.3. Test Docker Installation](#43-test-docker-installation)
+    - [4.4. Test Local Installation](#44-test-local-installation)
   - [5. Running the Image](#5-running-the-image)
       
 
@@ -334,16 +335,7 @@ This script is used to build the project with optional configurations. It accept
 - `--build_type <type>`: Specifies the build type. Replace `<type>` with the desired build configuration, such as "Debug" or "Release". This allows you to control the optimization and debugging settings of the build.
 - `-h, --help`: Displays the help message, showing usage instructions and available options. Use this option to understand how to use the script.
 
-
-### Option #3: Local Installation from Debian Packages (outdated)
-
-You can install the Intel® Tiber™ Broadcast Suite locally on bare metal. This installation allows you to skip installing Docker altogether.
-
-```bash
-./build.sh -l
-```
-
-### Option #4: Install Docker Image from Docker Hub
+### Option #3: Install Docker Image from Docker Hub
 Visit <https://hub.docker.com/r/intel/intel-tiber-broadcast-suite/> Intel® Tiber™ Broadcast Suite image Docker Hub to select the most appropriate version.
 
 Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
@@ -351,7 +343,7 @@ Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
 docker pull intel/intel-tiber-broadcast-suite:latest
 ```
 
-### Option #5: Build Docker image from Dockerfile Manually
+### Option #4: Build Docker image from Dockerfile Manually
 
 > **Note:** Below method does not require buildx, but lacks cross-compatibility and may prolong the build process.
 
@@ -454,7 +446,97 @@ For a dockerized solution, please follow [instructions on this page](https://git
 
 ## 4. Preparation to Run Intel® Tiber™ Broadcast Suite
 
-### 4.1. First Run Script
+BCS pod launcher starts once Media Proxy Agent instance (on one machine) and MCM Media Proxy instances on each machine. It enables to starts BCS ffmpeg pipeline with bound NMOS client node application.
+
+```mermaid
+graph TD
+  A[BCS Pod Launcher] -->|Starts| B[Media Proxy Agent Instance]
+  A -->|Starts| C[MCM Media Proxy Instances]
+  C -->|One per Machine| D[MCM Media Proxy Instance]
+  A -->|Starts| E[BCS FFMPEG Pipeline]
+  E -->|Bound to| F[NMOS Client Node Application]
+```
+
+**BCS Pod Launcher** is the central controller that starts all other components.  
+**Media Proxy Agent** Instance is a single instance started by the BCS Pod Launcher on one machine.  
+**MCM Media Proxy** Instances is a multiple instances started by the BCS Pod Launcher, one on each machine.  
+**BCS FFMPEG Pipeline** is a pipeline started by the BCS Pod Launcher whereas **NMOS Client Node Application** is bound to the BCS FFMPEG Pipeline for media management and discovery. And this pair of containers  that are working seperate containers either standalone or within one pod.  
+  
+**There are 2 possible use cases:**  
+
+- run in containerized mode - `<repo>/launcher/internal/container_controller/container_controller.go` implements a DockerContainerController that is responsible for managing Docker containers based on the launcher configuration. The DockerContainerController is designed to:
+  - Parse the launcher configuration file.
+  - Create and run Docker containers based on the parsed configuration.
+  - Handle container lifecycle operations such as checking if a container is running, removing existing containers, and starting new ones based on input configuration file in json format.
+
+- run in orchestrated mode in cluster using kuberenetes - `<repo>/launcher/internal/controller/bcsconfig_controller.go` implements the Kubernetes controller logic for managing `BcsConfig` custom resources. This controller is responsible for reconciling the state of the cluster with the desired state defined in the BcsConfig resources. The BcsConfigReconciler is designed to:
+  - Watch for changes to BcsConfig custom resources.
+  - Reconcile the desired state by creating or updating Kubernetes resources such as ConfigMaps, Deployments, and Services.
+  - Ensure that the BcsConfig resources are correctly applied and maintained in the cluster.
+
+> Prerequisite is to build 4 images in advance if you do not have access to any registry with released images:
+> - mesh-agent
+> - media-proxy
+> - tiber-broadcast-suite (in this scenario it is Broadcast Suite pipeline app - ffmpeg)
+
+#### Prerequisite - build necessary images
+
+##### mesh-agent and media-proxy
+
+It is recommended to use [Setup Guide Media Communications Mesh](<https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/build_docker.sh>) and complete the steps with runing script [build_docker.sh](https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/build_docker.sh). No need to execute `docker run` or `kubectl apply/create`. BCS launcher will do it for you.
+
+#### tiber-broadcast-suite and tiber-broadcast-suite-nmos-node
+```bash
+git clone https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite.git Intel-Tiber-Broadcast-Suite
+cd Intel-Tiber-Broadcast-Suite
+./build.sh
+# first_run.sh needs to be run after every reset of the machine
+./first-run.sh 
+```
+> NOTE MTL manager image is build together with tiber-broadcast-suite
+tiber-broadcast-suite-nmos-node images using script `build.sh`. MTL manager container is run due to `first-run.sh`. In this version BCS launcher has not supported running MTL manager container yet.In this version BCS launcher has already supported  MTL manager deployment, but make sure before rn of BCS launcher that MTL manager container is not running as a standalone app. MTL manager is necessary to run scenario with stream type ST2110.
+
+**Description**  
+
+The tool can operate in two modes:
+
+- Kubernetes Mode: For multi-node cluster deployment.
+- Docker Mode: For single-node using Docker containers.
+
+**Flow (Common to Both Modes)**  
+
+1. Run MediaProxy Agent
+2. Run MCM Media Proxy
+3. Run BcsFfmpeg pipeline with NMOS
+
+In case of docker, MediaProxy/MCM things should only start/run once and on every run of launcher, one should start the app according to input file. It does not store the state of apps, just check appropriate conditions.
+
+In case of kuberenetes, MediaProxy/MCM things should only be run once and BCS pod launcher works as operator in the understanding of Kuberenetes operators within pod. That is way, input file in this way is CustomReaource called BcsConfig.
+
+#### Additional necessary steps when Docker (containers) scenario/mode is used
+
+Then proceed to [run.md](run.md) instructions to run containers using BCS launcher.
+
+#### Additional necessary steps when Kubernetes scenario/mode is used
+
+> **IMPORTANT NOTE!** The prerequisite is to prepare cluster (for example the simplest one using the link below): [Creating a cluster with kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
+
+**Build image:**
+
+```bash
+cd <repo>/launcher
+docker build -t bcs_pod_launcher:controller .
+```
+
+> NOTE! If you have issues with building, try to add proxy environment variables. `--build-arg http_proxy=<proxy>` and `--build-arg https_proxy=<proxy>`. Example: `docker build --build-arg http_proxy=<proxy> --build-arg https_proxy=<proxy> -t bcs_pod_launcher:controller .`
+
+Then proceed to [run.md](run.md) instructions to deploy resources on the cluster.
+
+---
+
+No need to execute steps 4.2-4.4 because it refers to local installation on machines.
+
+### 4.2. First Run Script
 
 > **Note:** first_run.sh needs to be run after every reset of the machine.
 
@@ -477,13 +559,13 @@ This script will start the Mtl Manager locally. To avoid issues with core assign
 
 > **Note:** In order to avoid unnecessary reruns, preserve the command's output as a file to note which interface was bound to which Virtual Functions.
 
-### 4.2. Test Docker Installation
+### 4.3. Test Docker Installation
 
 ```bash
 docker run --rm -it --user=root --privileged video_production_image --help
 ```
 
-### 4.3. Test Local Installation
+### 4.4. Test Local Installation
 ```bash
 ffmpeg --help
 ```
