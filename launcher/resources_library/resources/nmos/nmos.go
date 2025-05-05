@@ -7,72 +7,83 @@
 package nmos
 
 type Config struct {
-	MultiviewerColumns     int				 `json:"multiviewer_columns,omitempty"`
-	GpuHwAccelerationDevice string			 `json:"gpu_hw_acceleration_device,omitempty"`
-	LoggingLevel           int               `json:"logging_level,omitempty"`
-	HttpPort               int               `json:"http_port"`
-	Label                  string            `json:"label,omitempty"`
-	DeviceTags             map[string][]string `json:"device_tags,omitempty"`
-	Function               string            `json:"function"`
-	StreamLoop             int               `json:"stream_loop,omitempty"`
-	GpuHwAcceleration      string            `json:"gpu_hw_acceleration"`
-	Domain                 string            `json:"domain"`
-	FfmpegGrpcServerAddress string           `json:"ffmpeg_grpc_server_address"`
-	FfmpegGrpcServerPort   string            `json:"ffmpeg_grpc_server_port"`
-	SenderPayloadType      int               `json:"sender_payload_type"`
-	Sender                 []Stream          `json:"sender"`
-	Receiver               []Stream          `json:"receiver"`
-}
+	LoggingLevel            int `json:"logging_level"`
+	HttpPort                int `json:"http_port"`
+	Label                   string `json:"label"`
+	DeviceTags              DeviceTags `json:"device_tags"`
+	Function                string `json:"function"`
+	ActivateSenders		    bool `json:"activate_senders"`
+	MultiviewerColumns	    int `json:"multiviewer_columns,omitempty"`
+	StreamLoop 	            int `json:"stream_loop"`
+	GpuHwAcceleration       string `json:"gpu_hw_acceleration"`
+	GpuHwAccelerationDevice string `json:"gpu_hw_acceleration_device,omitempty"`
+	Domain                  string `json:"domain"`
+	FfmpegGrpcServerAddress string `json:"ffmpeg_grpc_server_address,omitempty"`
+	FfmpegGrpcServerPort    string `json:"ffmpeg_grpc_server_port,omitempty"`
+	SenderPayloadType       int `json:"sender_payload_type"`
+	Sender                  []Sender `json:"sender"`
+	Receiver                []Receiver `json:"receiver"`
+  }
 
-type Stream struct {
+  type DeviceTags struct {
+	Pipeline []string `json:"pipeline"`
+  }
+
+  type Sender struct {
 	StreamPayload StreamPayload `json:"stream_payload"`
-	StreamType    StreamType    `json:"stream_type"`
-}
+	StreamType    StreamType `json:"stream_type"`
+  }
 
-type StreamPayload struct {
-	Video Video `json:"video"`
+  type Receiver struct {
+	StreamPayload StreamPayload `json:"stream_payload"`
+	StreamType    StreamType `json:"stream_type"`
+  }
+
+  type StreamPayload struct {
+	Video Video `json:"video,omitempty"`
 	Audio Audio `json:"audio,omitempty"`
-}
+  }
 
-type Video struct {
-	FrameWidth   int    `json:"frame_width"`
-	FrameHeight  int    `json:"frame_height"`
-	FrameRate    FrameRate `json:"frame_rate"`
-	PixelFormat  string `json:"pixel_format,omitempty"`
-	VideoType    string `json:"video_type"`
-}
+  type Video struct {
+	FrameWidth  int `json:"frame_width"`
+	FrameHeight int `json:"frame_height"`
+	FrameRate   FrameRate `json:"frame_rate"`
+	PixelFormat string `json:"pixel_format"`
+	VideoType   string `json:"video_type"`
+  }
 
-type FrameRate struct {
-	Numerator   int `json:"numerator,omitempty"`
-	Denominator int `json:"denominator,omitempty"`
-}
+  type FrameRate struct {
+	Numerator   int `json:"numerator"`
+	Denominator int `json:"denominator"`
+  }
 
-type Audio struct {
-	Channels   int    `json:"channels,omitempty"`
-	SampleRate int    `json:"sampleRate,omitempty"`
-	Format     string `json:"format,omitempty"`
-	PacketTime string `json:"packetTime,omitempty"`
-}
+  type Audio struct {
+	Channels   int `json:"channels"`
+	SampleRate int `json:"sampleRate"`
+	Format     string `json:"format"`
+	PacketTime string `json:"packetTime"`
+  }
 
-type StreamType struct {
+  type StreamType struct {
 	St2110 *St2110 `json:"st2110,omitempty"`
-	File   *File   `json:"file,omitempty"`
-	MCM	*MCM    `json:"mcm,omitempty"`
-}
+	Mcm  *Mcm  `json:"mcm,omitempty"`
+	File *File `json:"file,omitempty"`
+  }
 
-type St2110 struct {
-	Transport   string `json:"transport,omitempty"`
-	PayloadType int    `json:"payloadType,omitempty"`
-}
+  type St2110 struct {
+	Transport string `json:"transport"`
+	Payload_type int `json:"payloadType"`
+	QueuesCount int `json:"queues_cnt"`
+  }
 
-type File struct {
-	Path     string `json:"path,omitempty"`
-	Filename string `json:"filename,omitempty"`
-}
+  type Mcm struct {
+	ConnType             string `json:"conn_type"`
+	Transport            string `json:"transport"`
+	Urn                  string `json:"urn"`
+	TransportPixelFormat string `json:"transportPixelFormat"`
+  }
 
-type MCM struct {
-	ConnType             string `json:"conn_type,omitempty"`
-	Transport            string `json:"transport,omitempty"`
-	URN                  string `json:"urn,omitempty"`
-	TransportPixelFormat string `json:"transportPixelFormat,omitempty"`
-}
+  type File struct {
+	Path     string `json:"path"`
+	Filename string `json:"filename"`
+  }

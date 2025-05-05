@@ -14,7 +14,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # Build the manager binary
-FROM golang:1.23 AS builder
+FROM golang:1.23@sha256:ec5612bbd9e96d5b80a8b968cea06a4a9b985fe200ff6da784bf607063273c59 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -37,7 +37,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o ma
 
 # # Use distroless as minimal base image to package the manager binary
 # # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static:nonroot@sha256:c0f429e16b13e583da7e5a6ec20dd656d325d88e6819cafe0adb0828976529dc
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532

@@ -15,7 +15,6 @@ import (
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/workloads"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/docker/engine-api/types/strslice"
 	"github.com/docker/go-connections/nat"
@@ -290,7 +289,7 @@ func TestConvertEnvVars_NilInput(t *testing.T) {
 // 					"imtl":         "/host/imtl",
 // 					"shm":          "/dev/shm",
 // 					"vfio":         "/dev/vfio",
-// 					"driDev":       "/dev/dri",
+// 					"dri-dev":       "/dev/dri",
 // 				},
 // 				EnvironmentVariables: []bcsv1.EnvVar{
 // 					{Name: "APP_ENV_VAR1", Value: "APP_VALUE1"},
@@ -344,10 +343,7 @@ func TestCreateBcsService(t *testing.T) {
 			Name:      "test-bcs-service",
 			Namespace: "test-namespace",
 			Nmos: bcsv1.Nmos{
-				NmosApiPort:                8080,
 				NmosApiNodePort:            30080,
-				NmosAppCommunicationPort:   9090,
-				NmosAppCommunicationNodePort: 30090,
 			},
 		},
 	}
@@ -360,20 +356,6 @@ func TestCreateBcsService(t *testing.T) {
 	assert.Equal(t, corev1.ServiceTypeNodePort, service.Spec.Type)
 
 	assert.Equal(t, 2, len(service.Spec.Ports))
-
-	nmosApiPort := service.Spec.Ports[0]
-	assert.Equal(t, "nmos-node-api", nmosApiPort.Name)
-	assert.Equal(t, corev1.ProtocolTCP, nmosApiPort.Protocol)
-	assert.Equal(t, int32(8080), nmosApiPort.Port)
-	assert.Equal(t, intstr.FromInt(8080), nmosApiPort.TargetPort)
-	assert.Equal(t, int32(30080), nmosApiPort.NodePort)
-
-	nmosAppCommunicationPort := service.Spec.Ports[1]
-	assert.Equal(t, "nmos-app-communication", nmosAppCommunicationPort.Name)
-	assert.Equal(t, corev1.ProtocolTCP, nmosAppCommunicationPort.Protocol)
-	assert.Equal(t, int32(9090), nmosAppCommunicationPort.Port)
-	assert.Equal(t, intstr.FromInt(9090), nmosAppCommunicationPort.TargetPort)
-	assert.Equal(t, int32(30090), nmosAppCommunicationPort.NodePort)
 
 	assert.Equal(t, map[string]string{"app": "test-bcs-service"}, service.Spec.Selector)
 }

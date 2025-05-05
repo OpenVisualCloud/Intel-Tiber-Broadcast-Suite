@@ -24,8 +24,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -61,68 +59,83 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	log := log.FromContext(ctx)
 
 	// MCM silent start up
-	createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
-		err := r.Get(ctx, namespacedName, resource)
-		if err != nil {
-			err = r.Create(ctx, resource)
-			if err != nil {
-				log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
-				return err
-			}
-			log.Info("MCM resource is created", "resource", resource.GetObjectKind(), "name", namespacedName)
-		}
-		return nil
-	}
+	// createResourceIfNotExists := func(resource client.Object, namespacedName types.NamespacedName) error {
+	// 	err := r.Get(ctx, namespacedName, resource)
+	// 	if err != nil {
+	// 		if errors.IsNotFound(err) {
+	// 			// Create the resource if it doesn't exist
+	// 			err = r.Create(ctx, resource)
+	// 			if err != nil {
+	// 				log.Error(err, "Failed to create resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+	// 				return err
+	// 			}
+	// 			log.Info("Resource created successfully", "resource", resource.GetObjectKind(), "name", namespacedName)
+	// 		} else {
+	// 			// Log and return any other error
+	// 			log.Error(err, "Failed to get resource", "resource", resource.GetObjectKind(), "named", namespacedName)
+	// 			return err
+	// 		}
+	// 	} else {
+	// 		// Log if the resource already exists
+	// 		log.Info("Resource already exists", "resource", resource.GetObjectKind(), "name", namespacedName)
+	// 	}
+	// 	return nil
+	// }
 
-	mcmCmInfo:= &corev1.ConfigMap{}
-	err := r.Get(ctx, types.NamespacedName{Name: "k8s-bcs-config", Namespace: "bcs"}, mcmCmInfo)
-	if err != nil {
-		log.Error(err, "Failed to get resource", "resource", mcmCmInfo.GetObjectKind(), "named", "k8s-bcs-config")
-		return ctrl.Result{}, err
-	}
-	// fmt.Printf("MCM ConfigMap: %+v\n", mcmCmInfo)
+	// mcmCmInfo:= &corev1.ConfigMap{}
+	// err := r.Get(ctx, types.NamespacedName{Name: "k8s-bcs-config", Namespace: "bcs"}, mcmCmInfo)
+	// if err != nil {
+	// 	log.Error(err, "Failed to get resource", "resource", mcmCmInfo.GetObjectKind(), "named", "k8s-bcs-config")
+	// 	return ctrl.Result{}, err
+	// }
 
-	mcmNamespace := utils.CreateNamespace("mcm")
-	mcmAgentDeployment := utils.CreateMeshAgentDeployment(mcmCmInfo)
-	mcmAgentService := utils.CreateMeshAgentService(mcmCmInfo)
-	mcmMediaProxyPv := utils.CreatePersistentVolume(mcmCmInfo)
-	mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim(mcmCmInfo)
-	mcmMediaProxyDs := utils.CreateDaemonSet(mcmCmInfo)
+	// mcmNamespace := utils.CreateNamespace("mcm")
+	// mcmAgentDeployment := utils.CreateMeshAgentDeployment(mcmCmInfo)
+	// mcmAgentService := utils.CreateMeshAgentService(mcmCmInfo)
+	// mcmMediaProxyPv := utils.CreatePersistentVolume(mcmCmInfo)
+	// mcmMediaProxyPvc := utils.CreatePersistentVolumeClaim(mcmCmInfo)
+	// mcmMediaProxyDs := utils.CreateDaemonSet(mcmCmInfo)
+	// mtlManagerDeployment := utils.CreateMtlManagerDeployment(mcmCmInfo)
 
-	err = createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
-	if err != nil {
-		log.Error(err, "Failed to create resource", "resource", mcmNamespace.GetObjectKind(), "named", mcmNamespace.Name)
-		return ctrl.Result{}, err
-	}
-	err = createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: "mcm"})
-	if err != nil {
-		log.Error(err, "Failed to create resource", "resource", mcmAgentDeployment.GetObjectKind(), "named", mcmAgentDeployment.Name)
-		return ctrl.Result{}, err
-	}
-	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:"mcm"})
-	if err != nil {
-		log.Error(err, "Failed to create resource", "resource", mcmAgentService.GetObjectKind(), "named", mcmAgentService.Name)
-		return ctrl.Result{}, err
-	}
-	err = createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: "mcm"})
-	if err != nil {	
-		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPv.GetObjectKind(), "named", mcmMediaProxyPv.Name)
-		return ctrl.Result{}, err
-	}
-	err = createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: "mcm"})
-	if err != nil {
-		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPvc.GetObjectKind(), "named", mcmMediaProxyPvc.Name)
-		return ctrl.Result{}, err
-	}
-	err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
-    if err != nil {
-		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyDs.GetObjectKind(), "named", mcmMediaProxyDs.Name)
-		return ctrl.Result{}, err
-	}
+	// err = createResourceIfNotExists(mcmNamespace, types.NamespacedName{Name: mcmNamespace.Name})
+	// if err != nil {
+	// 	log.Error(err, "Failed to create resource", "resource", mcmNamespace.GetObjectKind(), "named", mcmNamespace.Name)
+	// 	return ctrl.Result{}, err
+	// }
+	// err = createResourceIfNotExists(mcmAgentDeployment, types.NamespacedName{Name: mcmAgentDeployment.Name, Namespace: "mcm"})
+	// if err != nil {
+	// 	log.Error(err, "Failed to create resource", "resource", mcmAgentDeployment.GetObjectKind(), "named", mcmAgentDeployment.Name)
+	// 	return ctrl.Result{}, err
+	// }
+	// err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:"mcm"})
+	// if err != nil {
+	// 	log.Error(err, "Failed to create resource", "resource", mcmAgentService.GetObjectKind(), "named", mcmAgentService.Name)
+	// 	return ctrl.Result{}, err
+	// }
+	// err = createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: "mcm"})
+	// if err != nil {	
+	// 	log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPv.GetObjectKind(), "named", mcmMediaProxyPv.Name)
+	// 	return ctrl.Result{}, err
+	// }
+	// err = createResourceIfNotExists(mcmMediaProxyPvc, types.NamespacedName{Name: mcmMediaProxyPvc.Name, Namespace: "mcm"})
+	// if err != nil {
+	// 	log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPvc.GetObjectKind(), "named", mcmMediaProxyPvc.Name)
+	// 	return ctrl.Result{}, err
+	// }
+	// err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
+    // if err != nil {
+	// 	log.Error(err, "Failed to create resource", "resource", mcmMediaProxyDs.GetObjectKind(), "named", mcmMediaProxyDs.Name)
+	// 	return ctrl.Result{}, err
+	// }
+	// err = createResourceIfNotExists(mtlManagerDeployment, types.NamespacedName{Name: mtlManagerDeployment.Name, Namespace: "mcm"})
+	// if err != nil {
+	// 	log.Error(err, "Failed to create resource", "resource", mtlManagerDeployment.GetObjectKind(), "named", mtlManagerDeployment.Name)
+	// 	return ctrl.Result{}, err
+	// }
 	
 	// Lookup the BcsConfig instance for this reconcile request
 	bcsConf := &bcsv1.BcsConfig{}
-	err = r.Get(ctx, req.NamespacedName, bcsConf)
+	err := r.Get(ctx, req.NamespacedName, bcsConf)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("BcsConfig resource not found. Ignoring since object must be deleted")
@@ -132,18 +145,11 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 	log.Info("Reconciling", "app", bcsConf.Spec.Name)
-	// fmt.Printf("BcsConfig: %+v\n", bcsConf)
 
 	// Run all k8s resources for BCS pipeline and NMOS
 	err = r.reconcileResources(ctx, bcsConf, log)
 	if err != nil {
 		log.Error(err, "Failed to reconcile resources for this custom resource")
-		return ctrl.Result{}, err
-	}
-
-	err = r.waitForPodsRunning(ctx, "default", "tiber-broadcast-suite", 1*time.Minute, log)
-	if err != nil {
-		log.Error(err, "Error waiting for pod to be running.")
 		return ctrl.Result{}, err
 	}
 
@@ -157,19 +163,21 @@ func (r *BcsConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, bcs *bcsv1.BcsConfig, log logr.Logger) error {
-
 	// Reconcile ConfigMap
 	if err := r.reconcileConfigMap(ctx, bcs , log); err != nil {
+		log.Error(err, "Failed to reconcile ConfigMap")
 		return err
 	}
 
 	// Reconcile Deployment
 	if err := r.reconcileDeployment(ctx, bcs, log); err != nil {
+		log.Error(err, "Failed to reconcile Deployment")
 		return err
 	}
 
 	// Reconcile Service
 	if err := r.reconcileService(ctx, bcs , log); err != nil {
+		log.Error(err, "Failed to reconcile Service")
 		return err
 	}
 
@@ -178,24 +186,28 @@ func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, bcs *bcsv1
 
 func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, bcs *bcsv1.BcsConfig, log logr.Logger) error {
 	bcsConfigMap := &corev1.ConfigMap{}
-	err := r.Get(ctx, types.NamespacedName{Name: bcs.Spec.Name, Namespace: bcs.Spec.Namespace}, bcsConfigMap)
-	if errors.IsNotFound(err) {
+	configMapName := bcs.Spec.Name+"-config"
+	err := r.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: bcs.Spec.Namespace}, bcsConfigMap)
+	if err != nil && errors.IsNotFound(err) {
 		bcsConfigMap = utils.CreateConfigMap(bcs)
 		if err := r.Create(ctx, bcsConfigMap); err != nil {
 			log.Error(err, "Failed to create ConfigMap")
 			return err
 		}
-		log.Info("ConfigMap is created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
-	} else if err != nil  {
-		log.Error(err, "Failed to create/update ConfigMap. Check your either cluster or bcs launcher configuration")
+		log.Info("ConfigMap created successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+	} else if err != nil {
+		log.Error(err, "Failed to get ConfigMap")
 		return err
 	} else {
+		updatedConfigMap := utils.CreateConfigMap(bcs)
+		bcsConfigMap.Data = updatedConfigMap.Data
 		if err := r.Update(ctx, bcsConfigMap); err != nil {
 			log.Error(err, "Failed to update ConfigMap")
 			return err
 		}
-		log.Info("ConfigMap is updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
+		log.Info("ConfigMap updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
 	}
+
 	return nil
 }
 
@@ -244,30 +256,4 @@ func (r *BcsConfigReconciler) reconcileService(ctx context.Context,bcs *bcsv1.Bc
 	}
 
 	return nil
-}
-
-func (r *BcsConfigReconciler) waitForPodsRunning(ctx context.Context, namespace string, name string, timeout time.Duration, log logr.Logger) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("timed out waiting for pods to be running")
-		case <-ticker.C:
-			depl := &appsv1.Deployment{}
-			err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, depl)
-			if err != nil {
-				log.Error(err, "Failed to get deployment to read state of pods")
-				return err
-			}
-			if depl.Status.Replicas == depl.Status.AvailableReplicas && depl.Status.Replicas == depl.Status.ReadyReplicas {
-				log.Info("All pods are running")
-				return nil
-			}
-			log.Info("Deployment not in running status phase... waiting")
-		}
-	}
 }

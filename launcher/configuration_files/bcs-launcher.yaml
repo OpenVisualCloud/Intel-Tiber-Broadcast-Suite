@@ -40,14 +40,6 @@ metadata:
   namespace: bcs
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - create
-  - update
-- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -123,6 +115,7 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
   - configmaps
   - persistentvolumeclaims
   - persistentvolumes
@@ -132,6 +125,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - apps
   resources:
@@ -347,12 +341,15 @@ spec:
             - ALL
         volumeMounts:
         - name: config-volume
-          mountPath: /etc/config
+          mountPath: /etc/config/config.yaml
           subPath: config.yaml
       volumes:
       - name: config-volume
         configMap:
           name: k8s-bcs-config
+          items:
+          - key: config.yaml
+            path: config.yaml
       securityContext:
         runAsNonRoot: true
       serviceAccountName: bcs-launcher-controller-manager

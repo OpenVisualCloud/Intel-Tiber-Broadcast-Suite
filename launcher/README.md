@@ -82,8 +82,6 @@ configuration: # Configuration should be used only for docker mode
         dri: /usr/lib/x86_64-linux-gnu/dri
         kahawai: /tmp/kahawai_lcore.lock
         devnull: /dev/null
-        tmpHugepages: /tmp/hugepages
-        hugepages: /hugepages
         imtl: /var/run/imtl
         shm: /dev/shm
       devices:
