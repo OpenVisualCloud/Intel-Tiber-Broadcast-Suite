@@ -30,7 +30,7 @@ type MediaProxyAgentConfig struct {
 	Dri         string `yaml:"dri"`
 	Kahawai     string `yaml:"kahawai"`
 	Devnull     string `yaml:"devnull"`
-	TmpHugepages string `yaml:"tmpHugepages.omitempty"`
+	TmpHugepages string `yaml:"tmpHugepages,omitempty"`
 	Hugepages   string `yaml:"hugepages,omitempty"`
 	Imtl        string `yaml:"imtl"`
 	Shm         string `yaml:"shm"`
