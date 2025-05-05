@@ -1,6 +1,21 @@
+# Summary of Changes for Intel® Tiber™ Broadcast Suite - 25.04 Release:
+
+### What's Changed
+
+- Transitioned from a single-container architecture based on FFmpeg to an advanced architecture featuring a processing component with a pre-configured FFmpeg pipeline generator and a control component based on NMOS
+- Added NMOS support for IS-04 and IS-05 standards
+- Enabled Kubernetes-managed runtime environment for improved scalability and deployment
+- Introduced a Launcher as a centralized point for user interaction
+- Implemented gRPC-based communication between the Application container and the NMOS container
+- Optimized installation scripts and updated user guides for better usability
+- Updated the supported version of Media Transport Library (MTL) to 25.02.1
+- Updated the supported version of Media Communication Mesh to 25.03
+
+
 # Summary of Changes for Intel® Tiber™ Broadcast Suite - 24.10 Release: 
 
-What's Changed
+### What's Changed
+
 - Support Nvidia GPU (CUDA filters)
 - Uploaded Intel® Tiber™ Broadcast Suite to the Docker Hub
 - Enabled build of Intel® Tiber™ Broadcast Suite from Debian packages
@@ -11,7 +26,8 @@ What's Changed
 
 # Summary of Changes for Intel® Tiber™ Broadcast Suite - 24.07 Release: 
 
-What's Changed
+### What's Changed
+
 - Move the lcore management to mtl-manager
 - Remove unnecessary MTL patch and adjust tag
 - Minor update to build.md
@@ -19,7 +35,7 @@ What's Changed
 
 # Summary of Changes for Intel® Tiber™ Broadcast Suite - Initial Release: 
 
-## New Features:
+### New Features:
 
 - Comprehensive Integration with FFmpeg: Enhanced version of FFmpeg tailored with Intel's patches for optimized media handling. 
 - Advanced Media Processing: Integration of Intel® QSV and OneVPL for GPU-accelerated processing. 
@@ -35,7 +51,7 @@ What's Changed
 - Support for changing input and output streams Payload ID: This feature adds flexibility to the deployment of the Suite. 
 
 
-## Enhancements:
+### Enhancements:
 
 - Optimized Memory Management: Improvements in memory allocation that enhance performance and reduce latency. 
 - Asynchronous Execution: Video pipeline filters operate asynchronously to maximize GPU utilization. 
