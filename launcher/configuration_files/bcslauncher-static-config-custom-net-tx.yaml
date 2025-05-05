@@ -10,10 +10,10 @@ configuration: # Configuration should be used only for docker mode
   runOnce:
     mediaProxyAgent:
       imageAndTag: mcm/mesh-agent:latest
-      gRPCPort: 50051 # this is the port used by the agent
+      gRPCPort: 50081 # this is the port used by the agent
       restPort: 8100
       custom_network: # custom network = false means that the container will be run in the host docker network
-        enable: true
+        enable: false
         name: <bcs-custom-net>
         ip: <ip-address>
     mediaProxyMcm:
@@ -22,14 +22,14 @@ configuration: # Configuration should be used only for docker mode
       volumes:
         - /dev/vfio:/dev/vfio
       custom_network: # custom network = false means that the container will be run in the host docker network
-        enable: true
+        enable: false
         name: <bcs-custom-net>
         ip: <ip-address>
   workloadToBeRun:
     ffmpegPipeline:
       name: bcs-ffmpeg-pipeline-tx
       imageAndTag: tiber-broadcast-suite:latest
-      gRPCPort: 50088 # this is the port used by the nmos container to communicate with ffmpeg pipeline
+      gRPCPort: 50051 # this is the port used by the nmos container to communicate with ffmpeg pipeline
       nmosPort: 5004 # this is the port used by the nmos container to manage node via REST API
       environmentVariables:
         - "http_proxy="
