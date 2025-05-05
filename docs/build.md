@@ -345,13 +345,7 @@ cd <repo>/src/
 ./build_local.sh
 ```
 
-<<<<<<< HEAD
 ### Option #4: Install Docker Image from Docker Hub
-=======
-It will build two crucial binary files: `<repo>/src/nmos/nmos-node/build/bcs-nmos-node` and in `<repo>/src/gRPC/build/FFmpeg_wrapper_service`. In order to run it, refer to [README](../src/nmos/RUN-SIMPLE-PIPELINE.md)
-
-### Option #3: Install Docker Image from Docker Hub
->>>>>>> 9a47158 (Update documentation for bcs launcher)
 Visit <https://hub.docker.com/r/intel/intel-tiber-broadcast-suite/> Intel® Tiber™ Broadcast Suite image Docker Hub to select the most appropriate version.
 
 Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
