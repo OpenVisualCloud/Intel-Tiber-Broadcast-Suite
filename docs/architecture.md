@@ -19,7 +19,7 @@ The software package includes several performance features on top of regular [In
 ![Architecture](images/sw-architecture.png)
 
 
-## 3. Components inside Suite's docker image
+## 3. Components Inside Suite's Application Docker Image
 
 Component               |   Version     |   Source
 ---                     |   ---         |   ---
@@ -40,3 +40,10 @@ GMMLIB                  |   22.7.1     |   [GMMLIB](https://github.com/intel/gmm
 Vulkan-Headers          |   1.3.280.0   |   [Vulkan](https://github.com/KhronosGroup/Vulkan-Headers)
 LIBVA                   |   2.22.0      |   [LIBVA](https://github.com/intel/libva)
 Nvidia CUDA plugin      |   [version](https://github.com/FFmpeg/nv-codec-headers/tree/1889e62e2d35ff7aa9baca2bceb14f053785e6f1)  |   [Nvidia CUDA plugin](https://github.com/FFmpeg/nv-codec-headers)
+
+## 4. Components Inside Suite's NMOS Docker Image
+
+Component               |   Version     |   Source
+---                     |   ---         |   ---
+nmos-cpp                |   [version](https://github.com/sony/nmos-cpp/tree/f54971298c47a633969e9e9adac824b56fc08da7)      |   [nmos-cpp](https://github.com/sony/nmos-cpp)
+mDNS Responder          |   878.260.1 |   [mDNS Responder](https://github.com/apple-oss-distributions/mDNSResponder)

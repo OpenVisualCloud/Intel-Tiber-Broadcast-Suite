@@ -293,20 +293,20 @@ Note: Currently, the VF (Virtual Function) does not support the hardware timesyn
 ### Option #1: Build Docker Image from Dockerfile Using build.sh Script
 > **Note:** This method is recommended instead of Option #2 - layers are built in parallel, cross-compatibility is possible.
 
-Access the project directory.
+1. Access the project directory.
 
 ```bash
 cd Intel-Tiber-Broadcast-Suite
 ```
 
-Install Dependencies.
+2. Install Dependencies.
 
 ```bash
 sudo apt-get update
 sudo apt-get install meson python3-pyelftools libnuma-dev
 ```
 
-Run build.sh script.
+3. Run build.sh script.
 
 > **Note:** For `build.sh` script to run without errors, `docker-buildx-plugin` must be installed. The error thrown without the plugin does not inform about that fact, rather that the flags are not correct. See section [1.2.1. Install Docker build environment](#121-install-docker-build-environment) for installation details.
 
@@ -314,7 +314,28 @@ Run build.sh script.
 ./build.sh
 ```
 
-### Option #2: Local Installation from Debian Packages
+### Option #2: Local Installation of The Applications from Sources
+
+1. Navigate to the source directory of the project to begin the local installation process.
+
+```bash
+cd <project_dir>/src
+```
+
+2. Run build_local.sh script.
+
+```bash
+./build_local.sh
+```
+This script is used to build the project with optional configurations. It accepts the following parameters:
+
+#### Parameters:
+- `-ut`: Enables building with unit tests. Use this option if you want to include unit tests in the build process.
+- `--build_type <type>`: Specifies the build type. Replace `<type>` with the desired build configuration, such as "Debug" or "Release". This allows you to control the optimization and debugging settings of the build.
+- `-h, --help`: Displays the help message, showing usage instructions and available options. Use this option to understand how to use the script.
+
+
+### Option #3: Local Installation from Debian Packages (outdated)
 
 You can install the Intel® Tiber™ Broadcast Suite locally on bare metal. This installation allows you to skip installing Docker altogether.
 
@@ -322,7 +343,7 @@ You can install the Intel® Tiber™ Broadcast Suite locally on bare metal. This
 ./build.sh -l
 ```
 
-### Option #3: Install Docker Image from Docker Hub
+### Option #4: Install Docker Image from Docker Hub
 Visit <https://hub.docker.com/r/intel/intel-tiber-broadcast-suite/> Intel® Tiber™ Broadcast Suite image Docker Hub to select the most appropriate version.
 
 Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
@@ -330,7 +351,7 @@ Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
 docker pull intel/intel-tiber-broadcast-suite:latest
 ```
 
-### Option #4: Build Docker image from Dockerfile Manually
+### Option #5: Build Docker image from Dockerfile Manually
 
 > **Note:** Below method does not require buildx, but lacks cross-compatibility and may prolong the build process.
 

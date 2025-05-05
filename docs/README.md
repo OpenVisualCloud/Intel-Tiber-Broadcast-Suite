@@ -19,16 +19,28 @@ The video pipelines are built using Intel-optimized version of FFmpeg and combin
 
 ### 2.1. High level components description
 
-The Intel® Tiber™ Broadcast Suite uses open-source FFmpeg framework as a baseline, and enhances it with:
-- Media Transport Library (MTL) with [SMPTE ST 2110 transport protocols](https://www.smpte.org/standards/st2110) and yuv422p10le and y210le pixel formats.
-- Intel® QSV and OneVPL libraries to support hardware-accelerated media processing with Intel Flex GPU cards.
-- DPC++ kernels to enable custom effect filters used in video production (not supported in this release).
-- OpenGL/Vulcan integration to display rendering effects (not supported in this release).
+The Intel® Tiber™ Broadcast Suite uses the open-source FFmpeg framework as a baseline and enhances it with the following components:
 
-The software package includes several performance features on top of regular [Intel's Cartwheel FFmpeg](https://github.com/intel/cartwheel-ffmpeg/) upstream patches:
-- memory management optimizations for page-aligned surface allocations
-- asynchronous execution of video pipeline filters to maximize GPU utilization
-- high-throughput GPU-CPU memory data transfers
+- **Media Transport Library (MTL):** Implements [SMPTE ST 2110 transport protocols](https://www.smpte.org/standards/st2110) with support for yuv422p10le and y210le pixel formats. It ensures ultra-low latency and high-performance media transport.
+- **Media Communications Mesh:** Provides a scalable and efficient framework for managing media communication workflows, enabling seamless integration of multiple media streams with low latency and high reliability. Media Communications Mesh supports advanced features such as dynamic stream routing, adaptive bitrate control, and real-time synchronization across distributed systems.
+- **Intel® QSV and OneVPL libraries:** Enable hardware-accelerated media processing using Intel Flex GPU cards for encoding, decoding, and transcoding.
+- **SVT AV1 Codec Support:** The suite integrates the Scalable Video Technology for AV1 (SVT-AV1) codec, enabling high-performance, scalable, and efficient AV1 encoding and decoding for modern video streaming and broadcast applications.
+- **JPEG-XS Codec Support:** Includes support for JPEG-XS, a low-latency, visually lossless codec optimized for professional video production workflows, ensuring high-quality compression and decompression for live video streams.
+
+The architecture, as depicted in above diagram, highlights the modular design of the suite, which includes:
+
+1. **Input Sources:** The suite supports multiple input sources, including IP streams (SMPTE ST 2110), and file-based media.
+2. **Processing Pipelines:** The pipelines leverage Intel-optimized FFmpeg with MTL for media transport, Intel QSV for hardware acceleration
+3. **Output Targets:** Outputs include IP streams, and file-based formats, ensuring compatibility with various broadcast and production workflows.
+4. **Control Plane:** The control plane integrates with NMOS IS-04/IS-05 for device discovery and connection management, enabling seamless orchestration of media workflows.
+5. **Monitoring and Analytics:** Real-time monitoring and analytics are supported to ensure high-quality media delivery and performance optimization.
+
+The software package also includes several performance optimizations:
+- **Memory Management:** Page-aligned surface allocations for efficient memory usage.
+- **Asynchronous Execution:** Video pipeline filters execute asynchronously to maximize GPU utilization.
+- **High-throughput Data Transfers:** Optimized GPU-CPU memory transfers for high-performance processing.
+
+This modular architecture ensures flexibility, scalability, and high performance for live video production environments.
 
 ![Architecture](images/sw-architecture.png)
 
