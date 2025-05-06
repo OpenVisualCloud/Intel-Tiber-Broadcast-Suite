@@ -48,7 +48,7 @@ cd Intel-Tiber-Broadcast-Suite
 ./first-run.sh
 ```
 > NOTE MTL manager image is build together with tiber-broadcast-suite
-tiber-broadcast-suite-nmos-node images using script `build.sh`. MTL manager container is run due to `first-run.sh`. In this version BCS launcher has not supported running MTL manager container yet.In this version BCS launcher has already supported  MTL manager deployment, but make sure before rn of BCS launcher that MTL manager container is not running as a standalone app. MTL manager is necessary to run scenario with stream type ST2110.
+tiber-broadcast-suite-nmos-node images using script `build.sh`. MTL manager container is run due to `first-run.sh`. In this version BCS launcher has not supported running MTL manager container yet.In this version BCS launcher has already supported  MTL manager deployment, but make sure before run of BCS launcher that MTL manager container is not running as a standalone app. MTL manager is necessary to run scenario with stream type ST2110.
 
 ## Description
 
