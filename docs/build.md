@@ -336,6 +336,7 @@ This script is used to build the project with optional configurations. It accept
 - `-h, --help`: Displays the help message, showing usage instructions and available options. Use this option to understand how to use the script.
 
 ### Option #3: Install Docker Image from Docker Hub
+
 Visit <https://hub.docker.com/r/intel/intel-tiber-broadcast-suite/> Intel® Tiber™ Broadcast Suite image Docker Hub to select the most appropriate version.
 
 Pull the Intel® Tiber™ Broadcast Suite image from Docker Hub:
