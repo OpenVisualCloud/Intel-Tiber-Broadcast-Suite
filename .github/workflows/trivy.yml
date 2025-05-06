@@ -91,6 +91,14 @@ jobs:
         output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
         format: "sarif"
 
+    - name: "Validation: Run Trivy vulnerability scanner on image"
+      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      continue-on-error: true
+      with:
+        image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        output: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.table"
+        format: "table"
+
     - name: "Finish: Upload Trivy scan results to GitHub Security tab"
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       continue-on-error: true
@@ -101,8 +109,8 @@ jobs:
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
       continue-on-error: true
       with:
-        name: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-        path: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+        name: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.table"
+        path: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.table"
         retention-days: 5
 
   trivy-config-scan:
