@@ -31,7 +31,7 @@ configuration: # Configuration should be used only for docker mode
       name: bcs-ffmpeg-pipeline-rx
       imageAndTag: tiber-broadcast-suite:latest
       gRPCPort: 50053 # this is the port used by the nmos container to communicate with ffmpeg pipeline
-      nmosPort: 95 # this is the port used by the nmos container to manage node via REST API
+      nmosPort: 8080 # this is the port used by the nmos container to manage node via REST API
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
