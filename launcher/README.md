@@ -14,7 +14,7 @@ graph TD
 **BCS Pod Launcher** is the central controller that starts all other components.  
 **Media Proxy Agent** Instance is a single instance started by the BCS Pod Launcher on one machine.  
 **MCM Media Proxy** Instances is a multiple instances started by the BCS Pod Launcher, one on each machine.  
-**BCS FFMPEG Pipeline** is a pipeline started by the BCS Pod Launcher whereas **NMOS Client Node Application** is bound to the BCS FFMPEG Pipeline for media management and discovery. And this pair of containers  that are working seperate containers either standalone or within one pod.  
+**BCS FFMPEG Pipeline** is a pipeline started by the BCS Pod Launcher whereas **NMOS Client Node Application** is bound to the BCS FFMPEG Pipeline for media management and discovery. And this pair of containers  that are working separate containers either standalone or within one pod.  
   
 There are 2 possible use cases:
 
