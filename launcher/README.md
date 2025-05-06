@@ -301,7 +301,7 @@ Modify CustomResource called `BcsConfig` (custom object in Kubernetes)`<repo>/la
    ```
   - **`nmosApiNodePort`**: node port for the NMOS API.
   - **`resources`**: resource requests and limits for the NMOS container.
-  - **`nmosInputFile`**: configuration for NMOS input. The detailed parameters are described under `<repo>/src/nmos/nmos-node/README.md`. **Remeber to adjust this configuration too to your needs!**
+  - **`nmosInputFile`**: configuration for NMOS input. The detailed parameters are described under `<repo>/src/nmos/nmos-node/README.md`. **Remember to adjust this configuration too to your needs!**
 
 **BCS pod launcher installer in k8s cluster:**  
 
