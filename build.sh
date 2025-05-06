@@ -819,6 +819,7 @@ function install_in_docker_enviroment {
         --target final-stage \
         "${SCRIPT_DIR}"
 
+
     if [ "${BUILD_TYPE}" == "CI" ]; then
         docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
           -t "${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" \
