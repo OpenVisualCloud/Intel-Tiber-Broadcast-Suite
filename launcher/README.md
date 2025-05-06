@@ -144,7 +144,7 @@ configuration: # Configuration should be used only for docker mode
       environmentVariables:
         - "http_proxy="
         - "https_proxy=" 
-        - "VFIO_PORT_TX=0000:ca:11.0" # this is the PCI address of the vfio device - MENDATORY!
+        - "VFIO_PORT_TX=0000:ca:11.0" # this is the PCI address of the vfio device - MANDATORY!
       nmosConfigPath: /root/path/to/intel-node-tx/json/file
       nmosConfigFileName: intel-node-tx.json
       custom_network:  # custom network = false means that the container will be run in the host docker network
