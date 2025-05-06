@@ -97,6 +97,14 @@ jobs:
       with:
         sarif_file: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
 
+    - name: "Trivy: Upload scan results as artifacts (out=sarif)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      continue-on-error: true
+      with:
+        name: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+        path: "trivy-image-scan-tiber-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+        retention-days: 5
+
   trivy-config-scan:
     name: "trivy config scans"
     runs-on: ubuntu-22.04
@@ -129,6 +137,14 @@ jobs:
       with:
         sarif_file: 'trivy-config-scan-tiber.sarif'
 
+    - name: "Trivy: Upload scan results as artifacts (out=sarif)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      if: always()
+      with:
+        name: 'trivy-config-scan-tiber.sarif'
+        path: 'trivy-config-scan-tiber.sarif'
+        retention-days: 5
+
   trivy-fs-scan:
     name: "trivy fs scans"
     runs-on: ubuntu-22.04
@@ -154,8 +170,34 @@ jobs:
         severity: 'CRITICAL,HIGH,MEDIUM'
         skip-dirs: 'tests'
 
+    - name: "Trivy: Run vulnerability scanner for type=config (out=table)"
+      if: always()
+      uses: aquasecurity/trivy-action@7c2007bcb556501da015201bcba5aa14069b74e2 # v0.23.0
+      with:
+        scan-type: config
+        skip-dirs: tests #helm charts not supported
+        exit-code: '0'
+        format: 'table'
+        output: 'trivy-fs-scan-tiber-table.sarif'
+
     - name: Upload Trivy scan results to GitHub Security tab
       if: always()
       uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
           sarif_file: 'trivy-fs-scan-tiber.sarif'
+
+    - name: "Trivy: Upload scan results as artifacts (out=sarif)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      if: always()
+      with:
+        name: 'trivy-fs-scan-tiber.sarif'
+        path: 'trivy-fs-scan-tiber.sarif'
+        retention-days: 5
+
+    - name: "Trivy: Upload scan results as artifacts (out=sarif)"
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+      if: always()
+      with:
+        name: 'trivy-fs-scan-tiber-table.sarif'
+        path: 'trivy-fs-scan-tiber-table.sarif'
+        retention-days: 5
