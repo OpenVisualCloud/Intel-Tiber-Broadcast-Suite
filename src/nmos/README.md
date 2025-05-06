@@ -13,86 +13,104 @@
 The key change is in configuration of senders and receivers for BCS pipeline.
 
 BCS Pipeline is a NMOS client that is treated as one node that has 1 device and has x senders and y receivers that are provided from the level of JSON config `node.json`.
-Here is sample config `node.json` (treated as transmitter node with 1 device and 1 sender):
+Here is sample config `intel-node-tx.json` (treated as transmitter node with 1 device and 1 sender):
 
 ```json
 {
   "logging_level": 10,
-  "http_port": 90,
-  "label": "intel-broadcast-suite",
+  "http_port": 5004,
+  "label": "intel-broadcast-suite-tx",
   "device_tags": {
-    "pipeline": ["tx"]
+    "pipeline": [
+      "tx"
+    ]
   },
-  "color_sampling": "YCbCr-4:2:2",
   "function": "tx",
+  "activate_senders": false,
+  "stream_loop": -1,
   "gpu_hw_acceleration": "none",
   "domain": "local",
-  "ffmpeg_grpc_server_address": "localhost",
+  "ffmpeg_grpc_server_address": "10.10.10.10",
   "ffmpeg_grpc_server_port": "50051",
-  "sender_payload_type":112,
-  "frame_rate": { "numerator": 60000, "denominator": 1001 },
-  "sender": [{
-    "stream_payload": {
-      "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
-        "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv422p10le",
-        "video_type": "rawvideo"
+  "sender_payload_type": 112,
+  "sender": [
+    {
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
       },
-      "audio": {
-        "channels": 2,
-        "sampleRate": 48000,
-        "format": "pcm_s24be",
-        "packetTime": "1ms"
-      }
-    },
-    "stream_type": {
-      "st2110": {
-        "transport": "st2110-20",
-        "payloadType" : 112
+      "stream_type": {
+        "st2110": {
+          "transport": "st2110-20",
+          "payloadType": 112,
+          "queues_cnt": 0
+        }
       }
     }
-  }],
-  "receiver": [{
-    "stream_payload": {
-      "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
-        "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv422p10le",
-        "video_type": "rawvideo"
+  ],
+  "receiver": [
+    {
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
       },
-      "audio": {
-        "channels": 2,
-        "sampleRate": 48000,
-        "format": "pcm_s24be",
-        "packetTime": "1ms"
-      }
-    },
-    "stream_type": {
-      "file": {
-        "path": "/root",
-        "filename": "1920x1080p10le_1.yuv"
+      "stream_type": {
+        "file": {
+          "path": "/root",
+          "filename": "1920x1080p10le_0.yuv"
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
+You can find more examples here: `<repo>/tests/`
+
 Curretly only video mode is supported. The audio support is under development and will be relesed too.
 - `logging_level`: The level of logging detail.
-- `http_port`: The port number for HTTP communication (90 in this case).
+- `http_port`: The port number for HTTP communication (REST API). Using this port you can refer to NMOS node via e.g." curl command and send request to GET the content or PATCH configuration to connect sender to receiver of two different NMOS nodes.
 - `label`: A label or identifier for the configuration ("intel-broadcast-suite").
 - `color_sampling`: The color sampling format ("YCbCr-4:2:2").
-- `function`: The function of the device, here indicating the pipeline type ("tx" for transmit).
-- `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none").
-- `domain`: The domain of the device ("local").
-- `ffmpeg_grpc_server_address`: The address of the FFmpeg gRPC server ("localhost").
-- `ffmpeg_grpc_server_port`: The port of the FFmpeg gRPC server (50051).
+- `function`: The function of the device, here indicating the pipeline type ("tx" for transmit). Possible options are: `multiviewer|upscale|replay|recorder|jpegxs|rx|tx`.
+- `multiviewer_columns`: Number of streams in a row. [used only for multiviewer]
+- `stream_loop`: Number of times to loop the input stream. Default value is -1.
+- `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none"). Possible oprtions are `intel`, `nvidia`, `none`.
+- `gpu_hw_acceleration_device`:If `gpu_hw_acceleration` is not `none`, GPU acceleration requires a device path, e.g.: `/dev/dri/renderD128`
+- `domain`: The domain of the device ("local"). If NMOS node is used as an orchestrated app, you should change it according to [DNS Kubernetes rules](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#namespaces-of-services)  
+- `ffmpeg_grpc_server_address`: The address of the FFmpeg gRPC server that is exposed by ffmpeg (streaming) app e.g.: ("localhost").
+- `ffmpeg_grpc_server_port`: The port of the FFmpeg gRPC server that is exposed by ffmpeg (streaming) app e.g.: (50051).
 - `sender_payload_type`: The payload type for the sender (112).
 - `frame_rate`: The frame rate for the video, given as a fraction ({"numerator": 60000, "denominator": 1001}).
-- `sender`: An array of sender configurations:
+- `sender`|`receiver`: An array of sender|receiver configurations:
   - `stream_payload`: Contains details about the video and audio streams:
     - `video`: Details about the video stream
       - `frame_width`: Width of the video frame (1920).
@@ -105,18 +123,21 @@ Curretly only video mode is supported. The audio support is under development an
       - `sampleRate`: Sample rate of the audio (48000).
       - `format`: Audio format ("pcm_s24be").
       - `packetTime`: Packet time for the audio ("1ms").
-    - `stream_type`: Type of stream:
+    - `stream_type`: Type of stream (you can select only one type out of three):
       - `st2110`: Details for ST 2110 transport:
         - `transport`: Transport type ("st2110-20").
         - `payloadType`: Payload type (112).
-- `receiver`: An array of receiver configurations:
-  - `stream_payload`: Contains details about the video stream that acts as ffmpeg receiver. Just to indicate the ffmpeg pipeline the source of the video.
-  - `stream_type`: Type of stream:
-    - `file`: Details for file-based stream:
-      - `path`: Path to the file ("/root").
-      - `filename`: Filename ("1920x1080p10le_1.yuv").
+        - `queues_cnt`: As a parameter in ffmpeg: `-tx_queues` or `-rx_queues` depending on if it is sender or receiver.
+      - `file`: Details for file-based stream:
+        - `path`: Path to the file ("/root").
+        - `filename`: Filename ("1920x1080p10le_1.yuv").
+      - `mcm`: Details for Media Communications Mesh
+        - `conn_type`: SMPTE ST 2110 Connection Type e.g.: "st2110",
+        - `transport`: Transport Type: e.g.: "st2110-20",
+        - `urn`: Uniform Resource Name of the multipoint group,
+        - `transportPixelFormat`: Transport Pixel Fomat (required only when used with "st2110-20" transport type)
 
-For testing purposes there are also NMOS sample cotroller, NMOS registry pod and NMOS testing tool for validation of features.
+For testing purposes there are also NMOS sample controller, NMOS registry pod and NMOS testing tool for validation of features.
 
 ## Installation
 
