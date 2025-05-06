@@ -67,7 +67,7 @@
       "stream_type": {
         "file": {
           "path": "/videos",
-          "filename": "1920x1080p10le_0.yuv"
+          "filename": "in_1920x1080_yuv422p10le.yuv"
         }
       }
     }

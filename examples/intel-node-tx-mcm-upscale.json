@@ -1,22 +1,23 @@
 {
-  "logging_level": 10,
-  "http_port": 95,
+  "logging_level": 0,
+  "http_port": 90,
   "label": "intel-broadcast-suite",
   "device_tags": {
-    "pipeline": ["rx"]
+    "pipeline": ["tx"]
   },
-  "function": "rx",
+  "function": "upscale",
   "activate_senders": false,
-  "gpu_hw_acceleration": "none",
+  "gpu_hw_acceleration": "intel",
+  "gpu_hw_acceleration_device": "/dev/dri/renderD128",
   "domain": "local",
   "ffmpeg_grpc_server_address": "localhost",
-  "ffmpeg_grpc_server_port": "50058",
-  "receiver_payload_type":112,
+  "ffmpeg_grpc_server_port": "50057",
+  "sender_payload_type":112,
   "sender": [{
     "stream_payload": {
       "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
+        "frame_width": 3840,
+        "frame_height": 2160,
         "frame_rate": { "numerator": 60, "denominator": 1 },
         "pixel_format": "yuv422p10le",
         "video_type": "rawvideo"
@@ -29,9 +30,11 @@
       }
     },
     "stream_type": {
-      "file": {
-        "path": "/videos/recv",
-        "filename": "out_1920x1080_yuv422p10le.yuv"
+      "mcm": {
+        "conn_type": "st2110",
+        "transport": "st2110-20",
+        "urn": "NULL",
+        "transportPixelFormat": "yuv422p10rfc4175"
       }
     }
   }],
@@ -52,12 +55,10 @@
       }
     },
     "stream_type": {
-      "mcm": {
-        "conn_type": "st2110",
-        "transport": "st2110-20",
-        "urn": "NULL",
-        "transportPixelFormat": "yuv422p10rfc4175"
-        }
+      "file": {
+        "path": "/videos",
+        "filename": "in_1920x1080_yuv422p10le.yuv"
       }
+    }
   }]
 }

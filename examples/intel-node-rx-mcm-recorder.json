@@ -1,40 +1,18 @@
 {
-  "logging_level": 10,
+  "logging_level": 0,
   "http_port": 95,
   "label": "intel-broadcast-suite",
   "device_tags": {
     "pipeline": ["rx"]
   },
-  "function": "rx",
+  "function": "recorder",
   "activate_senders": false,
-  "gpu_hw_acceleration": "none",
+  "gpu_hw_acceleration": "intel",
+  "gpu_hw_acceleration_device": "/dev/dri/renderD128",
   "domain": "local",
   "ffmpeg_grpc_server_address": "localhost",
   "ffmpeg_grpc_server_port": "50058",
   "receiver_payload_type":112,
-  "sender": [{
-    "stream_payload": {
-      "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
-        "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv422p10le",
-        "video_type": "rawvideo"
-      },
-      "audio": {
-        "channels": 2,
-        "sampleRate": 48000,
-        "format": "pcm_s24be",
-        "packetTime": "1ms"
-      }
-    },
-    "stream_type": {
-      "file": {
-        "path": "/videos/recv",
-        "filename": "out_1920x1080_yuv422p10le.yuv"
-      }
-    }
-  }],
   "receiver": [{
     "stream_payload": {
       "video": {
@@ -59,5 +37,51 @@
         "transportPixelFormat": "yuv422p10rfc4175"
         }
       }
-  }]
+  }],
+  "sender": [{
+    "stream_payload": {
+      "video": {
+        "frame_width": 1920,
+        "frame_height": 1080,
+        "frame_rate": { "numerator": 60, "denominator": 1 },
+        "pixel_format": "yuv422p10le",
+        "video_type": "hevc_qsv"
+      },
+      "audio": {
+        "channels": 2,
+        "sampleRate": 48000,
+        "format": "pcm_s24be",
+        "packetTime": "1ms"
+      }
+    },
+    "stream_type": {
+      "file": {
+        "path": "/videos/recv",
+        "filename": "out_1920x1080_yuv422p10le_h265.mp4"
+      }
+    }
+  },
+  {
+  "stream_payload": {
+    "video": {
+      "frame_width": 960,
+      "frame_height": 540,
+      "frame_rate": { "numerator": 60, "denominator": 1 },
+      "pixel_format": "yuv422p10le",
+      "video_type": "hevc_qsv"
+    },
+    "audio": {
+      "channels": 2,
+      "sampleRate": 48000,
+      "format": "pcm_s24be",
+      "packetTime": "1ms"
+    }
+  },
+  "stream_type": {
+    "file": {
+      "path": "/videos/recv",
+      "filename": "out_960x540_yuv422p10le_h265.mp4"
+    }
+  }
+}]
 }
