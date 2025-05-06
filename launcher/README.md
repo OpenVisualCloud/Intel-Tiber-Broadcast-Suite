@@ -328,7 +328,7 @@ kubectl delete -f ./configuration_files/bcsconfig-k8s-custom-resource-example.ya
 
 **BCS pod launcher roles of files in k8s cluster:**  
 
-- `configuration_files/bcslauncher-k8s-config-map.yaml` -> configmap for setting up the mode of launcher. `k8s: true` defines kuberenets mode. Currently, you should not modify this in that file.  
+- `configuration_files/bcslauncher-k8s-config-map.yaml` -> configmap for setting up the mode of launcher. `k8s: true` defines Kubernetes mode. Currently, you should not modify this in that file.  
 - `configuration_files/bcsconfig-crd.yaml` -> object definition - CustomResourceDefinition for `BcsConfig`  
 - `configuration_files/bcs-launcher.yaml` -> install set of kuberenetes resources that are needed to run bcs pod luancher, no additional configuration required
 - `configuration_files/bcsconfig-k8s-custom-resource-example.yaml` -> example `BcsConfig` file that it is an input to provide information about **bcs ffmpeg piepeline and NMOS client**, you can adjust file to your needs,
