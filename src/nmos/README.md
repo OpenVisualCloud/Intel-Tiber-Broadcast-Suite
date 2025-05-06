@@ -102,7 +102,7 @@ Curretly only video mode is supported. The audio support is under development an
 - `color_sampling`: The color sampling format ("YCbCr-4:2:2").
 - `function`: The function of the device, here indicating the pipeline type ("tx" for transmit). Possible options are: `multiviewer|upscale|replay|recorder|jpegxs|rx|tx`.
 - `multiviewer_columns`: Number of streams in a row. [used only for multiviewer]
-- `stream_loop`; Number of times to loop the input stream. Default value is -1.
+- `stream_loop`: Number of times to loop the input stream. Default value is -1.
 - `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none"). Possible oprtions are `intel`, `nvidia`, `none`.
 - `gpu_hw_acceleration_device`:If `gpu_hw_acceleration` is not `none`, GPU acceleration requires a device path, e.g.: `/dev/dri/renderD128`
 - `domain`: The domain of the device ("local"). If NMOS node is used as an orchestrated app, you should change it according to [DNS Kubernetes rules](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#namespaces-of-services)  
