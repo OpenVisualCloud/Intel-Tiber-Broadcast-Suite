@@ -24,6 +24,8 @@
 - docker version 17.03+. [host setup](build.md)
 - Access to a Kubernetes v1.11.3+ cluster. (only when Kubernetes mode used)
 
+> NOTE! Remember that this tool provides ability to install appropriate media applications on your machine or cluster. If you want to expose this tool outside the world, you must provide appropriate security steps for docker or Kubernetes cluster adjusted to your needs.
+
 ### To Run containers on single node
 
 **step #1** Note that you have to adjust **NMOS** node configuration file. Examples with use cases you can find under the path  `<repo>/tests` (Files in json format). In config in *step #2* this file is defined by keys `nmosConfigFileName` and `nmosConfigPath`. Name and path must exist on your host machine. You can refer to [../tests](examples) or to definition of NMOS configuration - [../src/nmos/README.md](NMOS README)
