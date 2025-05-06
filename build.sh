@@ -822,7 +822,7 @@ function install_in_docker_enviroment {
     docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/launcher/Dockerfile" \
-        "${SCRIPT_DIR}launcher"
+        "${SCRIPT_DIR}/launcher"
 
     if [ "${BUILD_TYPE}" != "CI" ]; then
         docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
