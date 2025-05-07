@@ -956,6 +956,8 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             v.frame_rate.denominator=config_by_id.payload.video.frame_rate.denominator;
             v.pixel_format=config_by_id.payload.video.pixel_format;
             v.video_type=config_by_id.payload.video.video_type;
+            v.preset=config_by_id.payload.video.preset;
+            v.profile=config_by_id.payload.video.profile;
             Stream s;
             if(config_by_id.stream_type.type==stream_type::mcm)
             {
@@ -1119,6 +1121,8 @@ nmos::connection_activation_handler make_node_implementation_connection_activati
             v.frame_rate.numerator=fps_numerator;
             v.frame_rate.denominator=fps_denominator;
             v.pixel_format=config_by_id.payload.video.pixel_format;
+            v.preset=config_by_id.payload.video.preset;
+            v.profile=config_by_id.payload.video.profile;
             if (encoding_name == U("raw")) {
                 v.video_type = "rawvideo";
             } else {

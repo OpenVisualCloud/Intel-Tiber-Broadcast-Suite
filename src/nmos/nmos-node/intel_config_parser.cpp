@@ -85,6 +85,8 @@ void ConfigManager::print_config() const {
         std::cout << "Sender Video Frame Rate: " << sender.payload.video.frame_rate.numerator << "/" << sender.payload.video.frame_rate.denominator << std::endl;
         std::cout << "Sender Video Pixel Format: " << sender.payload.video.pixel_format << std::endl;
         std::cout << "Sender Video Type: " << sender.payload.video.video_type << std::endl;
+        std::cout << "Sender Preset: " << sender.payload.video.preset << std::endl;
+        std::cout << "Sender Profile: " << sender.payload.video.profile << std::endl;
         if (sender.stream_type.type == stream_type::file) {
             std::cout<<"Sender Stream type: File"<<std::endl;
             std::cout << "|_ File Path: " << sender.stream_type.file.path << std::endl;
@@ -109,6 +111,8 @@ void ConfigManager::print_config() const {
         std::cout << "Receiver Video Frame Rate: " << receiver.payload.video.frame_rate.numerator << "/" << receiver.payload.video.frame_rate.denominator << std::endl;
         std::cout << "Receiver Video Pixel Format: " << receiver.payload.video.pixel_format << std::endl;
         std::cout << "Receiver Video Type: " << receiver.payload.video.video_type << std::endl;
+        std::cout << "Receiver Preset: " << receiver.payload.video.preset << std::endl;
+        std::cout << "Receiver Profile: " << receiver.payload.video.profile << std::endl;
         if (receiver.stream_type.type == stream_type::file) {
             std::cout<<"Receiver Stream type: File"<<std::endl;
             std::cout << "|_ File Path: " << receiver.stream_type.file.path << std::endl;
@@ -136,6 +140,8 @@ Video ConfigManager::parse_video(const web::json::value& video_data) const {
     video.frame_rate.denominator = video_data.at(U("frame_rate")).at(U("denominator")).as_integer();
     video.pixel_format = video_data.at(U("pixel_format")).as_string();
     video.video_type = video_data.at(U("video_type")).as_string();
+    video.preset = video_data.has_field(U("preset")) ? video_data.at(U("preset")).as_string() : "";
+    video.profile = video_data.has_field(U("profile")) ? video_data.at(U("profile")).as_string() : "";
     return video;
 }
 

@@ -83,7 +83,9 @@
             "denominator": 1
           },
           "pixel_format": "",
-          "video_type": "hevc_qsv"
+          "video_type": "hevc_qsv",
+          "preset": "veryfast",
+          "profile": "main"
         },
         "audio": {
           "channels": 2,
@@ -109,7 +111,9 @@
             "denominator": 1
           },
           "pixel_format": "",
-          "video_type": "hevc_qsv"
+          "video_type": "hevc_qsv",
+          "preset": "veryfast",
+          "profile": "main"
         },
         "audio": {
           "channels": 2,

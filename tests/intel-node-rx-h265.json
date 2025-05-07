@@ -44,7 +44,9 @@
         "frame_height": 1080,
         "frame_rate": { "numerator": 60, "denominator": 1 },
         "pixel_format": "yuv422p10le",
-        "video_type": "hevc_qsv"
+        "video_type": "hevc_qsv",
+        "preset": "veryfast",
+        "profile": "main"
       },
       "audio": {
         "channels": 2,

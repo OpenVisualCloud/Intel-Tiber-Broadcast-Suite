@@ -81,7 +81,9 @@ const std::string json_str = R"json(
             "frame_height": 1080,
             "frame_rate": { "numerator": 60, "denominator": 1 },
             "pixel_format": "yuv422p10le",
-            "video_type": "rawvideo"
+            "video_type": "h265_qsv",
+            "preset": "veryfast",
+            "profile": "main"
           },
           "audio": {
             "channels": 2,
@@ -154,7 +156,9 @@ TEST(ConfigManagerTest, ParseStreamValidData) {
     EXPECT_EQ(c_mgr.get_framerate(conf.senders[0]).first, 60);
     EXPECT_EQ(c_mgr.get_framerate(conf.senders[0]).second, 1);
     EXPECT_EQ(conf.senders[0].payload.video.pixel_format, "yuv422p10le");
-    EXPECT_EQ(conf.senders[0].payload.video.video_type, "rawvideo");
+    EXPECT_EQ(conf.senders[0].payload.video.video_type, "h265_qsv");
+    EXPECT_EQ(conf.senders[0].payload.video.preset, "veryfast");
+    EXPECT_EQ(conf.senders[0].payload.video.profile, "main");
     EXPECT_EQ(conf.senders[0].payload.audio.channels, 2);
     EXPECT_EQ(conf.senders[0].payload.audio.sample_rate, 48000);
     EXPECT_EQ(conf.senders[0].payload.audio.format, "pcm_s24be");
@@ -170,6 +174,8 @@ TEST(ConfigManagerTest, ParseStreamValidData) {
     EXPECT_EQ(conf.receivers[0].payload.video.frame_rate.denominator, 1);
     EXPECT_EQ(conf.receivers[0].payload.video.pixel_format, "yuv422p10le");
     EXPECT_EQ(conf.receivers[0].payload.video.video_type, "rawvideo");
+    EXPECT_EQ(conf.receivers[0].payload.video.preset, "");
+    EXPECT_EQ(conf.receivers[0].payload.video.profile, "");
     EXPECT_EQ(conf.receivers[0].payload.audio.channels, 2);
     EXPECT_EQ(conf.receivers[0].payload.audio.sample_rate, 48000);
     EXPECT_EQ(conf.receivers[0].payload.audio.format, "pcm_s24be");
