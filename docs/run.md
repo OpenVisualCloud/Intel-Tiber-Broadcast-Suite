@@ -24,7 +24,7 @@
 - docker version 17.03+. [host setup](build.md)
 - Access to a Kubernetes v1.11.3+ cluster. (only when Kubernetes mode used)
 
-> NOTE! Remember that this tool provides ability to install appropriate media applications on your machine or cluster. If you want to expose this tool outside the world, you must provide appropriate security steps for docker or Kubernetes cluster adjusted to your needs.
+> NOTE! This tool provides an ability to install appropriate media applications on your machine or cluster. Supply appropriate security measures adjusted to the needs of the selected environment.
 
 ### To Run containers on single node
 
