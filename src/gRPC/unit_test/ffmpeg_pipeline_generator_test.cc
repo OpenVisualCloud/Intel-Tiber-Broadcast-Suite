@@ -421,13 +421,15 @@ TEST(FFmpegPipelineGeneratorTest, test_convert) {
 TEST(FFmpegPipelineGeneratorTest, test_recorder) {
     Config conf;
     fill_conf_recorder(conf);
+    conf.senders[1].payload.video.preset = "veryfast";
+    conf.senders[1].payload.video.profile = "main";
 
     std::string pipeline_string;
 
     if (ffmpeg_generate_pipeline(conf, pipeline_string) != 0) {
             ASSERT_EQ(1, 0) << "Error generating convert pipeline" << std::endl;
     }
-    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"split=2[in0][in1];[in0]scale=640:360[out0];[in1]scale=1280:720[out1];\" -map \"[out0]\" -video_size 640x360 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /videos/recv/recv_1.yuv -map \"[out1]\" -c:v h263p /videos/recv/recv_2.mov";
+    std::string expected_string = " -y -video_size 1920x1080 -pix_fmt yuv422p10le -r 30/1 -f rawvideo -i /videos/1920x1080p10le_1.yuv -filter_complex \"split=2[in0][in1];[in0]scale=640:360[out0];[in1]scale=1280:720[out1];\" -map \"[out0]\" -video_size 640x360 -pix_fmt yuv422p10le -r 30/1 -f rawvideo /videos/recv/recv_1.yuv -map \"[out1]\" -c:v h263p  -preset veryfast  -profile main /videos/recv/recv_2.mov";
     ASSERT_EQ(pipeline_string.compare(expected_string) == 0, 1) << "Expected: " << std::endl << expected_string << std::endl << " Got: " << std::endl << pipeline_string << std::endl;
 }
 
@@ -473,6 +475,10 @@ TEST(FFmpegPipelineGeneratorTest, test_mcm_receiver) {
 TEST(FFmpegPipelineConfigTest, serialize_deserialize_multiviewer) {
     Config conf_reference;
     fill_conf_multiviewer(conf_reference);
+    conf_reference.senders[0].payload.video.video_type = "hevc_qsv";
+    conf_reference.senders[0].payload.video.preset = "veryfast";
+    conf_reference.senders[0].payload.video.profile = "main";
+    conf_reference.senders[0].stream_type.file.filename = "1920x1080p10le_1.mp4";
 
     std::string pipeline_string_reference;
 

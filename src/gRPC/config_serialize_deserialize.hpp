@@ -7,7 +7,7 @@
 #define CONFIG_SERIALIZE_DESERIALIZE_H
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FrameRate, numerator, denominator)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Video, frame_width, frame_height, frame_rate, pixel_format, video_type)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Video, frame_width, frame_height, frame_rate, pixel_format, video_type, preset, profile)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Audio, channels, sample_rate, format, packet_time)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(File, path, filename)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ST2110, network_interface, local_ip, remote_ip, transport, remote_port, payload_type, queues_cnt)

@@ -21,8 +21,11 @@ struct Video {
     FrameRate frame_rate;
     std::string pixel_format;
     std::string video_type;
+    std::string preset; //optional
+    std::string profile; //optional
     // in case of rawvideo then ffmpeg param = "-f rawwideo"
-    // otherwise -c:v <video_type> e.g. -c:v x264
+    // otherwise -c:v <video_type> <preset> <profile> e.g. -c:v x264 -preset veryfast -profile main
+
 };
 
  // Audio struct is a placeholder for future implementation
