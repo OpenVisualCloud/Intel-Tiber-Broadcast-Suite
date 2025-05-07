@@ -147,6 +147,12 @@ int ffmpeg_append_stream_type(Stream &st, bool is_rx, int idx, std::string &pipe
             }
             else if (!st.payload.video.video_type.empty()) {
                 pipeline_string += "-c:v " + st.payload.video.video_type + " ";
+                if(!st.payload.video.preset.empty()){
+                    pipeline_string += " -preset " + st.payload.video.preset + " ";
+                }
+                if(!st.payload.video.profile.empty()){
+                    pipeline_string += " -profile " + st.payload.video.profile + " ";
+                }
             }
         }
 
