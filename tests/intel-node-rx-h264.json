@@ -42,7 +42,9 @@
         "frame_height": 1080,
         "frame_rate": { "numerator": 60, "denominator": 1 },
         "pixel_format": "yuv420p",
-        "video_type": "h264"
+        "video_type": "h264",
+        "preset": "veryfast",
+        "profile": "main"
       },
       "audio": {
         "channels": 2,
