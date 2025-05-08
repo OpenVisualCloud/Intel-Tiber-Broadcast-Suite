@@ -1,13 +1,15 @@
 name: Docker Build
 
 on:
-  workflow_call:
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       branch:
         description: 'Branch to run scans on'
         default: 'main'
         type: string
+  workflow_call:
   pull_request:
   push:
     branches: [ "main" ]
@@ -18,9 +20,13 @@ permissions:
 
 env:
   BUILD_TYPE: "Release"
+  CMAKE_BUILD_TYPE: "Release"
+  DOCKER_REGISTRY: "ghcr.io"
+  DOCKER_LOGIN: "${{ github.repository == 'openvisualcloud/intel-tiber-broadcast-suite' }}"
+  DOCKER_REGISTRY_NAMESPACE: 'openvisualcloud/intel-tiber-broadcast-suite'
   DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/intel-tiber-broadcast-suite"
   DOCKER_IMAGE_NAME: "tiber-broadcast-suite"
-  DOCKER_IMAGE_TAG: "${{ github.sha }}"
+  DOCKER_IMAGE_TAG: "${{ inputs.branch || github.sha || github.ref }}"
   DEBIAN_FRONTEND: "noninteractive"
 
 concurrency:
@@ -28,58 +34,132 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  docker:
+  docker-tiber:
     name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
+    runs-on: ["self-hosted", "docker", "Linux"]
+    timeout-minutes: 180
     permissions:
       contents: read
-      security-events: write
+      packages: write
     env:
       BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
       BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
       DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
+      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-    - name: "OS-Configuration: Preparation: Harden Runner"
+    - name: "OS-Configuration: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
       with:
         egress-policy: audit
 
-    - name: "OS-Configuration: Report memory, block-dev and free disk space."
-      run: |
-        sudo free -h
-        sudo lsblk
-        sudo df -h
+    - name: "OS-Configuration: Docker with Buildx Toolkit set up"
+      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
 
-    - name: "OS-Configuration: Disable SWAP in OS, create mnt points, show settings."
-      shell: bash
-      run: |
-        export SWAP_FILE="$(sudo swapon --show=NAME | tail -n 1)"
-        sudo swapoff "${SWAP_FILE}"
-        sudo rm "${SWAP_FILE}"
-        sudo mkdir -p "/mnt/docker/docker-d" "/mnt/docker/docker-tmp"
-
-    - name: "OS-Configuration: Add data-root and other JSON changes to dockerd, reload it."
-      run: |
-        sudo chmod 666 /etc/docker/daemon.json
-        echo "$(sudo jq '. += {"data-root":"/mnt/docker/docker-d","log-driver":"json-file","log-format":"text","log-level":"info","log-opts":{"cache-disabled":"false","cache-max-file":"5","cache-max-size":"20m","max-file":"5","max-size":"10m"}}' /etc/docker/daemon.json)" > /etc/docker/daemon.json
-        sudo chmod 644 /etc/docker/daemon.json
-        sudo systemctl daemon-reload
-        sudo systemctl restart docker
-        sudo cat "/etc/docker/daemon.json"
-
-    - name: "Configuration: Docker with Buildx Toolkit set up"
-      uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+    - name: "Code-Sync: GitHub git checkout push"
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
-        buildkitd-flags: "--debug --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
-        platforms: "linux/amd64"
-        driver-opts: memory=14Gib,memory-swap=25Gib,env.BUILDKIT_STEP_LOG_MAX_SIZE=50000000,env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000
-        
-    - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-      with:
-        ref: ${{ inputs.branch }}
+        ref: ${{ inputs.branch || github.sha }}
 
-    - name: "validate build.sh script"
+    - name: "Code-Sync: GitHub git checkout pull_request or release"
+      if: github.event_name == 'pull_request' || github.event_name == 'release'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with:
+        ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+
+    - name: "Docker: Login to ghcr.io Container Registry"
+      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+      if: ${{ env.DOCKER_LOGIN == 'true' }}
+      continue-on-error: true
+      with:
+        registry: "ghcr.io"
+        username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.repository_owner }}"
+        password: "${{ secrets.DOCKER_REGISTRY_PASSKEY || secrets.GITHUB_TOKEN }}"
+
+    - name: "Build and push mtl-manager image"
       run: ./build.sh
       env:
         BUILD_TYPE: "CI"
+        CMAKE_BUILD_TYPE: "Release"
+        LOCAL_INSTALL: "false"
+        IMAGE_NAME: "mtl-manager"
+        IMAGE_PATH: "./docker/app/Dockerfile"
+        BUILD_SCOPE: "./"
+        BUILD_STAGE: "manager-stage"
+
+    - name: "Build and push tiber-broadcast-suite image"
+      run: ./build.sh
+      env:
+        BUILD_TYPE: "CI"
+        CMAKE_BUILD_TYPE: "Release"
+        LOCAL_INSTALL: "false"
+        IMAGE_NAME: "tiber-broadcast-suite"
+        IMAGE_PATH: "./docker/app/Dockerfile"
+        BUILD_SCOPE: "./"
+        BUILD_STAGE: "final-stage"
+
+  docker-aux:
+    name: "Dockerfile build for Intel® Tiber™ NMOS and BCS containers"
+    runs-on: ["self-hosted", "docker", "Linux"]
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      packages: write
+    env:
+      BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
+      BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
+      DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
+      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - name: "OS-Configuration: Harden Runner"
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: "OS-Configuration: Docker with Buildx Toolkit set up"
+      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
+
+    - name: "Code-Sync: GitHub git checkout push"
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with:
+        ref: ${{ inputs.branch || github.sha }}
+
+    - name: "Code-Sync: GitHub git checkout pull_request or release"
+      if: github.event_name == 'pull_request' || github.event_name == 'release'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with:
+        ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
+
+    - name: "Docker: Login to ghcr.io Container Registry"
+      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+      if: ${{ env.DOCKER_LOGIN == 'true' }}
+      continue-on-error: true
+      with:
+        registry: "ghcr.io"
+        username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.repository_owner }}"
+        password: "${{ secrets.DOCKER_REGISTRY_PASSKEY || secrets.GITHUB_TOKEN }}"
+
+    - name: "Build and push tiber-broadcast-suite-nmos-node image"
+      run: ./build.sh
+      env:
+        BUILD_TYPE: "CI"
+        CMAKE_BUILD_TYPE: "Release"
+        LOCAL_INSTALL: "false"
+        IMAGE_NAME: "tiber-broadcast-suite-nmos-node"
+        IMAGE_PATH: "./docker/nmos/Dockerfile"
+        BUILD_SCOPE: "./"
+        BUILD_STAGE: "final-stage"
+
+    - name: "Build and push bcs-pod-launcher image"
+      run: ./build.sh
+      env:
+        BUILD_TYPE: "CI"
+        CMAKE_BUILD_TYPE: "Release"
+        LOCAL_INSTALL: "false"
+        IMAGE_NAME: "bcs-pod-launcher"
+        IMAGE_PATH: "./launcher/Dockerfile"
+        BUILD_SCOPE: "./launcher"
+        BUILD_STAGE: ""

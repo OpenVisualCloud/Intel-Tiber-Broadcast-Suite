@@ -780,59 +780,154 @@ function install_locally {
 }
 ### local installation section end
 
-
-
 ### docker installation
 function install_in_docker_enviroment {
+    ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
     ENV_PROXY_ARGS=()
+
     while IFS='' read -r line; do
         ENV_PROXY_ARGS+=("--build-arg")
         ENV_PROXY_ARGS+=("${line}=${!line}")
     done < <(compgen -e | grep -E "_(proxy|PROXY)")
 
+    cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
     IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
     IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
     IMAGE_TAG="${IMAGE_TAG:-latest}"
-    cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
-        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
-        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
-        -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
-        --target final-stage \
-        "${SCRIPT_DIR}"
-
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
-        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
-        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
-        -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
-        --target manager-stage \
-        "${SCRIPT_DIR}"
-
-    #cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
-
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
-        -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
-        -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
-        --target final-stage \
-        "${SCRIPT_DIR}"
+    ENV_BUILDER_ARGS+=(
+      "--build-arg" \
+      "VERSIONS_ENVIRONMENT_FILE=.temp.env" \
+      "--build-arg" \
+      "IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}"\
+    )
 
     if [ "${BUILD_TYPE}" == "CI" ]; then
-        docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
-          -t "${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" \
-          -f "${SCRIPT_DIR}/launcher/Dockerfile" \
-          "${SCRIPT_DIR}/launcher"
+      echo -e "Using build values:\n\tENV_PROXY_ARGS=${ENV_PROXY_ARGS[*]}\n\tENV_BUILDER_ARGS=${ENV_BUILDER_ARGS[*]}"
+      echo -e "\tIMAGE_REGISTRY=${IMAGE_REGISTRY}\n\tIMAGE_TAG=${IMAGE_TAG}"
     fi
 
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
+        "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
+        -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
+        --target final-stage "${SCRIPT_DIR}"
+
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
+        "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
+        -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
+        -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
+        --target manager-stage "${SCRIPT_DIR}"
+
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
+        "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
+        -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
+        -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
+        --target final-stage "${SCRIPT_DIR}"
+
     if [ "${BUILD_TYPE}" != "CI" ]; then
-        docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
-        docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
-        docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
+      docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
+      docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
+      docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
+    fi
+    #cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
+}
+### docker installation end
+
+### docker installation
+function ci_cd_build_single_images {
+    IMAGE_NAME="${1:?}"
+    IMAGE_PATH="${2:?}"
+    BUILD_SCOPE="${3:-${SCRIPT_DIR}}"
+    BUILD_STAGE="${4:-}"
+
+    ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
+    ENV_PROXY_ARGS=()
+
+    while IFS='' read -r line; do
+        ENV_PROXY_ARGS+=("--build-arg")
+        ENV_PROXY_ARGS+=("${line}=${!line}")
+    done < <(compgen -e | grep -E "_(proxy|PROXY)")
+
+    cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
+    IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
+    IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
+    IMAGE_TAG="${IMAGE_TAG:-latest}"
+    IMAGE_FULL_TAG="${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+    if [ -n "${BUILD_STAGE}" ]; then ENV_BUILDER_ARGS+=("--target" "${BUILD_STAGE}"); fi
+    ENV_BUILDER_ARGS+=( \
+      "--build-arg" "VERSIONS_ENVIRONMENT_FILE=.temp.env" \
+      "--build-arg" "IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}" )
+
+    if [ "${BUILD_TYPE}" == "CI" ]; then
+      echo -e "Using build values:\n\tENV_PROXY_ARGS=${ENV_PROXY_ARGS[*]}\n\tENV_BUILDER_ARGS=${ENV_BUILDER_ARGS[*]}"
+      echo -e "\n\rIMAGE_FULL_TAG=${IMAGE_FULL_TAG}"
+      echo -e "\tIMAGE_REGISTRY=${IMAGE_REGISTRY}\n\tIMAGE_TAG=${IMAGE_TAG}"
+    fi
+
+    docker buildx build -f "${IMAGE_PATH}" \
+      -t "${IMAGE_FULL_TAG}" -o "type=docker,name=${IMAGE_FULL_TAG}" \
+      "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
+      "${BUILD_SCOPE}"
+
+    if [ "${BUILD_TYPE}" == "CI" ] && [ "${DOCKER_LOGIN}" == "true" ]; then
+      docker push "${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}";
+      err_code="$?";
+      if [ "${err_code}" != "0" ]; then echo -e "Warning! Error (${err_code}) while pushing to registry:\n\t${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"; fi
     fi
 }
 ### docker installation end
+
+### docker cicd installation
+function ci_cd_build_images {
+  IMAGE_NAME="${IMAGE_NAME:-${1}}"
+  IMAGE_PATH="${IMAGE_PATH:-${2}}"
+  BUILD_SCOPE="${BUILD_SCOPE:-${3}}"
+  BUILD_STAGE="${BUILD_STAGE:-${4}}"
+
+  export IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
+  export IMAGE_REGISTRY="${DOCKER_IMAGE_BASE:?}"
+  export DOCKER_LOGIN="${DOCKER_LOGIN:?}"
+  IMAGE_TAG="${DOCKER_IMAGE_TAG:?}"
+  CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
+  ENV_BUILDER_ARGS=( \
+    "${ENV_BUILDER_ARGS[@]}" \
+    "--build-arg" \
+    "BUILD_TYPE=${CMAKE_BUILD_TYPE}" \
+    "--build-arg" \
+    "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" \
+    "--cache-from" \
+    "type=gha,timeout=20m" \
+    "--platform" \
+    "linux/amd64" \
+  )
+
+  ENV_BUILDER_ARGS+=("--cache-to")
+  if [ "$GITHUB_EVENT_NAME" == "push" ]; then
+    if [ "$GITHUB_REF" == "refs/heads/main" ]; then
+      ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
+      IMAGE_TAG="latest"
+    else
+      ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
+      IMAGE_TAG="${GITHUB_SHA}"
+    fi
+  elif [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+    ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
+    IMAGE_TAG="${GITHUB_SHA}"
+  elif [ "$GITHUB_EVENT_NAME" == "release" ]; then
+    ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
+    IMAGE_TAG="${TAG_NAME}"
+  fi
+
+  export IMAGE_TAG
+  export ENV_BUILDER_ARGS
+
+  set -x
+  ci_cd_build_single_images "${IMAGE_NAME}" "${IMAGE_PATH}" "${BUILD_SCOPE}" "${BUILD_STAGE}"
+  set +x
+}
+### docker cicd installation end
 
 function display_help {
 cat <<- HELPTEXT
@@ -925,12 +1020,13 @@ fi
 
 ret=0
 if [ "$LOCAL_INSTALL" = true ]; then
-    install_locally || ret=$?
+  install_locally
+elif [ "${BUILD_TYPE}" = "CI" ]; then
+  ci_cd_build_images
 else
-    {
-        install_in_docker_enviroment
-    } || ret=$?
+  install_in_docker_enviroment
 fi
+ret=$?
 
 if [ "$ret" -ne 0 ]; then
     echo
