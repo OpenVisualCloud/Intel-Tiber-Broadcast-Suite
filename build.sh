@@ -794,12 +794,12 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
-    echo "Using build values: "
+    set -x
+    echo "Using build values:"
     echo "ENV_PROXY_ARGS=${ENV_PROXY_ARGS[*]}"
     echo "ENV_BUILDER_ARGS=${ENV_BUILDER_ARGS[*]}"
     echo "IMAGE_REGISTRY=${IMAGE_REGISTRY},IMAGE_TAG=${IMAGE_TAG},IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}"
 
-    set -x
     docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
@@ -879,7 +879,7 @@ function install_in_cicd_docker_environment {
     fi
   elif [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
     ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
-    export IMAGE_TAG="${GITHUB_REF}"
+    export IMAGE_TAG="${GITHUB_SHA}"
   fi
 
   export ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
