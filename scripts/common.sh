@@ -1,65 +1,63 @@
 #!/bin/bash
 
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2024 Intel Corporation
+# Copyright 2025 Intel Corporation
 
-COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-REPO_DIR="$(readlink -f "${COMMON_SCRIPT_DIR}/..")"
-
+COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")/..")"
+export REPO_DIR="${REPO_DIR:-${COMMON_SCRIPT_DIR}}"
 export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
 export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
+export PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
+
+VERSIONS_FILE_PATH="$(readlink -f "${VERSIONS_FILE:-${REPO_DIR}/versions.env}")"
+export VERSIONS_FILE_PATH
+
+# shellcheck source="../versions.env"
+. "${VERSIONS_FILE_PATH}"
 
 # Package manager to use in script can be overriden using TIBER_USE_PM variable:
-export PM="${TIBER_USE_PM:-apt}"
+TIBER_USE_PM="{TIBER_USE_PM:-apt-get}"
+PM="${TIBER_USE_PM:-${PM}}"
+KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
+
 export TZ="${TZ:-Europe/Warsaw}"
 export NPROC="${NPROC:-$(nproc)}"
-export DEBIAN_FRONTEND="noninteractive"
 
-export MTL_DIR="${MTL_DIR:-${BUILD_DIR}/mtl}"
-export ICE_VER="${ICE_VER:-1.14.9}"
-export ICE_DIR="{$ICE_DIR:-${DRIVERS_DIR}/ice/${ICE_VER}}"
-export IAVF_VER="${IAVF_VER:-4.12.5}"
-export IAVF_DIR="${IAVF_DIR:-${DRIVERS_DIR}/iavf/${IAVF_VER}}"
-export IRDMA_DMID="${IRDMA_DMID:-832291}"
-export IRDMA_VER="${IRDMA_VER:-1.15.11}"
-export IRDMA_DIR="${IRDMA_DIR:-${DRIVERS_DIR}/irdma/${IRDMA_VER}}"
-
-if ! grep "/root/.local/bin" <<< "${PATH}"; then
+if ! grep "/root/.local/bin" <<< "${PATH}" > /dev/null 2>&1; then
     export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
     export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH}"
 fi
 
-if [ -z "${DISABLE_COLOR_PRINT}" ]; then
-    export    PromptTBlue='\e[38;05;45m'
-    export    PromptHBlue='\e[38;05;33m'
-    export      ErrorHRed='\e[38;05;1m'
-    export WarningHPurple='\e[38;05;61m'
-    export          EndCl='\e[m'
-else
-    export    PromptTBlue=''
-    export    PromptHBlue=''
-    export      ErrorHRed=''
-    export WarningHPurple=''
-    export          EndCl=''
-fi
+BOLD="${BOLD:-\e[1;}"
+REGULAR="${REGULAR:-\e[0;}"
+RED="${RED:-31m}"
+GREEN="${GREEN:-32m}"
+YELLOW="${YELLOW:-33m}"
+BLUE="${BLUE:-34m}"
+EndCl='\e[m'
 
-function message() {
-    local type=$1
+function log_message() {
+    local type="${1}"
     shift
-    echo -e "$type: $*" >&2
+    local HEADER="${type}: "
+    local FOOTER=""
+    # case $(echo $type | tr '[:upper:]' '[:lower:]') in
+    if [ -z "${DISABLE_COLOR_PRINT}" ]; then
+        FOOTER='\e[0m'
+        case "${type}" in
+          ERROR)        HEADER="${REGULAR}${RED}${type}:  ${BOLD}${RED}" ;;
+          WARN|WARNING) HEADER="${REGULAR}${BLUE}${type}: ${BOLD}${YELLOW}" ;;
+          SUCC|SUCCESS) HEADER="${REGULAR}${BLUE}${type}: ${BOLD}${GREEN}" ;;
+          INFO|*)       HEADER="${REGULAR}${BLUE}${type}: ${BOLD}${BLUE}" ;;
+        esac
+    fi
+    echo -e "${HEADER}$*${FOOTER}" >&2
 }
 
-function prompt() {
-    message "${PromptHBlue}INFO${PromptTBlue}" "$*${EndCl}"
-}
-
-function error() {
-    message "${ErrorHRed}ERROR${PromptTBlue}" "$*${EndCl}"
-}
-
-function warning() {
-    message "${WarningHPurple}WARN${PromptTBlue}" "$*${EndCl}"
-}
+function log_info()    { log_message "INFO" "$*"; }
+function log_success() { log_message "SUCCESS" "$*"; }
+function log_warning() { log_message "WARNING" "$*"; }
+function log_error()   { log_message "ERROR" "$*"; }
 
 function get_user_input_confirm() {
     local confirm
@@ -67,7 +65,7 @@ function get_user_input_confirm() {
     local confirm_default="${1:-0}"
     confirm_string=( "(N)o" "(Y)es" )
 
-    echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: ${EndCl}" >&2
+    echo -en "${REGULAR}${BLUE}CHOOSE:${BOLD}${BLUE} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: ${EndCl}" >&2
     read -r confirm
     if [[ -z "$confirm" ]]; then
         confirm="$confirm_default"
@@ -126,7 +124,7 @@ function get_github_elements() {
     path_part="${1#*://github.com/}"
     mapfile -t -d'/' path_elements <<< "${path_part}"
     if [[ "${#path_elements[@]}" -lt "2" ]]; then
-        error "Invalid link passed to get_github_elements method."
+        log_error  "Invalid link passed to get_github_elements method."
         return 1
     fi
     echo "${path_elements[0]} ${path_elements[1]}"
@@ -156,25 +154,31 @@ function get_filepath_add_sufix() {
     echo "${dir_path}${file_base}${file_sufix}.${file_ext}"
 }
 
-function run_as_root_user()
+function command_exists {
+    command -v "$@" > /dev/null 2>&1
+}
+
+function as_root()
 {
     CMD_TO_EVALUATE="$*"
-    EFECTIVE_USER_ID="${EUID:-$(id -u)}"
+    CURRENT_USER_ID="$(id -u)"
+    EFECTIVE_USER_ID="${EUID:-$CURRENT_USER_ID}"
+    AS_ROOT="/bin/bash -c"
 
-    if [ "${EFECTIVE_USER_ID}" -eq 0 ]; then
-        eval "${CMD_TO_EVALUATE[*]}"
-    else
-        if which sudo 1>/dev/null; then
-            eval "sudo ${CMD_TO_EVALUATE[*]}"
+    if [ "${EFECTIVE_USER_ID}" -ne 0 ]; then
+        if command_exists sudo; then
+            AS_ROOT="sudo -E /bin/bash -c"
+        elif command_exists su; then
+            AS_ROOT="su -c"
         else
-            error "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
-            error "- current [EUID=${EFECTIVE_USER_ID}]."
-            error "- sudo was not found in PATH."
-            error "Re-run the script as sudo or install sudo pkg. Exiting."
+            log_error  "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
+            log_error  "- current [EUID=${EFECTIVE_USER_ID}]."
+            log_error  "- 'sudo' nor 'su' commands were found in PATH."
+            log_error  "Re-run the script as sudo or install sudo pkg."
             exit 1
         fi
     fi
-    return 0
+    $AS_ROOT "${CMD_TO_EVALUATE[*]}"
 }
 
 function github_api_call() {
@@ -265,6 +269,7 @@ function print_logo()
 
 function print_logo_sequence()
 {
+    set +x
     local wait_between_frames="${1:-0}"
     local wait_cmd=""
     if [ ! "${wait_between_frames}" = "0" ]; then
@@ -292,6 +297,7 @@ function print_logo_sequence()
 
 function print_logo_anim()
 {
+    set +x
     local number_of_sequences="${1:-2}"
     local wait_between_frames="${2:-0.025}"
     clear
@@ -301,7 +307,8 @@ function print_logo_anim()
     done
 }
 
-function catch_error_print_debug() {
+function catch_error_print_debug()
+{
     local _last_command_height=""
     local -n _lineno="${1:-LINENO}"
     local -n _bash_lineno="${2:-BASH_LINENO}"
@@ -336,14 +343,14 @@ function catch_error_print_debug() {
     fi
 
     _output_array+=('---')
-    error "${_output_array[@]}"
+    log_error  "${_output_array[*]}"
 }
 
 # Calling this function executes ERR and SIGINT signals trapping. Triggered trap calls catch_error_print_debug and exit 1
 function trap_error_print_debug() {
-    prompt "Setting trap for errors handling"
+    log_info "Setting trap for errors handling"
     trap 'catch_error_print_debug "LINENO" "BASH_LINENO" "${BASH_COMMAND}" "${?}"; exit 1' SIGINT ERR
-    prompt "Trap set successfuly."
+    log_info "Trap set successfuly."
 }
 
 # GITHUB_CREDENTIALS="username:password"
@@ -355,7 +362,7 @@ function git_download_strip_unpack()
 {
     # Version can be commit sha or tag, examples:
     # version=d2515b90cc0ef651f6d0a6661d5a644490bfc3f3
-    # version=refs/tags/v${BPF_VER}
+    # version=refs/tags/v${JPEG_XS_VER}
     name="${1}"
     version="${2}"
     dest_dir="${3}"
@@ -385,68 +392,150 @@ function wget_download_strip_unpack()
     rm -f "${dest_dir}/${filename}.tar.gz"
 }
 
+function install_intel_drivers_os_dependencies()
+{
+    log_info Starting: OS packages installation.
+    log_info Starting: OS package manager auto-detection.
+    setup_package_manager "apt-get"
+    if [[ "${PM}" == "apt" || "${PM}" == "apt-get" ]]; then
+        log_success "Found ${PM}. Using Ubuntu package dependencies approach"
+        as_root "${PM}" update --fix-missing && \
+        as_root "${PM}" install -y \
+            cmake \
+            cython3 \
+            debhelper \
+            dh-python \
+            dpkg-dev \
+            libnl-3-dev \
+            libnl-route-3-dev \
+            libsystemd-dev \
+            libudev-dev \
+            ninja-build \
+            pandoc \
+            pkg-config \
+            python3-dev \
+            python3-docutils \
+            valgrind \
+            build-essential \
+            gcc \
+            python3-pyverbs \
+            libelf-dev \
+            infiniband-diags \
+            rdma-core \
+            ibverbs-utils \
+            perftest \
+            ethtool
+
+    elif [[ "${PM}" == "yum" || "${PM}" == "dnf" ]]; then
+        log_success "Found ${PM}. Using CentOS package dependencies approach"
+        as_root "${PM}" -y update && \
+        as_root "${PM}" -y install ethtool && \
+        as_root "${PM}" builddep redhat/rdma-core.spec
+    else
+        log_error "Exiting: No supported package manager found. Contact support"
+        exit 1
+    fi
+    log_info "Finished: Successful OS packages installation."
+    log_warning OS reboot is required for all of the changes to take place.
+    return 0
+}
+
+function get_irdma_driver_tgz() {
+    echo "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz"
+}
+
 function get_and_patch_intel_drivers()
 {
-    set -x
+    log_info "Intel drivers: Starting download and patching actions."
+    if [[ ! -d "${MTL_DIR}" ]]; then
+        git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
+    fi
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
-        error "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
+        log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
-    pushd "${ICE_DIR}" || return
-    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch)
-    popd || return
-    set +x
+    pushd "${ICE_DIR}" && \
+    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
+    popd && \
+    { log_success "Intel drivers: Finished download and patching actions." && return 0; } ||
+    { log_error "Intel drivers: Failed to download or patch." && return 1; }
 }
 
 function build_install_and_config_intel_drivers()
 {
-    set -x
-    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
-    make -j "${NPROC}" -C "${ICE_DIR}/src" install
-    pushd "${IRDMA_DIR}" || return
-    ./build.sh
-    popd || return
-    config_intel_rdma_driver
-    modprobe irdma
-    set +x
+    log_info "Intel ICE: Driver starting the build and install workflow."
+    if ! as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
+        log_error "Intel ICE: Failed to build and install drivers"
+        exit 5
+    fi
+    as_root rmmod irdma 2>&1 || true
+    as_root rmmod ice
+    as_root modprobe ice
+    log_success "Intel ICE: Drivers finished install process."
+
+    return 0
 }
 
-function config_intel_rdma_driver() {
+function build_install_and_config_irdma_drivers()
+{
+    IRDMA_REPO="$(get_irdma_driver_tgz)"
+    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
+
+    if pushd "${IRDMA_DIR}"; then
+        "${IRDMA_DIR}/build_core.sh" -y || exit 2
+        as_root "${IRDMA_DIR}/install_core.sh"  || exit 3
+
+        if as_root "${IRDMA_DIR}/build.sh"; then
+            popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
+            log_success "Intel irdma: Finished configuration and installation successfully."
+            as_root rmmod irdma 2>&1 || true
+            as_root modprobe irdma
+            return 0
+        fi
+
+        log_error "Intel irdma: Errors while building '${IRDMA_DIR}/build.sh'"
+        popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
+    fi
+    log_error "Intel irdma: Error while performing configuration/installation."
+    return 1
+}
+
+function config_intel_rdma_driver()
+{
     #   \s - single (s)pace or tabulator
     #   \d - single (d)igit
     # ^\s* - starts with zero or more space/tabulators
     # \s\+ - at least one or more space/tabulators
     local PREFIX_REGEX='^\s*options\s\+irdma\s\+'
-    local PREFIX_NORM_ROCE='options irdma roce_ena=1'
-    local PREFIX_NORM_SEL='options irdma limits_sel=5'
+    local PREFIX_NORM_ROCE='options\ irdma\ roce_ena=1'
+    local PREFIX_NORM_SEL='options\ irdma\ limits_sel=5'
 
-    prompt "Configuration of iRDMA starting."
-    touch "/etc/modprobe.d/irdma.conf"
+    log_info "Configuration of iRDMA starting."
+    as_root mkdir -p "/etc/modprobe.d"
+    as_root touch "/etc/modprobe.d/irdma.conf"
 
-    prompt "Enabling RoCE."
+    log_info "Enabling RoCE."
     if grep -e "${PREFIX_REGEX}roce_ena=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
-        sudo sed -i "s/${PREFIX_REGEX}roce_ena=\d/${PREFIX_NORM_ROCE}/g" /etc/modprobe.d/irdma.conf
+        as_root sed -i "s/${PREFIX_REGEX}roce_ena=\d/${PREFIX_NORM_ROCE}/g" /etc/modprobe.d/irdma.conf
     else
-        echo "${PREFIX_NORM_ROCE}" | sudo tee -a /etc/modprobe.d/irdma.conf
+        echo "${PREFIX_NORM_ROCE}" | as_root tee -a /etc/modprobe.d/irdma.conf
     fi
-    prompt "RoCE enabled."
+    log_success "RoCE enabled."
 
-    prompt "Increasing Queue Pair limit."
+    log_info "Increasing Queue Pair limit."
     if grep -e "${PREFIX_REGEX}limits_sel=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
-        sudo sed -i "s/${PREFIX_REGEX}limits_sel=\d/${PREFIX_NORM_SEL}/g" /etc/modprobe.d/irdma.conf
+        as_root sed -i "s/${PREFIX_REGEX}limits_sel=\d/${PREFIX_NORM_SEL}/g" /etc/modprobe.d/irdma.conf
     else
-        echo "${PREFIX_NORM_SEL}" | sudo tee -a /etc/modprobe.d/irdma.conf
+        echo "${PREFIX_NORM_SEL}" | as_root tee -a /etc/modprobe.d/irdma.conf
     fi
-    sudo dracut -f
-    prompt "Queue Pair limits_sel set to 5."
-    prompt "Configuration of iRDMA finished."
+    as_root dracut -f
+    log_success "Queue Pair limits_sel set to 5."
+    log_success "Configuration of irdma finished."
 }
 
-# Example usage: 
+# Example usage:
 #    PM="$(setup_package_manager)" && \
 #    $PM install python3
 function setup_package_manager()
@@ -454,18 +543,44 @@ function setup_package_manager()
     TIBER_USE_PM="${PM:-$1}"
     if [[ -x "$(command -v "$TIBER_USE_PM")" ]]; then
         export PM="${TIBER_USE_PM}"
+    elif [[ -x "$(command -v yum)" ]]; then
+        export PM='yum'
     elif [[ -x "$(command -v dnf)" ]]; then
         export PM='dnf'
+    elif [[ -x "$(command -v apt-get)" ]]; then
+        export PM='apt-get'
     elif [[ -x "$(command -v apt)" ]]; then
         export PM='apt'
     else
-        error "No known pkg manager found. Try to re-run with variable, example:"
-        error "export PM=\"apt\""
+        log_error  "No known pkg manager found. Try to re-run with variable, example:"
+        log_error  "export PM=\"apt\""
         return 1
     fi
-    prompt "Setting pkg manager to ${PM}."
+    log_info "Setting pkg manager to ${PM}."
     echo "${PM}"
     return 0
+}
+
+# Setup build dir and ffmpeg version/directory.
+# FFMPEG_VER taken from environment or forced by 1st parameter
+# Exports FFMPEG_DIR and FFMPEG_VER
+function lib_setup_ffmpeg_dir_and_version()
+{
+    FFMPEG_VER="${1:-$FFMPEG_VER}"
+    FFMPEG_7_0_DIR="${FFMPEG_7_0_DIR:-ffmpeg-7-0}"
+    FFMPEG_6_1_DIR="${FFMPEG_6_1_DIR:-ffmpeg-6-1}"
+
+    if [[ "${FFMPEG_VER}" == "7.0" ]]; then
+        FFMPEG_SUB_DIR="${FFMPEG_7_0_DIR}"
+    elif [[ "${FFMPEG_VER}" == "6.1" ]]; then
+        FFMPEG_SUB_DIR="${FFMPEG_6_1_DIR}"
+    else
+        log_error "Unsupported version of FFmpeg == '${FFMPEG_VER}'."
+        log_error "Try again, choose one of '7.0', '6.1'."
+        exit 2
+    fi
+    export FFMPEG_VER
+    export FFMPEG_SUB_DIR
 }
 
 function exec_command()
@@ -484,12 +599,12 @@ function exec_command()
     elif [[ "$#" -eq "2" ]] || [[ "$#" -eq "3" ]]; then
         values_returned="$($SSH_CMD "RemoteCommand=eval \"${1}\"" "${user_at_address}" 2>/dev/null)"
     else
-        error "Wrong arguments for exec_command(). Valid number is one of [1 2 3], got $#"
+        log_error  "Wrong arguments for exec_command(). Valid number is one of [1 2 3], got $#"
         return 1
     fi
 
     if [ -z "$values_returned" ]; then
-        error "Unable to collect results or results are empty."
+        log_error  "Unable to collect results or results are empty."
         return 1
     else
         echo "${values_returned}"
@@ -516,19 +631,19 @@ function get_cpu_arch() {
 
     case $arch in
         icelake)
-            prompt "Xeon IceLake CPU (icx)"
+            log_info "Xeon IceLake CPU (icx)" 1>&2
             echo "icx"
             ;;
         sapphire_rapids)
-            prompt "Xeon Sapphire Rapids CPU (spr)"
+            log_info "Xeon Sapphire Rapids CPU (spr)" 1>&2
             echo "spr"
             ;;
         skylake)
-            prompt "Xeon SkyLake"
+            log_info "Xeon SkyLake"
             echo "skl"
             ;;
         *)
-            error "Unsupported architecture: ${arch}. Please edit the script or setup the architecture manually."
+            log_error  "Unsupported architecture: ${arch}. Please edit the script or setup the architecture manually."
             return 1
             ;;
     esac
