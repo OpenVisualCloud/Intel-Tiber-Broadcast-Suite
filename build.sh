@@ -784,6 +784,7 @@ function install_locally {
 function install_in_docker_enviroment {
     ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
     ENV_PROXY_ARGS=()
+
     while IFS='' read -r line; do
         ENV_PROXY_ARGS+=("--build-arg")
         ENV_PROXY_ARGS+=("${line}=${!line}")
@@ -824,20 +825,7 @@ function install_in_docker_enviroment {
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage "${SCRIPT_DIR}"
 
-    if [ "${BUILD_TYPE}" == "CI" ]; then
-      docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs-pod-launcher:${IMAGE_TAG}" \
-          "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
-          -t "${IMAGE_REGISTRY}/bcs-pod-launcher:${IMAGE_TAG}" \
-          -f "${SCRIPT_DIR}/launcher/Dockerfile" \
-          "${SCRIPT_DIR}/launcher"
-
-      if [ "${DOCKER_LOGIN}" == "true" ]; then
-        docker push "${IMAGE_REGISTRY}/bcs-pod-launcher:${IMAGE_TAG}"      || true
-        docker push "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}"           || true
-        docker push "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" || true
-        docker push "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" || true
-      fi
-    else
+    if [ "${BUILD_TYPE}" != "CI" ]; then
       docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
       docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
       docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
@@ -846,8 +834,58 @@ function install_in_docker_enviroment {
 }
 ### docker installation end
 
+### docker installation
+function ci_cd_build_single_images {
+    IMAGE_NAME="${1:?}"
+    IMAGE_PATH="${2:?}"
+    BUILD_SCOPE="${3:-${SCRIPT_DIR}}"
+    BUILD_STAGE="${4:-}"
+
+    ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
+    ENV_PROXY_ARGS=()
+
+    while IFS='' read -r line; do
+        ENV_PROXY_ARGS+=("--build-arg")
+        ENV_PROXY_ARGS+=("${line}=${!line}")
+    done < <(compgen -e | grep -E "_(proxy|PROXY)")
+
+    cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
+    IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
+    IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
+    IMAGE_TAG="${IMAGE_TAG:-latest}"
+    IMAGE_FULL_TAG="${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+    if [ -n "${BUILD_STAGE}" ]; then ENV_BUILDER_ARGS+=("--target" "${BUILD_STAGE}"); fi
+    ENV_BUILDER_ARGS+=( \
+      "--build-arg" "VERSIONS_ENVIRONMENT_FILE=.temp.env" \
+      "--build-arg" "IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}" )
+
+    if [ "${BUILD_TYPE}" == "CI" ]; then
+      echo -e "Using build values:\n\tENV_PROXY_ARGS=${ENV_PROXY_ARGS[*]}\n\tENV_BUILDER_ARGS=${ENV_BUILDER_ARGS[*]}"
+      echo -e "\n\rIMAGE_FULL_TAG=${IMAGE_FULL_TAG}"
+      echo -e "\tIMAGE_REGISTRY=${IMAGE_REGISTRY}\n\tIMAGE_TAG=${IMAGE_TAG}"
+    fi
+
+    docker buildx build -f "${IMAGE_PATH}" \
+      -t "${IMAGE_FULL_TAG}" -o "type=docker,name=${IMAGE_FULL_TAG}" \
+      "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
+      "${BUILD_SCOPE}"
+
+    if [ "${BUILD_TYPE}" == "CI" ] && [ "${DOCKER_LOGIN}" == "true" ]; then
+      docker push "${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}";
+      err_code="$?";
+      if [ "${err_code}" != "0" ]; then echo -e "Warning! Error (${err_code}) while pushing to registry:\n\t${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"; fi
+    fi
+}
+### docker installation end
+
 ### docker cicd installation
-function install_in_cicd_docker_environment {
+function ci_cd_build_images {
+  IMAGE_NAME="${IMAGE_NAME:-${1}}"
+  IMAGE_PATH="${IMAGE_PATH:-${2}}"
+  BUILD_SCOPE="${BUILD_SCOPE:-${3}}"
+  BUILD_STAGE="${BUILD_STAGE:-${4}}"
+
   export IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
   export IMAGE_REGISTRY="${DOCKER_IMAGE_BASE:?}"
   export DOCKER_LOGIN="${DOCKER_LOGIN:?}"
@@ -883,7 +921,7 @@ function install_in_cicd_docker_environment {
   export ENV_BUILDER_ARGS
 
   set -x
-  install_in_docker_enviroment
+  ci_cd_build_single_images "${IMAGE_NAME}" "${IMAGE_PATH}" "${BUILD_SCOPE}" "${BUILD_STAGE}"
   set +x
 }
 ### docker cicd installation end
@@ -981,7 +1019,7 @@ ret=0
 if [ "$LOCAL_INSTALL" = true ]; then
   install_locally
 elif [ "${BUILD_TYPE}" = "CI" ]; then
-  install_in_cicd_docker_environment
+  ci_cd_build_images
 else
   install_in_docker_enviroment
 fi
