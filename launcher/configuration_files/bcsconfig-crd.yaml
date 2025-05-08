@@ -219,6 +219,10 @@ spec:
                                       type: string
                                     video_type:
                                       type: string
+                                    preset:
+                                      type: string
+                                    profile:
+                                      type: string
                                 audio:
                                   type: object
                                   properties:
@@ -285,6 +289,10 @@ spec:
                                     pixel_format:
                                       type: string
                                     video_type:
+                                      type: string
+                                    preset:
+                                      type: string
+                                    profile:
                                       type: string
                                 audio:
                                   type: object
