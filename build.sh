@@ -915,6 +915,9 @@ function ci_cd_build_images {
   elif [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
     ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
     IMAGE_TAG="${GITHUB_SHA}"
+  elif [ "$GITHUB_EVENT_NAME" == "release" ]; then
+    ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
+    IMAGE_TAG="${TAG_NAME}"
   fi
 
   export IMAGE_TAG
