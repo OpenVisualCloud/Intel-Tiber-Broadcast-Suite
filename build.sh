@@ -780,10 +780,9 @@ function install_locally {
 }
 ### local installation section end
 
-
-
 ### docker installation
 function install_in_docker_enviroment {
+    ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
     ENV_PROXY_ARGS=()
     while IFS='' read -r line; do
         ENV_PROXY_ARGS+=("--build-arg")
@@ -795,44 +794,98 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
+    echo "Using build values: "
+    echo "ENV_PROXY_ARGS=${ENV_PROXY_ARGS[*]}"
+    echo "ENV_BUILDER_ARGS=${ENV_BUILDER_ARGS[*]}"
+    echo "IMAGE_REGISTRY=${IMAGE_REGISTRY},IMAGE_TAG=${IMAGE_TAG},IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}"
+
+    set -x
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
+        "${ENV_PROXY_ARGS[@]}" \
+        "${ENV_BUILDER_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}"
 
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
         --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
         --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
+        "${ENV_PROXY_ARGS[@]}" \
+        "${ENV_BUILDER_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
         --target manager-stage \
         "${SCRIPT_DIR}"
 
-    #cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
-
-    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
+    docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
+        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
+        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
+        "${ENV_PROXY_ARGS[@]}" \
+        "${ENV_BUILDER_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
         --target final-stage \
         "${SCRIPT_DIR}"
 
     if [ "${BUILD_TYPE}" == "CI" ]; then
-        docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
-          -t "${IMAGE_REGISTRY}/bcs_pod_launcher:${IMAGE_TAG}" \
+        docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs-pod-launcher:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
+          -t "${IMAGE_REGISTRY}/bcs-pod-launcher:${IMAGE_TAG}" \
           -f "${SCRIPT_DIR}/launcher/Dockerfile" \
           "${SCRIPT_DIR}/launcher"
     fi
+    #cp -r "${SCRIPT_DIR}/src/gRPC" "${SCRIPT_DIR}/gRPC"
 
     if [ "${BUILD_TYPE}" != "CI" ]; then
         docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" video_production_image:latest
         docker tag "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" mtl-manager:latest
         docker tag "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" tiber-broadcast-suite-nmos-node:latest
     fi
+    set +x
 }
 ### docker installation end
+
+### docker cicd installation
+function install_in_cicd_docker_environment {
+  export IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
+  export IMAGE_REGISTRY="${DOCKER_IMAGE_BASE:?}"
+  export IMAGE_TAG="${DOCKER_IMAGE_TAG:?}"
+  export CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
+  ENV_BUILDER_ARGS=( \
+    "${ENV_BUILDER_ARGS[@]}" \
+    "--build-arg" \
+    "BUILD_TYPE=${CMAKE_BUILD_TYPE}" \
+    "--build-arg" \
+    "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" \
+    "--cache-from" \
+    "type=gha,timeout=20m" \
+    "--platform" \
+    "linux/amd64" \
+  )
+  if [ "${DOCKER_LOGIN}" == "true" ]; then
+    ENV_BUILDER_ARGS+=("--push")
+  fi
+
+  ENV_BUILDER_ARGS+=("--cache-to")
+  if [ "$GITHUB_EVENT_NAME" == "push" ]; then
+    if [ "$GITHUB_REF" == "refs/heads/main" ]; then
+      ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
+      export IMAGE_TAG="latest"
+    else
+      ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
+      export IMAGE_TAG="${GITHUB_SHA}"
+    fi
+  elif [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+    ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
+    export IMAGE_TAG="${GITHUB_REF}"
+  fi
+
+  export ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
+  install_in_docker_enviroment
+}
+### docker cicd installation end
 
 function display_help {
 cat <<- HELPTEXT
@@ -925,12 +978,13 @@ fi
 
 ret=0
 if [ "$LOCAL_INSTALL" = true ]; then
-    install_locally || ret=$?
+  install_locally
+elif [ "${BUILD_TYPE}" = "CI" ]; then
+  install_in_cicd_docker_environment
 else
-    {
-        install_in_docker_enviroment
-    } || ret=$?
+  install_in_docker_enviroment
 fi
+ret=$?
 
 if [ "$ret" -ne 0 ]; then
     echo
