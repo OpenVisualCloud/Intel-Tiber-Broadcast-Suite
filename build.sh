@@ -794,41 +794,36 @@ function install_in_docker_enviroment {
     IMAGE_TAG="${IMAGE_TAG:-latest}"
     cat "${VERSIONS_ENVIRONMENT_FILE:-${SCRIPT_DIR}/versions.env}" > "${SCRIPT_DIR}/.temp.env"
 
+    ENV_BUILDER_ARGS+=(
+      "--build-arg" \
+      "VERSIONS_ENVIRONMENT_FILE=.temp.env" \
+      "--build-arg" \
+      "IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}"\
+    )
+
     set -x
     echo "Using build values:"
     echo "ENV_PROXY_ARGS=${ENV_PROXY_ARGS[*]}"
     echo "ENV_BUILDER_ARGS=${ENV_BUILDER_ARGS[*]}"
-    echo "IMAGE_REGISTRY=${IMAGE_REGISTRY},IMAGE_TAG=${IMAGE_TAG},IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}"
+    echo "IMAGE_REGISTRY=${IMAGE_REGISTRY},IMAGE_TAG=${IMAGE_TAG}"
 
     docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
-        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
-        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
-        "${ENV_PROXY_ARGS[@]}" \
-        "${ENV_BUILDER_ARGS[@]}" \
+        "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
-        --target final-stage \
-        "${SCRIPT_DIR}"
+        --target final-stage "${SCRIPT_DIR}"
 
     docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
-        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
-        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
-        "${ENV_PROXY_ARGS[@]}" \
-        "${ENV_BUILDER_ARGS[@]}" \
+        "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/mtl-manager:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/app/Dockerfile" \
-        --target manager-stage \
-        "${SCRIPT_DIR}"
+        --target manager-stage "${SCRIPT_DIR}"
 
     docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
-        --build-arg VERSIONS_ENVIRONMENT_FILE=".temp.env" \
-        --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" \
-        "${ENV_PROXY_ARGS[@]}" \
-        "${ENV_BUILDER_ARGS[@]}" \
+        "${ENV_PROXY_ARGS[@]}" "${ENV_BUILDER_ARGS[@]}" \
         -t "${IMAGE_REGISTRY}/tiber-broadcast-suite-nmos-node:${IMAGE_TAG}" \
         -f "${SCRIPT_DIR}/docker/nmos/Dockerfile" \
-        --target final-stage \
-        "${SCRIPT_DIR}"
+        --target final-stage "${SCRIPT_DIR}"
 
     if [ "${BUILD_TYPE}" == "CI" ]; then
         docker buildx build -o "type=image,name=${IMAGE_REGISTRY}/bcs-pod-launcher:${IMAGE_TAG}" "${ENV_PROXY_ARGS[@]}" \
@@ -851,8 +846,8 @@ function install_in_docker_enviroment {
 function install_in_cicd_docker_environment {
   export IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
   export IMAGE_REGISTRY="${DOCKER_IMAGE_BASE:?}"
-  export IMAGE_TAG="${DOCKER_IMAGE_TAG:?}"
-  export CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
+  IMAGE_TAG="${DOCKER_IMAGE_TAG:?}"
+  CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}"
   ENV_BUILDER_ARGS=( \
     "${ENV_BUILDER_ARGS[@]}" \
     "--build-arg" \
@@ -864,25 +859,26 @@ function install_in_cicd_docker_environment {
     "--platform" \
     "linux/amd64" \
   )
-  if [ "${DOCKER_LOGIN}" == "true" ]; then
-    ENV_BUILDER_ARGS+=("--push")
-  fi
+#   if [ "${DOCKER_LOGIN}" == "true" ]; then
+#     ENV_BUILDER_ARGS+=("--push")
+#   fi
 
   ENV_BUILDER_ARGS+=("--cache-to")
   if [ "$GITHUB_EVENT_NAME" == "push" ]; then
     if [ "$GITHUB_REF" == "refs/heads/main" ]; then
       ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
-      export IMAGE_TAG="latest"
+      IMAGE_TAG="latest"
     else
       ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
-      export IMAGE_TAG="${GITHUB_SHA}"
+      IMAGE_TAG="${GITHUB_SHA}"
     fi
   elif [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
     ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
-    export IMAGE_TAG="${GITHUB_SHA}"
+    IMAGE_TAG="${GITHUB_SHA}"
   fi
 
-  export ENV_BUILDER_ARGS=("${ENV_BUILDER_ARGS[@]}")
+  export IMAGE_TAG
+  export ENV_BUILDER_ARGS
   install_in_docker_enviroment
 }
 ### docker cicd installation end

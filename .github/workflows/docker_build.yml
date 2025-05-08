@@ -37,11 +37,13 @@ jobs:
     runs-on: ["self-hosted", "docker", "Linux"]
     timeout-minutes: 180
     permissions:
-      contents: write
+      contents: read
+      packages: write
     env:
       BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
       BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
       DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - name: "OS-Configuration: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -68,8 +70,8 @@ jobs:
       if: ${{ env.DOCKER_LOGIN == 'true' }}
       continue-on-error: true
       with:
-        registry: "${{ env.DOCKER_REGISTRY }}"
-        username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.actor }}"
+        registry: "ghcr.io"
+        username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.repository_owner }}"
         password: "${{ secrets.DOCKER_REGISTRY_PASSKEY || secrets.GITHUB_TOKEN }}"
 
     - name: "Build and push docker images"
