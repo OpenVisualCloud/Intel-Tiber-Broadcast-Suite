@@ -137,7 +137,9 @@ RUN \
 
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "bcs-nmos-node" || exit 1
 
-RUN chmod +x /home/entrypoint.sh
+RUN useradd -m -s /bin/bash -u 10001 nmos && \
+    usermod -aG sudo nmos && \
+    chmod +x /home/entrypoint.sh
 
 USER "nmos"
 
