@@ -50,6 +50,8 @@ type Config struct {
 	FrameRate   FrameRate `json:"frame_rate"`
 	PixelFormat string `json:"pixel_format"`
 	VideoType   string `json:"video_type"`
+	Preset	    string `json:"preset,omitempty"`
+	Profile	    string `json:"profile,omitempty"`
   }
 
   type FrameRate struct {
