@@ -50,10 +50,6 @@ jobs:
             IMAGE_PATH: "./docker/app/Dockerfile"
             BUILD_SCOPE: "./"
             BUILD_STAGE: "final-stage"
-          - IMAGE_NAME: "mtl-manager"
-            IMAGE_PATH: "./docker/app/Dockerfile"
-            BUILD_SCOPE: "./"
-            BUILD_STAGE: "manager-stage"
           - IMAGE_NAME: "tiber-broadcast-suite-nmos-node"
             IMAGE_PATH: "./docker/nmos/Dockerfile"
             BUILD_SCOPE: "./"
@@ -68,16 +64,6 @@ jobs:
       with:
         egress-policy: audit
 
-    - name: "OS-Configuration: Expose GitHub Runtime to bash and docker"
-      uses: crazy-max/ghaction-github-runtime@3cb05d89e1f492524af3d41a1c98c83bc3025124 # v3.1.0
-
-    - name: "OS-Configuration: Docker with Buildx Toolkit set up"
-      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-      with:
-        buildkitd-flags: "--debug --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host"
-        platforms: "linux/amd64"
-        driver-opts: memory=14Gib,memory-swap=25Gib,env.BUILDKIT_STEP_LOG_MAX_SIZE=50000000,env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000
-
     - name: "Docker: Login to ghcr.io Container Registry"
       uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
       if: ${{ env.DOCKER_LOGIN == 'true' }}
@@ -86,6 +72,9 @@ jobs:
         registry: "${{ env.DOCKER_REGISTRY }}"
         username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.repository_owner }}"
         password: "${{ secrets.DOCKER_REGISTRY_PASSKEY || secrets.GITHUB_TOKEN }}"
+
+    - name: "OS-Configuration: Docker with Buildx Toolkit set up"
+      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
 
     - name: "${{ matrix.config.IMAGE_NAME }}: Code-sync GitHub ref and Docker Image Tag"
       id: set_ref_and_tag
@@ -107,10 +96,15 @@ jobs:
       with:
         ref: "${{ steps.set_ref_and_tag.outputs.TEMP_REF }}"
 
-    - name: "${{ matrix.config.IMAGE_NAME }}: Build and push bcs-pod-launcher image"
-      run: ./build.sh
-      env:
-        IMAGE_NAME: "${{ matrix.config.IMAGE_NAME }}"
-        IMAGE_PATH: "${{ matrix.config.IMAGE_PATH }}"
-        BUILD_SCOPE: "${{ matrix.config.BUILD_SCOPE }}"
-        BUILD_STAGE: "${{ matrix.config.BUILD_STAGE }}"
+    - name: "Validation: Build/Push Dokcerfile"
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+      with:
+        context: "${{ matrix.config.BUILD_SCOPE }}"
+        file: "${{ matrix.config.IMAGE_PATH }}"
+        push: ${{ env.DOCKER_LOGIN == 'true' }}
+        target: "${{ matrix.config.BUILD_STAGE }}"
+        tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ matrix.config.IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        cache-from: type=gha,scope=${{ matrix.config.IMAGE_NAME }}
+        cache-to: type=gha,mode=max,scope=${{ matrix.config.IMAGE_NAME }}
+        platforms: "linux/amd64"
+        load: false
