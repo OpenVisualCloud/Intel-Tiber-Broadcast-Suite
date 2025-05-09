@@ -898,25 +898,22 @@ function ci_cd_build_images {
     "--build-arg" \
     "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" \
     "--cache-from" \
-    "type=gha,timeout=20m" \
+    "type=gha,scope=${IMAGE_NAME}" \
     "--platform" \
     "linux/amd64" \
   )
 
-  ENV_BUILDER_ARGS+=("--cache-to")
   if [ "$GITHUB_EVENT_NAME" == "push" ]; then
     if [ "$GITHUB_REF" == "refs/heads/main" ]; then
-      ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
+      ENV_BUILDER_ARGS+=("--cache-to" "type=gha,mode=max,scope=${IMAGE_NAME}")
       IMAGE_TAG="latest"
     else
-      ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
       IMAGE_TAG="${GITHUB_SHA}"
     fi
   elif [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
-    ENV_BUILDER_ARGS+=("type=gha,mode=min,timeout=20m")
+    ENV_BUILDER_ARGS+=("--cache-to" "type=gha,mode=min,scope=${IMAGE_NAME}")
     IMAGE_TAG="${GITHUB_SHA}"
   elif [ "$GITHUB_EVENT_NAME" == "release" ]; then
-    ENV_BUILDER_ARGS+=("type=gha,mode=max,timeout=20m")
     IMAGE_TAG="${TAG_NAME}"
   fi
 
