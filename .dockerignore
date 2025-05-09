@@ -1,3 +1,13 @@
+.git/
+.github/
+.sources/
+.pytest_cache/
+
 src/gRPC/build/
 src/nmos/nmos-cpp/Development/build/
 src/nmos/nmos-node/build/
+test/
+tests/
+docs/
+
+*.md
