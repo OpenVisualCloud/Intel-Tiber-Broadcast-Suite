@@ -96,15 +96,15 @@ jobs:
       with:
         ref: "${{ steps.set_ref_and_tag.outputs.TEMP_REF }}"
 
-    - name: "Validation: Build/Push Dokcerfile"
+    - name: "${{ matrix.config.IMAGE_NAME }}: Build/Push Dokcerfile"
       uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
       with:
         context: "${{ matrix.config.BUILD_SCOPE }}"
         file: "${{ matrix.config.IMAGE_PATH }}"
-        push: ${{ env.DOCKER_LOGIN == 'true' }}
+        push: "${{ env.DOCKER_LOGIN == 'true' && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name != 'push' && github.event_name != 'pull_request') }}"
         target: "${{ matrix.config.BUILD_STAGE }}"
         tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ matrix.config.IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-        cache-from: type=gha,scope=${{ matrix.config.IMAGE_NAME }}
-        cache-to: type=gha,mode=max,scope=${{ matrix.config.IMAGE_NAME }}
+        cache-from: "type=gha,scope=${{ matrix.config.IMAGE_NAME }}"
+        cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('type=gha,mode=max,scope={0}', matrix.config.IMAGE_NAME) || '' }}
         platforms: "linux/amd64"
         load: false
