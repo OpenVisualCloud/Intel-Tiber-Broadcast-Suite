@@ -19,7 +19,8 @@ permissions:
   contents: read
 
 env:
-  BUILD_TYPE: "Release"
+  BUILD_TYPE: "CI"
+  LOCAL_INSTALL: "false"
   CMAKE_BUILD_TYPE: "Release"
   DOCKER_REGISTRY: "ghcr.io"
   DOCKER_LOGIN: "${{ github.repository == 'openvisualcloud/intel-tiber-broadcast-suite' }}"
@@ -28,138 +29,82 @@ env:
   DOCKER_IMAGE_NAME: "tiber-broadcast-suite"
   DOCKER_IMAGE_TAG: "${{ inputs.branch || github.sha || github.ref }}"
   DEBIAN_FRONTEND: "noninteractive"
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
-  docker-tiber:
-    name: "Dockerfile build for Intel® Tiber™ Broadcast Suite"
+  docker:
+    name: "Docker image build for Intel® Tiber™ repository"
     runs-on: ["self-hosted", "docker", "Linux"]
     timeout-minutes: 180
     permissions:
       contents: read
       packages: write
-    env:
-      BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
-      BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
-      DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
-      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      matrix:
+        config:
+          - IMAGE_NAME: "tiber-broadcast-suite"
+            IMAGE_PATH: "./docker/app/Dockerfile"
+            BUILD_SCOPE: "./"
+            BUILD_STAGE: "final-stage"
+          - IMAGE_NAME: "tiber-broadcast-suite-nmos-node"
+            IMAGE_PATH: "./docker/nmos/Dockerfile"
+            BUILD_SCOPE: "./"
+            BUILD_STAGE: "final-stage"
+          - IMAGE_NAME: "bcs-pod-launcher"
+            IMAGE_PATH: "./launcher/Dockerfile"
+            BUILD_SCOPE: "./launcher"
+            BUILD_STAGE: ""
     steps:
     - name: "OS-Configuration: Harden Runner"
       uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
       with:
         egress-policy: audit
 
-    - name: "OS-Configuration: Docker with Buildx Toolkit set up"
-      uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-
-    - name: "Code-Sync: GitHub git checkout push"
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      with:
-        ref: ${{ inputs.branch || github.sha }}
-
-    - name: "Code-Sync: GitHub git checkout pull_request or release"
-      if: github.event_name == 'pull_request' || github.event_name == 'release'
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-      with:
-        ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
-
     - name: "Docker: Login to ghcr.io Container Registry"
       uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
       if: ${{ env.DOCKER_LOGIN == 'true' }}
       continue-on-error: true
       with:
-        registry: "ghcr.io"
+        registry: "${{ env.DOCKER_REGISTRY }}"
         username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.repository_owner }}"
         password: "${{ secrets.DOCKER_REGISTRY_PASSKEY || secrets.GITHUB_TOKEN }}"
-
-    - name: "Build and push mtl-manager image"
-      run: ./build.sh
-      env:
-        BUILD_TYPE: "CI"
-        CMAKE_BUILD_TYPE: "Release"
-        LOCAL_INSTALL: "false"
-        IMAGE_NAME: "mtl-manager"
-        IMAGE_PATH: "./docker/app/Dockerfile"
-        BUILD_SCOPE: "./"
-        BUILD_STAGE: "manager-stage"
-
-    - name: "Build and push tiber-broadcast-suite image"
-      run: ./build.sh
-      env:
-        BUILD_TYPE: "CI"
-        CMAKE_BUILD_TYPE: "Release"
-        LOCAL_INSTALL: "false"
-        IMAGE_NAME: "tiber-broadcast-suite"
-        IMAGE_PATH: "./docker/app/Dockerfile"
-        BUILD_SCOPE: "./"
-        BUILD_STAGE: "final-stage"
-
-  docker-aux:
-    name: "Dockerfile build for Intel® Tiber™ NMOS and BCS containers"
-    runs-on: ["self-hosted", "docker", "Linux"]
-    timeout-minutes: 180
-    permissions:
-      contents: read
-      packages: write
-    env:
-      BUILDKIT_STEP_LOG_MAX_SIZE: 50000000
-      BUILDKIT_STEP_LOG_MAX_SPEED: 10000000
-      DOCKER_TMPDIR: "/mnt/docker/docker-tmp"
-      TAG_NAME: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-    - name: "OS-Configuration: Harden Runner"
-      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-      with:
-        egress-policy: audit
 
     - name: "OS-Configuration: Docker with Buildx Toolkit set up"
       uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
 
-    - name: "Code-Sync: GitHub git checkout push"
-      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    - name: "${{ matrix.config.IMAGE_NAME }}: Code-sync GitHub ref and Docker Image Tag"
+      id: set_ref_and_tag
+      run: |
+        if [ "${{ github.event_name }}" == "release" ]; then
+          TEMP_REF="${{ github.event.release.tag_name }}"
+        elif [ "${{ github.event_name }}" == "pull_request" ]; then
+          TEMP_REF="${{ github.ref }}"
+        else
+          TEMP_REF="${{ inputs.branch || github.sha }}"
+        fi
+        # Sanitize the tag to be Docker image tag safe
+        DOCKER_IMAGE_TAG="$(echo "${TEMP_REF}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g' | sed 's/^-*//;s/-*$//')"
+        echo "TEMP_REF=${TEMP_REF}" >> $GITHUB_ENV
+        echo "DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG}" >> $GITHUB_ENV
+
+    - name: "${{ matrix.config.IMAGE_NAME }}: Code-sync GitHub git checkout push"
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       with:
-        ref: ${{ inputs.branch || github.sha }}
+        ref: "${{ steps.set_ref_and_tag.outputs.TEMP_REF }}"
 
-    - name: "Code-Sync: GitHub git checkout pull_request or release"
-      if: github.event_name == 'pull_request' || github.event_name == 'release'
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: "${{ matrix.config.IMAGE_NAME }}: Build/Push Dokcerfile"
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
       with:
-        ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref }}
-
-    - name: "Docker: Login to ghcr.io Container Registry"
-      uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-      if: ${{ env.DOCKER_LOGIN == 'true' }}
-      continue-on-error: true
-      with:
-        registry: "ghcr.io"
-        username: "${{ secrets.DOCKER_REGISTRY_LOGIN || github.repository_owner }}"
-        password: "${{ secrets.DOCKER_REGISTRY_PASSKEY || secrets.GITHUB_TOKEN }}"
-
-    - name: "Build and push tiber-broadcast-suite-nmos-node image"
-      run: ./build.sh
-      env:
-        BUILD_TYPE: "CI"
-        CMAKE_BUILD_TYPE: "Release"
-        LOCAL_INSTALL: "false"
-        IMAGE_NAME: "tiber-broadcast-suite-nmos-node"
-        IMAGE_PATH: "./docker/nmos/Dockerfile"
-        BUILD_SCOPE: "./"
-        BUILD_STAGE: "final-stage"
-
-    - name: "Build and push bcs-pod-launcher image"
-      run: ./build.sh
-      env:
-        BUILD_TYPE: "CI"
-        CMAKE_BUILD_TYPE: "Release"
-        LOCAL_INSTALL: "false"
-        IMAGE_NAME: "bcs-pod-launcher"
-        IMAGE_PATH: "./launcher/Dockerfile"
-        BUILD_SCOPE: "./launcher"
-        BUILD_STAGE: ""
+        context: "${{ matrix.config.BUILD_SCOPE }}"
+        file: "${{ matrix.config.IMAGE_PATH }}"
+        push: "${{ env.DOCKER_LOGIN == 'true' && (github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name != 'push' && github.event_name != 'pull_request') }}"
+        target: "${{ matrix.config.BUILD_STAGE }}"
+        tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ matrix.config.IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
+        cache-from: "type=gha,scope=${{ matrix.config.IMAGE_NAME }}"
+        cache-to: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && format('type=gha,mode=max,scope={0}', matrix.config.IMAGE_NAME) || '' }}
+        platforms: "linux/amd64"
+        load: false
