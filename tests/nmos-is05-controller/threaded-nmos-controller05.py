@@ -50,11 +50,13 @@ def parse_json(data):
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON response: {e}")
         return None
-def get_id(receiver_or_sender):
+    
+# index represents the index of the resource receiver or sender (stream) in the list
+def get_id(receiver_or_sender, index=0):
     if receiver_or_sender:
         resource = parse_json(receiver_or_sender)
         if resource:
-            id = resource[0].strip('/')
+            id = resource[index].strip('/')
             return id
         else:
             print("Failed to parse data")
@@ -115,18 +117,30 @@ def main():
     parser.add_argument("--receiver_port", type=int, required=True, help="Receiver port.")
     parser.add_argument("--sender_ip", required=True, help="Sender IP address.")
     parser.add_argument("--sender_port", type=int, required=True, help="Sender port.")
+    parser.add_argument("--receiver_index", type=int, default=0, help="Index of the receiver in the list.")
+    parser.add_argument("--sender_index", type=int, default=0, help="Index of the sender in the list.")
     input_connection_data = parser.parse_args()
     receiver_ip = input_connection_data.receiver_ip
     receiver_port = input_connection_data.receiver_port
     sender_ip = input_connection_data.sender_ip
     sender_port = input_connection_data.sender_port
+    receiver_index = input_connection_data.receiver_index
+    sender_index = input_connection_data.sender_index
+    
+    if not receiver_ip or not receiver_port or not sender_ip or not sender_port:
+        print("Error: Receiver IP, Receiver Port, Sender IP, or Sender Port is not provided.")
+        return
+
+    if receiver_index is None or sender_index is None:
+        print("Error: Receiver index or sender index is not provided.")
+        return
 
     receiver_url = f"http://{receiver_ip}:{receiver_port}/x-nmos/connection/v1.1/single/receivers/"
     sender_url = f"http://{sender_ip}:{sender_port}/x-nmos/connection/v1.1/single/senders/"
     receiver_data = fetch_data(receiver_url)
     sender_data = fetch_data(sender_url)
-    receiver_id = get_id(receiver_data)
-    sender_id = get_id(sender_data)
+    receiver_id = get_id(receiver_data, receiver_index)
+    sender_id = get_id(sender_data, sender_index)
 
     # logic for updating sender staged endpoint and activate
     patched_file="sender.json"
