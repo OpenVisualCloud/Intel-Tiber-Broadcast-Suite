@@ -1,0 +1,19 @@
+{
+  "logging_level": 10,
+  "http_port": 95,
+  "label": "intel-broadcast-suite",
+  "device_tags": {
+    "pipeline": [
+      "rx"
+    ]
+  },
+  "function": "rx",
+  "gpu_hw_acceleration": "none",
+  "gpu_hw_acceleration_device": "",
+  "domain": "local",
+  "ffmpeg_grpc_server_address": "192.168.2.6",
+  "ffmpeg_grpc_server_port": "50053",
+  "sender_payload_type": 0,
+  "sender": [],
+  "receiver": []
+}
