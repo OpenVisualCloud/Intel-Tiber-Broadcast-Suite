@@ -22,37 +22,37 @@ configuration: # Configuration should be used only for docker mode
       custom_network: # custom network = false means that the container will be run in the host docker network
         enable: false
   workloadToBeRun:
-    ffmpegPipeline:
-      name: bcs-ffmpeg-pipeline-tx
-      imageAndTag: tiber-broadcast-suite:latest
-      gRPCPort: 50088 # this is the port used by the nmos container to communicate with ffmpeg pipeline
-      nmosPort: 5004 # this is the port used by the nmos container to manage node via REST API
-      environmentVariables:
-        - "http_proxy="
-        - "https_proxy=" 
-      volumes:
-        videos: /root #for videos
-        dri: /usr/lib/x86_64-linux-gnu/dri
-        kahawai: /tmp/kahawai_lcore.lock
-        devnull: /dev/null
-        tmpHugepages: /tmp/hugepages
-        hugepages: /hugepages
-        imtl: /var/run/imtl
-        shm: /dev/shm
-      devices:
-        vfio: /dev/vfio
-        dri: /dev/dri
-      custom_network:  # custom network = false means that the container will be run in the host docker network
-        enable: false
-        ip: 10.123.x.x #this ip is crucial to be exposed explicitly to the nmos client. It should be the same as host IP address or localhost
-    nmosClient:
-      name: bcs-ffmpeg-pipeline-nmos-client-tx
-      imageAndTag: tiber-broadcast-suite-nmos-node:latest
-      environmentVariables:
-        - "http_proxy="
-        - "https_proxy=" 
-        - "VFIO_PORT_TX=0000:ca:11.0" # this is the PCI address of the vfio device - MENDATORY!
-      nmosConfigPath: /root/path/to/intel-node-tx/json/file
-      nmosConfigFileName: intel-node-tx.json
-      custom_network:  # custom network = false means that the container will be run in the host docker network
-        enable: false
+    - ffmpegPipeline:
+        name: bcs-ffmpeg-pipeline-tx
+        imageAndTag: tiber-broadcast-suite:latest
+        gRPCPort: 50088 # this is the port used by the nmos container to communicate with ffmpeg pipeline
+        nmosPort: 5004 # this is the port used by the nmos container to manage node via REST API
+        environmentVariables:
+          - "http_proxy="
+          - "https_proxy=" 
+        volumes:
+          videos: /root #for videos
+          dri: /usr/lib/x86_64-linux-gnu/dri
+          kahawai: /tmp/kahawai_lcore.lock
+          devnull: /dev/null
+          tmpHugepages: /tmp/hugepages
+          hugepages: /hugepages
+          imtl: /var/run/imtl
+          shm: /dev/shm
+        devices:
+          vfio: /dev/vfio
+          dri: /dev/dri
+        custom_network:  # custom network = false means that the container will be run in the host docker network
+          enable: false
+          ip: 10.123.x.x #this ip is crucial to be exposed explicitly to the nmos client. It should be the same as host IP address or localhost
+      nmosClient:
+        name: bcs-ffmpeg-pipeline-nmos-client-tx
+        imageAndTag: tiber-broadcast-suite-nmos-node:latest
+        environmentVariables:
+          - "http_proxy="
+          - "https_proxy=" 
+          - "VFIO_PORT_TX=0000:ca:11.0" # this is the PCI address of the vfio device - MENDATORY!
+        nmosConfigPath: /root/path/to/intel-node-tx/json/file
+        nmosConfigFileName: intel-node-tx.json
+        custom_network:  # custom network = false means that the container will be run in the host docker network
+          enable: false
