@@ -27,7 +27,6 @@ configuration: # Configuration should be used only for docker mode
         name: bcs-ffmpeg-pipeline-rx
         imageAndTag: tiber-broadcast-suite:latest
         gRPCPort: 50044 # this is the port used by the nmos container to communicate with ffmpeg pipeline
-        nmosPort: 5006 # this is the port used by the nmos container to manage node via REST API
         environmentVariables:
           - "http_proxy="
           - "https_proxy=" 
@@ -54,6 +53,7 @@ configuration: # Configuration should be used only for docker mode
           - "https_proxy=" 
           - "VFIO_PORT_RX=0000:ca:11.1" # this is the PCI address of the vfio device - MENDATORY!
         nmosConfigPath: /root/path/to/intel-node-rx/json/file
+        nmosPort: 5044
         nmosConfigFileName: intel-node-rx.json
         custom_network:  # custom network = false means that the container will be run in the host docker network
           enable: false

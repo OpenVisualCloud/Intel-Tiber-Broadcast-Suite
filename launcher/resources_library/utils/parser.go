@@ -14,20 +14,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type MediaProxyAgentConfig struct {
-	ImageAndTag string        `yaml:"imageAndTag"`
-	GRPCPort    string        `yaml:"gRPCPort"`
-	RestPort    string        `yaml:"restPort"`
-	Network     NetworkConfig `yaml:"custom_network"`
-}
-
-type MediaProxyMcmConfig struct {
-	ImageAndTag   string        `yaml:"imageAndTag"`
-	InterfaceName string        `yaml:"interfaceName"`
-	Volumes       []string      `yaml:"volumes"`
-	Network       NetworkConfig `yaml:"custom_network"`
-}
-
 type WorkloadConfig struct {
 	FfmpegPipeline FfmpegPipelineConfig `yaml:"ffmpegPipeline"`
 	NmosClient     NmosClientConfig     `yaml:"nmosClient"`
@@ -53,7 +39,6 @@ type FfmpegPipelineConfig struct {
 	Name                 string        `yaml:"name"`
 	ImageAndTag          string        `yaml:"imageAndTag"`
 	GRPCPort             int           `yaml:"gRPCPort"`
-	NmosPort             int           `yaml:"nmosPort"`
 	EnvironmentVariables []string      `yaml:"environmentVariables"`
 	Volumes              Volumes       `yaml:"volumes"`
 	Devices              Devices       `yaml:"devices"`
@@ -83,8 +68,8 @@ type Config struct {
 }
 
 type Configuration struct {
-	RunOnce         RunOnce          `yaml:"runOnce"`
-	WorkloadToBeRun []WorkloadConfig `yaml:"workloadToBeRun"`
+	RunOnce         RunOnce                    `yaml:"runOnce"`
+	WorkloadToBeRun []workloads.WorkloadConfig `yaml:"workloadToBeRun"`
 }
 
 type RunOnce struct {
