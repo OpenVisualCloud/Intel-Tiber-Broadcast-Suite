@@ -27,7 +27,7 @@ network:
   enable: true
   name: "nmos-network"
   ip: "192.168.1.100"
-ffmpegConectionAddress: "192.168.1.101"
+ffmpegConnectionAddress: "192.168.1.101"
 ffmpegConnectionPort: "8080"
 `
 		var config NmosClientConfig
@@ -42,7 +42,7 @@ ffmpegConnectionPort: "8080"
 		assert.True(t, config.Network.Enable)
 		assert.Equal(t, "nmos-network", config.Network.Name)
 		assert.Equal(t, "192.168.1.100", config.Network.IP)
-		assert.Equal(t, "192.168.1.101", config.FfmpegConectionAddress)
+		assert.Equal(t, "192.168.1.101", config.FfmpegConnectionAddress)
 		assert.Equal(t, "8080", config.FfmpegConnectionPort)
 	})
 
@@ -76,7 +76,7 @@ imageAndTag: "nmos-client:latest"
 		assert.False(t, config.Network.Enable)
 		assert.Empty(t, config.Network.Name)
 		assert.Empty(t, config.Network.IP)
-		assert.Empty(t, config.FfmpegConectionAddress)
+		assert.Empty(t, config.FfmpegConnectionAddress)
 		assert.Empty(t, config.FfmpegConnectionPort)
 	})
 }
