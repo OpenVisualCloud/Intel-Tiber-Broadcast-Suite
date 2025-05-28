@@ -1,0 +1,92 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# 
+# SPDX-License-Identifier: BSD-3-Clause
+# 
+# CONFIGURATION FOR mediaProxyAgent AND mediaProxyMcm MUST BE THE SAME WITHIN THE SAME NETWORK/SETUP
+# CONFIGURATION FOR mediaProxyAgent AND mediaProxyMcm IS FOR ONE NODE SCENARIO ONLY
+k8s: false # use in both modes: k8s | docker
+configuration: # Configuration should be used only for docker mode
+  runOnce:
+    mediaProxyAgent:
+      imageAndTag: mcm/mesh-agent:latest
+      gRPCPort: 50051 # this is the port used by the agent
+      restPort: 8100
+      custom_network: # custom network = false means that the container will be run in the host docker network
+        enable: false
+    mediaProxyMcm:
+      imageAndTag: mcm/media-proxy:latest
+      interfaceName: eth0
+      volumes:
+        - /dev/vfio:/dev/vfio
+      custom_network: # custom network = false means that the container will be run in the host docker network
+        enable: false
+  workloadToBeRun:
+    - ffmpegPipeline:
+        name: bcs-ffmpeg-pipeline-tx
+        imageAndTag: tiber-broadcast-suite:latest
+        gRPCPort: 50088 # this is the port used by the nmos container to communicate with ffmpeg pipeline
+        environmentVariables:
+          - "http_proxy="
+          - "https_proxy=" 
+        volumes:
+          videos: /root #for videos
+          dri: /usr/lib/x86_64-linux-gnu/dri
+          kahawai: /tmp/kahawai_lcore.lock
+          devnull: /dev/null
+          tmpHugepages: /tmp/hugepages
+          hugepages: /hugepages
+          imtl: /var/run/imtl
+          shm: /dev/shm
+        devices:
+          vfio: /dev/vfio
+          dri: /dev/dri
+        custom_network:  # custom network = false means that the container will be run in the host docker network
+          enable: false
+          ip: 192.168.1.2 #this ip is crucial to be exposed explicitly to the nmos client. It should be the same as host IP address or localhost
+      nmosClient:
+        name: bcs-ffmpeg-pipeline-nmos-client-tx
+        imageAndTag: tiber-broadcast-suite-nmos-node:latest
+        environmentVariables:
+          - "http_proxy="
+          - "https_proxy=" 
+          - "VFIO_PORT_TX=0000:ca:11.0" # this is the PCI address of the vfio device - MENDATORY!
+        nmosConfigPath: /path
+        nmosConfigFileName: intel-node-tx.json
+        nmosPort: 8080
+        custom_network:  # custom network = false means that the container will be run in the host docker network
+          enable: false
+    - ffmpegPipeline:
+        name: bcs-ffmpeg-pipeline-rx
+        imageAndTag: tiber-broadcast-suite:latest
+        gRPCPort: 50089 # this is the port used by the nmos container to communicate with ffmpeg pipeline
+        environmentVariables:
+          - "http_proxy="
+          - "https_proxy=" 
+        volumes:
+          videos: /root #for videos
+          dri: /usr/lib/x86_64-linux-gnu/dri
+          kahawai: /tmp/kahawai_lcore.lock
+          devnull: /dev/null
+          tmpHugepages: /tmp/hugepages
+          hugepages: /hugepages
+          imtl: /var/run/imtl
+          shm: /dev/shm
+        devices:
+          vfio: /dev/vfio
+          dri: /dev/dri
+        custom_network:  # custom network = false means that the container will be run in the host docker network
+          enable: false
+          ip: 192.168.1.3 #this ip is crucial to be exposed explicitly to the nmos client. It should be the same as host IP address or localhost
+      nmosClient:
+        name: bcs-ffmpeg-pipeline-nmos-client-rx
+        imageAndTag: tiber-broadcast-suite-nmos-node:latest
+        environmentVariables:
+          - "http_proxy="
+          - "https_proxy=" 
+          - "VFIO_PORT_RX=0000:ca:11.1" # this is the PCI address of the vfio device - MENDATORY!
+        nmosConfigPath: /path
+        nmosConfigFileName: intel-node-rx.json
+        nmosPort: 8088
+        custom_network:  # custom network = false means that the container will be run in the host docker network
+          enable: false
