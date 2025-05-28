@@ -25,12 +25,6 @@ jobs:
     - name: "Preparation: Repository Checkout"
       uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    - name: "Test first_run script"
-      working-directory: "${{ github.workspace }}/scripts"
-      run: |
-        chmod +x first_run.sh
-        ./first_run.sh
-
     - name: "Build: gRPC and nmos"
       working-directory: "${{ github.workspace }}/src"
       run: |

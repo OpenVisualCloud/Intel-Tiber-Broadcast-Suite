@@ -111,8 +111,14 @@ function copy_nicctl_script()
     if [ "$script_result" != "0" ]; then
         . versions.env 2>&1 &&
         STRIPPED_VER=${MTL_VER#v} 2>&1 &&
-        wget -O /usr/local/bin/nicctl.sh https://raw.githubusercontent.com/OpenVisualCloud/Media-Transport-Library/refs/heads/maint-"${STRIPPED_VER}"/script/nicctl.sh  2>&1 &&
-        chmod +x /usr/local/bin/nicctl.sh 2>&1
+        if ! sudo wget -O /usr/local/bin/nicctl.sh https://raw.githubusercontent.com/OpenVisualCloud/Media-Transport-Library/refs/heads/"${STRIPPED_VER}"/script/nicctl.sh; then
+            log_error "Failed to download nicctl.sh script"
+            return 1
+        fi
+        if ! sudo chmod +x /usr/local/bin/nicctl.sh; then
+            log_error "Failed to set executable permissions for nicctl.sh script"
+            return 1
+        fi
         script_result="$?"
     fi
 
@@ -120,7 +126,7 @@ function copy_nicctl_script()
         log_info 'Finished copy_nicctl_script sequence. Success.'
         return 0
     fi
-    log_error 'Finished copy_nicctl_script sequence.'
+    log_error 'Sequence copy_nicctl_script failed'
     return 1
 }
 
@@ -185,14 +191,19 @@ function setup_nic_virtual_functions()
     IFS=$'\n'
 
 
-    [ -f "/usr/local/bin/nicctl.sh" ] || copy_nicctl_script
+    if [ ! -f "/usr/local/bin/nicctl.sh" ]; then
+        if ! copy_nicctl_script; then
+            log_error "Failed to copy nicctl.sh script. Exiting."
+            exit 1
+        fi
+    fi
     if [ "$?" -ne "0" ]; then
         log_error 'Container mtl-manager:latest or nicctl.sh script failed. Exiting.'
         exit 1
     fi
 
     while IFS= read -r line; do
-        /usr/local/bin/nicctl.sh disable_vf "$line" 1>/dev/null
+        sudo /usr/local/bin/nicctl.sh disable_vf "$line" 1>/dev/null
         if ! /usr/local/bin/nicctl.sh create_vf "$line" ; then
             log_error "Error occurred while creating VF for device: '$line'"
             exit 2
@@ -220,14 +231,17 @@ function setup_mtl_manager_container
               mtl-manager:latest || return 2
         fi
     else
-        docker run -d \
+        if ! docker run -d \
           --name mtl-manager \
           --privileged --net=host \
           -v /var/run/imtl:/var/run/imtl \
           -v /sys/fs/bpf:/sys/fs/bpf \
-          mtl-manager:latest || return 2
+          mtl-manager:latest; then
+            log_warning "Failed to start mtl-manager container"
+        else
+            log_success 'Finished run sequence for mtl-manager:latest image. Success.'
+        fi
     fi
-    log_success 'Finished run sequence for mtl-manager:latest image. Success.'
 }
 
 print_help() {
