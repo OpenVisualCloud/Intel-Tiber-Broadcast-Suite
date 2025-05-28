@@ -51,7 +51,7 @@ configuration: # Configuration should be used only for docker mode
           - "http_proxy="
           - "https_proxy=" 
           - "VFIO_PORT_TX=0000:ca:11.0" # this is the PCI address of the vfio device - MENDATORY!
-        nmosConfigPath: /path
+        nmosConfigPath: /root/NMOS-FFMPEG-DEMO/magda/itbs/launcher/configuration_files
         nmosConfigFileName: intel-node-tx.json
         nmosPort: 8080
         custom_network:  # custom network = false means that the container will be run in the host docker network
@@ -85,7 +85,7 @@ configuration: # Configuration should be used only for docker mode
           - "http_proxy="
           - "https_proxy=" 
           - "VFIO_PORT_RX=0000:ca:11.1" # this is the PCI address of the vfio device - MENDATORY!
-        nmosConfigPath: /path
+        nmosConfigPath: /root/NMOS-FFMPEG-DEMO/magda/itbs/launcher/configuration_files
         nmosConfigFileName: intel-node-rx.json
         nmosPort: 8088
         custom_network:  # custom network = false means that the container will be run in the host docker network
