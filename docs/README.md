@@ -3,8 +3,10 @@
 > [!TIP]
 > [Full Documentation](https://openvisualcloud.github.io/Intel-Tiber-Broadcast-Suite) for [Intel®](https://intel.com) [Tiber™ Broadcast Suite](https://openvisualcloud.github.io/Intel-Tiber-Broadcast-Suite).
 
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![local-build](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/base_build.yml/badge.svg)](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/base_build.yml)
+[![dockerfiles-build](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/docker_build.yml/badge.svg)](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/docker_build.yml)
 [![Linters](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/linters.yml/badge.svg)](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/linters.yml)
-[![dockerfiles-build](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/build_tiber_docker.yml/badge.svg)](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/build_tiber_docker.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/badge)](https://securityscorecards.dev/viewer/?uri=github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite)
 [![Coverity Scan](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/coverity_build.yml/badge.svg)](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite/actions/workflows/coverity_build.yml)
 
