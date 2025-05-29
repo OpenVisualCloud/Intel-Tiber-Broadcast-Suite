@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 
+	"bcs.pod.launcher.intel/resources_library/parser"
 	"bcs.pod.launcher.intel/resources_library/resources/bcs"
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/resources/nmos"
@@ -192,38 +193,38 @@ func FileExists(filePath string) bool {
 	return !os.IsNotExist(err)
 }
 
-func constructContainerConfig(containerInfo *general.Containers, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
+func constructContainerConfig(containerInfo *general.Containers, config *parser.Configuration, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
 	var containerConfig *container.Config
 	var hostConfig *container.HostConfig
 	var networkConfig *network.NetworkingConfig
 
 	switch containerInfo.Type {
 	case general.MediaProxyAgent:
-		fmt.Printf(">> MediaProxyAgentConfig: %+v\n", containerInfo.Configuration.MediaProxyAgentConfig)
+		fmt.Printf(">> MediaProxyAgentConfig: %+v\n", config.RunOnce.MediaProxyAgent)
 		containerConfig = &container.Config{
 			User:  "root",
-			Image: containerInfo.Configuration.MediaProxyAgentConfig.ImageAndTag,
-			Cmd:   []string{"-c", containerInfo.Configuration.MediaProxyAgentConfig.RestPort, "-p", containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort},
+			Image: config.RunOnce.MediaProxyAgent.ImageAndTag,
+			Cmd:   []string{"-c", config.RunOnce.MediaProxyAgent.RestPort, "-p", config.RunOnce.MediaProxyAgent.GRPCPort},
 			ExposedPorts: nat.PortSet{
-				nat.Port(fmt.Sprintf("%s/tcp", containerInfo.Configuration.MediaProxyAgentConfig.RestPort)): struct{}{},
-				nat.Port(fmt.Sprintf("%s/tcp", containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort)): struct{}{},
+				nat.Port(fmt.Sprintf("%s/tcp", config.RunOnce.MediaProxyAgent.RestPort)): struct{}{},
+				nat.Port(fmt.Sprintf("%s/tcp", config.RunOnce.MediaProxyAgent.GRPCPort)): struct{}{},
 			},
 		}
 
 		hostConfig = &container.HostConfig{
 			Privileged: true,
 			PortBindings: nat.PortMap{
-				nat.Port(fmt.Sprintf("%s/tcp", containerInfo.Configuration.MediaProxyAgentConfig.RestPort)): []nat.PortBinding{{HostPort: containerInfo.Configuration.MediaProxyAgentConfig.RestPort}},
-				nat.Port(fmt.Sprintf("%s/tcp", containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort)): []nat.PortBinding{{HostPort: containerInfo.Configuration.MediaProxyAgentConfig.GRPCPort}},
+				nat.Port(fmt.Sprintf("%s/tcp", config.RunOnce.MediaProxyAgent.RestPort)): []nat.PortBinding{{HostPort: config.RunOnce.MediaProxyAgent.RestPort}},
+				nat.Port(fmt.Sprintf("%s/tcp", config.RunOnce.MediaProxyAgent.GRPCPort)): []nat.PortBinding{{HostPort: config.RunOnce.MediaProxyAgent.GRPCPort}},
 			},
 		}
-		if containerInfo.Configuration.MediaProxyAgentConfig.Network.Enable {
-			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.MediaProxyAgentConfig.Network.Name)
+		if config.RunOnce.MediaProxyAgent.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(config.RunOnce.MediaProxyAgent.Network.Name)
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
-					containerInfo.Configuration.MediaProxyAgentConfig.Network.Name: {
+					config.RunOnce.MediaProxyAgent.Network.Name: {
 						IPAMConfig: &network.EndpointIPAMConfig{
-							IPv4Address: containerInfo.Configuration.MediaProxyAgentConfig.Network.IP,
+							IPv4Address: config.RunOnce.MediaProxyAgent.Network.IP,
 						},
 					},
 				},
@@ -233,25 +234,25 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			hostConfig.NetworkMode = "host"
 		}
 	case general.MediaProxyMCM:
-		fmt.Printf(">> MediaProxyMcmConfig: %+v\n", containerInfo.Configuration.MediaProxyMcmConfig)
+		fmt.Printf(">> MediaProxyMcmConfig: %+v\n", config.RunOnce.MediaProxyMcm)
 		containerConfig = &container.Config{
-			Image: containerInfo.Configuration.MediaProxyMcmConfig.ImageAndTag,
-			Cmd:   []string{"-d", fmt.Sprintf("kernel:%s", containerInfo.Configuration.MediaProxyMcmConfig.InterfaceName), "-i", "localhost"},
+			Image: config.RunOnce.MediaProxyMcm.ImageAndTag,
+			Cmd:   []string{"-d", fmt.Sprintf("kernel:%s", config.RunOnce.MediaProxyMcm.InterfaceName), "-i", "localhost"},
 		}
 
 		hostConfig = &container.HostConfig{
 			Privileged: true,
-			Binds:      containerInfo.Configuration.MediaProxyMcmConfig.Volumes,
+			Binds:      config.RunOnce.MediaProxyMcm.Volumes,
 		}
 
-		if containerInfo.Configuration.MediaProxyMcmConfig.Network.Enable {
-			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.MediaProxyMcmConfig.Network.Name)
+		if config.RunOnce.MediaProxyMcm.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(config.RunOnce.MediaProxyMcm.Network.Name)
 
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
-					containerInfo.Configuration.MediaProxyMcmConfig.Network.Name: {
+					config.RunOnce.MediaProxyMcm.Network.Name: {
 						IPAMConfig: &network.EndpointIPAMConfig{
-							IPv4Address: containerInfo.Configuration.MediaProxyMcmConfig.Network.IP,
+							IPv4Address: config.RunOnce.MediaProxyMcm.Network.IP,
 						},
 					},
 				},
@@ -261,57 +262,58 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			hostConfig.NetworkMode = "host"
 		}
 	case general.BcsPipelineFfmpeg:
-		fmt.Printf(">> BcsPipelineFfmpeg: %+v\n", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline)
+		fmt.Printf(">> BcsPipelineFfmpeg: %+v\n", config.WorkloadToBeRun)
 
 		containerConfig = &container.Config{
 			User:  "root",
-			Image: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.ImageAndTag,
-			Env:   containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.EnvironmentVariables,
+			Image: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.ImageAndTag,
+			Env:   config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.EnvironmentVariables,
 			ExposedPorts: nat.PortSet{
-				nat.Port(fmt.Sprintf("%d/tcp", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)): struct{}{},
+				nat.Port(fmt.Sprintf("%d/tcp", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)): struct{}{},
 			},
 		}
 
-		if containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable {
-			containerConfig.Cmd = []string{containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP, fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)}
+		if config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.Enable {
+			containerConfig.Cmd = []string{config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.IP, fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)}
 		} else {
-			containerConfig.Cmd = []string{"localhost", fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)}
+			containerConfig.Cmd = []string{"localhost", fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)}
 		}
 
 		hostConfig = &container.HostConfig{
 			Privileged: true,
 			CapAdd:     []string{"ALL"},
 			PortBindings: nat.PortMap{
-				nat.Port(fmt.Sprintf("%d/tcp", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort)): []nat.PortBinding{
+				nat.Port(fmt.Sprintf("%d/tcp", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)): []nat.PortBinding{
 					{
-						HostPort: fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort),
+						HostPort: fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort),
 					},
 				},
 			},
 			Mounts: []mount.Mount{
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Videos, Target: "/videos"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri, Target: "/usr/local/lib/x86_64-linux-gnu/dri"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Kahawai, Target: "/tmp/kahawai_lcore.lock"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Devnull, Target: "/dev/null"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.TmpHugepages, Target: "/tmp/hugepages"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Hugepages, Target: "/hugepages"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Imtl, Target: "/var/run/imtl"},
-				{Type: mount.TypeBind, Source: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Shm, Target: "/dev/shm"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Videos, Target: "/videos"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Dri, Target: "/usr/local/lib/x86_64-linux-gnu/dri"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Kahawai, Target: "/tmp/kahawai_lcore.lock"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Devnull, Target: "/dev/null"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.TmpHugepages, Target: "/tmp/hugepages"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Hugepages, Target: "/hugepages"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Imtl, Target: "/var/run/imtl"},
+				{Type: mount.TypeBind, Source: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Volumes.Shm, Target: "/dev/shm"},
 			},
 			IpcMode: "host",
 		}
 		hostConfig.Devices = []container.DeviceMapping{
-			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio, PathInContainer: "/dev/vfio"},
-			{PathOnHost: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Dri, PathInContainer: "/dev/dri"},
+			{PathOnHost: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Devices.Vfio, PathInContainer: "/dev/vfio"},
+			{PathOnHost: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Devices.Dri, PathInContainer: "/dev/dri"},
 		}
-		if containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable {
-			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name)
+		if config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.Name)
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
-					containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name: {
+					config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.Name: {
 						IPAMConfig: &network.EndpointIPAMConfig{
-							IPv4Address: containerInfo.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP,
+							IPv4Address: config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.IP,
 						},
+						Aliases: []string{config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.Name},
 					},
 				},
 			}
@@ -320,51 +322,51 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 			hostConfig.NetworkMode = "host"
 		}
 	case general.BcsPipelineNmosClient:
-		nmosFileNameJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName
-		nmosFilePathJson := containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath + "/" + nmosFileNameJson
+		nmosFileNameJson := config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosConfigFileName
+		nmosFilePathJson := config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosConfigPath + "/" + nmosFileNameJson
 		if !FileExists(nmosFilePathJson) {
 			log.Error(errors.New("NMOS json file does not exist"), "NMOS json file does not exist")
 			return nil, nil, nil
 		}
 		errUpdateJson := updateNmosJsonFile(nmosFilePathJson,
-			containerInfo.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionAddress,
-			containerInfo.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort)
+			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionAddress,
+			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionPort)
 		if errUpdateJson != nil {
 			log.Error(errUpdateJson, "Error updating NMOS json file")
 			return nil, nil, nil
 		}
 		configPathContainer := "config/" + nmosFileNameJson
 		containerConfig = &container.Config{
-			Image: containerInfo.Configuration.WorkloadConfig.NmosClient.ImageAndTag,
+			Image: config.WorkloadToBeRun[containerInfo.Id].NmosClient.ImageAndTag,
 			Cmd:   []string{configPathContainer},
-			Env:   containerInfo.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables,
+			Env:   config.WorkloadToBeRun[containerInfo.Id].NmosClient.EnvironmentVariables,
 			User:  "root",
 			ExposedPorts: nat.PortSet{
-				nat.Port(fmt.Sprintf("%d/tcp", containerInfo.Configuration.WorkloadConfig.NmosClient.NmosPort)): struct{}{},
+				nat.Port(fmt.Sprintf("%d/tcp", config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosPort)): struct{}{},
 			},
 		}
 
 		hostConfig = &container.HostConfig{
 			Privileged: true,
 			PortBindings: nat.PortMap{
-				nat.Port(fmt.Sprintf("%d/tcp", containerInfo.Configuration.WorkloadConfig.NmosClient.NmosPort)): []nat.PortBinding{
+				nat.Port(fmt.Sprintf("%d/tcp", config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosPort)): []nat.PortBinding{
 					{
-						HostPort: fmt.Sprintf("%d", containerInfo.Configuration.WorkloadConfig.NmosClient.NmosPort),
+						HostPort: fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosPort),
 					},
 				},
 			},
-			Binds: []string{fmt.Sprintf("%s:/home/config/", containerInfo.Configuration.WorkloadConfig.NmosClient.NmosConfigPath)},
+			Binds: []string{fmt.Sprintf("%s:/home/config/", config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosConfigPath)},
 		}
 
-		if containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Enable {
-			hostConfig.NetworkMode = container.NetworkMode(containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name)
+		if config.WorkloadToBeRun[containerInfo.Id].NmosClient.Network.Enable {
+			hostConfig.NetworkMode = container.NetworkMode(config.WorkloadToBeRun[containerInfo.Id].NmosClient.Network.Name)
 			networkConfig = &network.NetworkingConfig{
 				EndpointsConfig: map[string]*network.EndpointSettings{
-					containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name: {
+					config.WorkloadToBeRun[containerInfo.Id].NmosClient.Network.Name: {
 						IPAMConfig: &network.EndpointIPAMConfig{
-							IPv4Address: containerInfo.Configuration.WorkloadConfig.NmosClient.Network.IP,
+							IPv4Address: config.WorkloadToBeRun[containerInfo.Id].NmosClient.Network.IP,
 						},
-						Aliases: []string{containerInfo.Configuration.WorkloadConfig.NmosClient.Network.Name},
+						Aliases: []string{config.WorkloadToBeRun[containerInfo.Id].NmosClient.Network.Name},
 					},
 				},
 			}
@@ -379,7 +381,7 @@ func constructContainerConfig(containerInfo *general.Containers, log logr.Logger
 	return containerConfig, hostConfig, networkConfig
 }
 
-func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo *general.Containers) error {
+func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo *general.Containers, config *parser.Configuration) error {
 	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
 		log.Error(err, "Failed to read container status (if it is in running state)")
@@ -413,7 +415,7 @@ func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Log
 		return err
 	}
 	// Define the container configuration
-	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, log)
+	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, config, log)
 
 	if containerConfig == nil || hostConfig == nil || networkConfig == nil {
 		// log.Error(errors.New("container configuration is nil"), "Failed to construct container configuration")
