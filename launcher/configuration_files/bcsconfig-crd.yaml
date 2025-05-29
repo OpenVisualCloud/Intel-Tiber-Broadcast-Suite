@@ -53,288 +53,290 @@ spec:
           metadata:
             type: object
           spec:
-            type: object
-            properties:
-              name:
-                type: string
-              namespace:
-                type: string
-              scheduleOnNode:
-                type: array
-                items:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
                   type: string
-              doNotScheduleOnNode:
-                type: array
-                items:
+                namespace:
                   type: string
-              app:
-                type: object
-                properties:
-                  image:
+                scheduleOnNode:
+                  type: array
+                  items:
                     type: string
-                  grpcPort:
-                    type: integer
-                  environmentVariables:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                  volumes:
-                    type: object
-                    additionalProperties:
-                      type: string
-                  resources:
-                    type: object
-                    properties:
-                      requests:
-                        type: object
-                        properties:
-                          cpu:
-                            type: string
-                          memory: 
-                            type: string
-                          hugepages-1Gi:
-                            type: string
-                          hugepages-2Mi:
-                            type: string
-                      limits:
-                        type: object
-                        properties:
-                          cpu:
-                            type: string
-                          memory: 
-                            type: string
-                          hugepages-1Gi:
-                            type: string
-                          hugepages-2Mi:
-                            type: string
-              nmos:
-                type: object
-                properties:
-                  image:
+                doNotScheduleOnNode:
+                  type: array
+                  items:
                     type: string
-                  args:
-                    type: array
-                    items:
+                app:
+                  type: object
+                  properties:
+                    image:
                       type: string
-                  environmentVariables:
-                    type: array
-                    items:
+                    grpcPort:
+                      type: integer
+                    environmentVariables:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
+                    volumes:
                       type: object
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                  nmosApiNodePort:
-                    type: integer
-                  resources:
-                    type: object
-                    properties:
-                      requests:
-                        type: object
-                        properties:
-                          cpu:
-                            type: string
-                          memory: 
-                            type: string
-                          hugepages-1Gi:
-                            type: string
-                          hugepages-2Mi:
-                            type: string
-                      limits:
-                        type: object
-                        properties:
-                          cpu:
-                            type: string
-                          memory: 
-                            type: string
-                          hugepages-1Gi:
-                            type: string
-                          hugepages-2Mi:
-                            type: string
-                  nmosInputFile:
-                    type: object
-                    properties:
-                      logging_level:
-                        type: integer
-                      http_port:
-                        type: integer
-                      label:
+                      additionalProperties:
                         type: string
-                      device_tags:
-                        type: object
-                        properties:
-                          pipeline:
-                            type: array
-                            items:
+                    resources:
+                      type: object
+                      properties:
+                        requests:
+                          type: object
+                          properties:
+                            cpu:
                               type: string
-                      function:
-                        type: string
-                      multiviewer_columns:
-                        type: integer
-                      stream_loop:
-                        type: integer
-                      activate_senders:
-                        type: boolean
-                      gpu_hw_acceleration:
-                        type: string
-                      gpu_hw_acceleration_device:
-                        type: string
-                      domain:
-                        type: string
-                      ffmpeg_grpc_server_address:
-                        type: string
-                      ffmpeg_grpc_server_port:
-                        type: string
-                      sender_payload_type:
-                        type: integer
-                      sender:
-                        type: array
-                        items:
+                            memory: 
+                              type: string
+                            hugepages-1Gi:
+                              type: string
+                            hugepages-2Mi:
+                              type: string
+                        limits:
                           type: object
                           properties:
-                            stream_payload:
-                              type: object
-                              properties:
-                                video:
-                                  type: object
-                                  properties:
-                                    frame_width:
-                                      type: integer
-                                    frame_height:
-                                      type: integer
-                                    frame_rate:
-                                      type: object
-                                      properties:
-                                        numerator:
-                                          type: integer
-                                        denominator:
-                                          type: integer
-                                    pixel_format:
-                                      type: string
-                                    video_type:
-                                      type: string
-                                    preset:
-                                      type: string
-                                    profile:
-                                      type: string
-                                audio:
-                                  type: object
-                                  properties:
-                                    channels:
-                                      type: integer
-                                    sampleRate:
-                                      type: integer
-                                    format:
-                                      type: string
-                                    packetTime:
-                                      type: string
-                            stream_type:
-                              type: object
-                              properties:
-                                st2110:
-                                  type: object
-                                  properties:
-                                    transport:
-                                      type: string
-                                    payloadType:
-                                      type: integer
-                                    queues_cnt:
-                                      type: integer
-                                file:
-                                  type: object
-                                  properties:
-                                    path:
-                                      type: string
-                                    filename:
-                                      type: string
-                                mcm:
-                                  type: object
-                                  properties:
-                                    conn_type:
-                                      type: string
-                                    transport:
-                                      type: string
-                                    urn:
-                                      type: string
-                                    transportPixelFormat:
-                                      type: string
-                      receiver:
-                        type: array
-                        items:
+                            cpu:
+                              type: string
+                            memory: 
+                              type: string
+                            hugepages-1Gi:
+                              type: string
+                            hugepages-2Mi:
+                              type: string
+                nmos:
+                  type: object
+                  properties:
+                    image:
+                      type: string
+                    args:
+                      type: array
+                      items:
+                        type: string
+                    environmentVariables:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
+                    nmosApiNodePort:
+                      type: integer
+                    resources:
+                      type: object
+                      properties:
+                        requests:
                           type: object
                           properties:
-                            stream_payload:
-                              type: object
-                              properties:
-                                video:
-                                  type: object
-                                  properties:
-                                    frame_width:
-                                      type: integer
-                                    frame_height:
-                                      type: integer
-                                    frame_rate:
-                                      type: object
-                                      properties:
-                                        numerator:
-                                          type: integer
-                                        denominator:
-                                          type: integer
-                                    pixel_format:
-                                      type: string
-                                    video_type:
-                                      type: string
-                                    preset:
-                                      type: string
-                                    profile:
-                                      type: string
-                                audio:
-                                  type: object
-                                  properties:
-                                    channels:
-                                      type: integer
-                                    sampleRate:
-                                      type: integer
-                                    format:
-                                      type: string
-                                    packetTime:
-                                      type: string
-                            stream_type:
-                              type: object
-                              properties:
-                                file:
-                                  type: object
-                                  properties:
-                                    path:
-                                      type: string
-                                    filename:
-                                      type: string
-                                st2110:
-                                  type: object
-                                  properties:
-                                    transport:
-                                      type: string
-                                    payloadType:
-                                      type: integer
-                                    queues_cnt:
-                                      type: integer
-                                mcm:
-                                  type: object
-                                  properties:
-                                    conn_type:
-                                      type: string
-                                    transport:
-                                      type: string
-                                    urn:
-                                      type: string
-                                    transportPixelFormat:
-                                      type: string
+                            cpu:
+                              type: string
+                            memory: 
+                              type: string
+                            hugepages-1Gi:
+                              type: string
+                            hugepages-2Mi:
+                              type: string
+                        limits:
+                          type: object
+                          properties:
+                            cpu:
+                              type: string
+                            memory: 
+                              type: string
+                            hugepages-1Gi:
+                              type: string
+                            hugepages-2Mi:
+                              type: string
+                    nmosInputFile:
+                      type: object
+                      properties:
+                        logging_level:
+                          type: integer
+                        http_port:
+                          type: integer
+                        label:
+                          type: string
+                        device_tags:
+                          type: object
+                          properties:
+                            pipeline:
+                              type: array
+                              items:
+                                type: string
+                        function:
+                          type: string
+                        multiviewer_columns:
+                          type: integer
+                        stream_loop:
+                          type: integer
+                        activate_senders:
+                          type: boolean
+                        gpu_hw_acceleration:
+                          type: string
+                        gpu_hw_acceleration_device:
+                          type: string
+                        domain:
+                          type: string
+                        ffmpeg_grpc_server_address:
+                          type: string
+                        ffmpeg_grpc_server_port:
+                          type: string
+                        sender_payload_type:
+                          type: integer
+                        sender:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              stream_payload:
+                                type: object
+                                properties:
+                                  video:
+                                    type: object
+                                    properties:
+                                      frame_width:
+                                        type: integer
+                                      frame_height:
+                                        type: integer
+                                      frame_rate:
+                                        type: object
+                                        properties:
+                                          numerator:
+                                            type: integer
+                                          denominator:
+                                            type: integer
+                                      pixel_format:
+                                        type: string
+                                      video_type:
+                                        type: string
+                                      preset:
+                                        type: string
+                                      profile:
+                                        type: string
+                                  audio:
+                                    type: object
+                                    properties:
+                                      channels:
+                                        type: integer
+                                      sampleRate:
+                                        type: integer
+                                      format:
+                                        type: string
+                                      packetTime:
+                                        type: string
+                              stream_type:
+                                type: object
+                                properties:
+                                  st2110:
+                                    type: object
+                                    properties:
+                                      transport:
+                                        type: string
+                                      payloadType:
+                                        type: integer
+                                      queues_cnt:
+                                        type: integer
+                                  file:
+                                    type: object
+                                    properties:
+                                      path:
+                                        type: string
+                                      filename:
+                                        type: string
+                                  mcm:
+                                    type: object
+                                    properties:
+                                      conn_type:
+                                        type: string
+                                      transport:
+                                        type: string
+                                      urn:
+                                        type: string
+                                      transportPixelFormat:
+                                        type: string
+                        receiver:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              stream_payload:
+                                type: object
+                                properties:
+                                  video:
+                                    type: object
+                                    properties:
+                                      frame_width:
+                                        type: integer
+                                      frame_height:
+                                        type: integer
+                                      frame_rate:
+                                        type: object
+                                        properties:
+                                          numerator:
+                                            type: integer
+                                          denominator:
+                                            type: integer
+                                      pixel_format:
+                                        type: string
+                                      video_type:
+                                        type: string
+                                      preset:
+                                        type: string
+                                      profile:
+                                        type: string
+                                  audio:
+                                    type: object
+                                    properties:
+                                      channels:
+                                        type: integer
+                                      sampleRate:
+                                        type: integer
+                                      format:
+                                        type: string
+                                      packetTime:
+                                        type: string
+                              stream_type:
+                                type: object
+                                properties:
+                                  file:
+                                    type: object
+                                    properties:
+                                      path:
+                                        type: string
+                                      filename:
+                                        type: string
+                                  st2110:
+                                    type: object
+                                    properties:
+                                      transport:
+                                        type: string
+                                      payloadType:
+                                        type: integer
+                                      queues_cnt:
+                                        type: integer
+                                  mcm:
+                                    type: object
+                                    properties:
+                                      conn_type:
+                                        type: string
+                                      transport:
+                                        type: string
+                                      urn:
+                                        type: string
+                                      transportPixelFormat:
+                                        type: string
           status:
             description: BcsConfigStatus defines the observed state of BcsConfig
             type: object
