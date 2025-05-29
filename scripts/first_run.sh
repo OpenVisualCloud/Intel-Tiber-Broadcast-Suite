@@ -109,8 +109,8 @@ function copy_nicctl_script()
     fi
 
     if [ "$script_result" != "0" ]; then
-        . versions.env 2>&1 &&
-        STRIPPED_VER=${MTL_VER#v} 2>&1 &&
+        . versions.env &&
+        STRIPPED_VER=${MTL_VER#v} &&
         if ! sudo wget -O /usr/local/bin/nicctl.sh https://raw.githubusercontent.com/OpenVisualCloud/Media-Transport-Library/refs/heads/"${STRIPPED_VER}"/script/nicctl.sh; then
             log_error "Failed to download nicctl.sh script"
             return 1
@@ -204,7 +204,7 @@ function setup_nic_virtual_functions()
 
     while IFS= read -r line; do
         sudo /usr/local/bin/nicctl.sh disable_vf "$line" 1>/dev/null
-        if ! /usr/local/bin/nicctl.sh create_vf "$line" ; then
+        if ! sudo /usr/local/bin/nicctl.sh create_vf "$line" ; then
             log_error "Error occurred while creating VF for device: '$line'"
             exit 2
         fi

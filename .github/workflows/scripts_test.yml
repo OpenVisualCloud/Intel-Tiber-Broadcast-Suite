@@ -36,5 +36,4 @@ jobs:
     - name: "Test first_run script"
       working-directory: "${{ github.workspace }}"
       run: |
-        sudo chmod +x scripts/first_run.sh
         sudo ./scripts/first_run.sh -d
