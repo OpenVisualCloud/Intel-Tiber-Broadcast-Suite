@@ -33,22 +33,8 @@ type ContainersConfig struct {
 }
 
 type Containers struct {
-	Type Workload
-	// Configuration   ContainersConfig
+	Type          Workload
 	ContainerName string
 	Image         string // image + tag
 	Id            int
-	// Command    		string
-	// ContainerName   string
-	// Ip              string
-	// ExposedPort     []string // "format should be: 80/tcp"
-	// BindingHostPort []string
-	// NetworkMode     string
-	// Overridden      string
-	// Privileged      bool
-	// VolumeMount     []string
-	// EnviromentVariables []string
-	// Network         string
-	// DeviceDri       string
-	// DeviceVfio      string
 }
