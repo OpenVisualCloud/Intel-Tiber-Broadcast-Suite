@@ -71,7 +71,7 @@ type BcsConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BcsConfigSpec   `json:"spec,omitempty"`
+	Spec   []BcsConfigSpec `json:"spec,omitempty"`
 	Status BcsConfigStatus `json:"status,omitempty"`
 }
 
