@@ -39,7 +39,7 @@ import (
 	bcsv1 "bcs.pod.launcher.intel/api/v1"
 	containercontroller "bcs.pod.launcher.intel/internal/container_controller"
 	"bcs.pod.launcher.intel/internal/controller"
-	"bcs.pod.launcher.intel/resources_library/utils"
+	"bcs.pod.launcher.intel/resources_library/parser"
 )
 
 var (
@@ -56,7 +56,7 @@ func init() {
 
 func main() {
 	ctx := ctrl.SetupSignalHandler()
-	
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
@@ -91,7 +91,7 @@ func main() {
 
 	fmt.Println("Launcher configuration file exists")
 
-	isKubernetesMode, err := utils.ParseLauncherMode(launcherStartupConfig)
+	isKubernetesMode, err := parser.ParseLauncherMode(launcherStartupConfig)
 	fmt.Println("Launcher mode: ", isKubernetesMode)
 	if err != nil {
 		fmt.Println("Launcher mode: ", err)

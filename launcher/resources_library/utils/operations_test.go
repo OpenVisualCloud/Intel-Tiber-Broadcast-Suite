@@ -91,7 +91,6 @@ func TestConstructContainerConfig_MediaProxyMCM(t *testing.T) {
 	assert.Equal(t, "192.168.1.101", networkConfig.EndpointsConfig["mcm-network"].IPAMConfig.IPv4Address)
 }
 
-
 func TestConstructContainerConfig_BcsPipelineFfmpeg(t *testing.T) {
 	log := testr.New(t)
 	containerInfo := &general.Containers{
@@ -99,8 +98,8 @@ func TestConstructContainerConfig_BcsPipelineFfmpeg(t *testing.T) {
 		Configuration: general.ContainersConfig{
 			WorkloadConfig: workloads.WorkloadConfig{
 				FfmpegPipeline: workloads.FfmpegPipelineConfig{
-					ImageAndTag: "ffmpeg-image:latest",
-					GRPCPort:    50051,
+					ImageAndTag:          "ffmpeg-image:latest",
+					GRPCPort:             50051,
 					EnvironmentVariables: []string{"ENV_VAR=VALUE"},
 					Network: workloads.NetworkConfig{
 						Name: "ffmpeg-network",
@@ -225,8 +224,6 @@ func TestCreateNamespace(t *testing.T) {
 	assert.Equal(t, namespaceName, namespace.ObjectMeta.Name)
 }
 
-
-
 func TestConvertEnvVars(t *testing.T) {
 	input := []bcsv1.EnvVar{
 		{Name: "ENV_VAR1", Value: "VALUE1"},
@@ -325,25 +322,25 @@ func TestConvertEnvVars_NilInput(t *testing.T) {
 // 		{Name: "APP_ENV_VAR2", Value: "APP_VALUE2"},
 // 	}, appContainer.Env)
 
-// 	assert.Equal(t, 11, len(deployment.Spec.Template.Spec.Volumes))
-// 	assert.Equal(t, "/host/videos", deployment.Spec.Template.Spec.Volumes[0].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/host/dri", deployment.Spec.Template.Spec.Volumes[1].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/host/kahawai.lock", deployment.Spec.Template.Spec.Volumes[2].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/dev/null", deployment.Spec.Template.Spec.Volumes[3].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/host/hugepages/tmp", deployment.Spec.Template.Spec.Volumes[4].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/host/hugepages", deployment.Spec.Template.Spec.Volumes[5].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/host/imtl", deployment.Spec.Template.Spec.Volumes[6].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/dev/shm", deployment.Spec.Template.Spec.Volumes[7].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/dev/vfio", deployment.Spec.Template.Spec.Volumes[8].VolumeSource.HostPath.Path)
-// 	assert.Equal(t, "/dev/dri", deployment.Spec.Template.Spec.Volumes[9].VolumeSource.HostPath.Path)
-// }
+//		assert.Equal(t, 11, len(deployment.Spec.Template.Spec.Volumes))
+//		assert.Equal(t, "/host/videos", deployment.Spec.Template.Spec.Volumes[0].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/host/dri", deployment.Spec.Template.Spec.Volumes[1].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/host/kahawai.lock", deployment.Spec.Template.Spec.Volumes[2].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/dev/null", deployment.Spec.Template.Spec.Volumes[3].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/host/hugepages/tmp", deployment.Spec.Template.Spec.Volumes[4].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/host/hugepages", deployment.Spec.Template.Spec.Volumes[5].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/host/imtl", deployment.Spec.Template.Spec.Volumes[6].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/dev/shm", deployment.Spec.Template.Spec.Volumes[7].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/dev/vfio", deployment.Spec.Template.Spec.Volumes[8].VolumeSource.HostPath.Path)
+//		assert.Equal(t, "/dev/dri", deployment.Spec.Template.Spec.Volumes[9].VolumeSource.HostPath.Path)
+//	}
 func TestCreateBcsService(t *testing.T) {
 	bcsConfig := &bcsv1.BcsConfig{
 		Spec: bcsv1.BcsConfigSpec{
 			Name:      "test-bcs-service",
 			Namespace: "test-namespace",
 			Nmos: bcsv1.Nmos{
-				NmosApiNodePort:            30080,
+				NmosApiNodePort: 30080,
 			},
 		},
 	}
