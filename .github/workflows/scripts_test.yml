@@ -1,0 +1,39 @@
+name: Scripts Test
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+env:
+  BUILD_TYPE: "CI"
+  LOCAL_INSTALL: "true"
+  CMAKE_BUILD_TYPE: "Release"
+  DEBIAN_FRONTEND: "noninteractive"
+  TERM: "xterm"
+
+jobs:
+  build:
+    name: "Test Script for Environment Setup - Intel® Tiber™ Broadcast Suite"
+    runs-on: ["self-hosted", "coverity", "Linux"]
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+    - name: "OS-Configuration: Preparation: Harden Runner"
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: "Preparation: Repository Checkout"
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+    - name: "Test first_run script"
+      working-directory: "${{ github.workspace }}"
+      run: |
+        sudo ./scripts/first_run.sh -d
