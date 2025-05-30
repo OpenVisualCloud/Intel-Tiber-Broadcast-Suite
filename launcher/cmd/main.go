@@ -106,7 +106,7 @@ func main() {
 			os.Exit(1)
 		}
 		// Handle container configuration
-		if err := controller.CreateAndRunContainers(ctx, launcherStartupConfig, setupContainerLog); err != nil {
+		if err := containercontroller.CreateAndRunContainers(ctx, controller, launcherStartupConfig, setupContainerLog); err != nil {
 			setupLog.Error(err, "unable to create and run containers!")
 			os.Exit(1)
 		}
