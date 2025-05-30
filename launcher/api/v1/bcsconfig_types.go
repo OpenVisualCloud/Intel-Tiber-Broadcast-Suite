@@ -29,36 +29,35 @@ import (
 )
 
 type BcsConfigSpec struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-	App       App `json:"app"`
-	Nmos      Nmos `json:"nmos"`
-	ScheduleOnNode []string `yaml:"scheduleOnNode,omitempty"`
-	DoNotScheduleOnNode []string `yaml:"doNotScheduleOnNode,omitempty"`
-  }
+	Name                string   `json:"name"`
+	Namespace           string   `json:"namespace"`
+	App                 App      `json:"app"`
+	Nmos                Nmos     `json:"nmos"`
+	ScheduleOnNode      []string `json:"scheduleOnNode,omitempty"`
+	DoNotScheduleOnNode []string `json:"doNotScheduleOnNode,omitempty"`
+}
 
-  type App struct {
-	Image               string `json:"image"`
-	GrpcPort            int    `json:"grpcPort"`
-	EnvironmentVariables []EnvVar `json:"environmentVariables"`
-	Volumes             map[string]string `json:"volumes"`
-	Resources bcs.HwResources `json:"resources,omitempty"`
-  }
+type App struct {
+	Image                string            `json:"image"`
+	GrpcPort             int               `json:"grpcPort"`
+	EnvironmentVariables []EnvVar          `json:"environmentVariables"`
+	Volumes              map[string]string `json:"volumes"`
+	Resources            bcs.HwResources   `json:"resources,omitempty"`
+}
 
-  type EnvVar struct {
+type EnvVar struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
-  }
+}
 
-  type Nmos struct {
-	Image                     string `json:"image"`
-	Args                      []string `json:"args"`
-	EnvironmentVariables      []EnvVar `json:"environmentVariables"`
-	NmosApiNodePort           int `json:"nmosApiNodePort"`
-	NmosInputFile             nmos.Config `json:"nmosInputFile"`
-	Resources bcs.HwResources `json:"resources,omitempty"`
-  }
-
+type Nmos struct {
+	Image                string          `json:"image"`
+	Args                 []string        `json:"args"`
+	EnvironmentVariables []EnvVar        `json:"environmentVariables"`
+	NmosApiNodePort      int             `json:"nmosApiNodePort"`
+	NmosInputFile        nmos.Config     `json:"nmosInputFile"`
+	Resources            bcs.HwResources `json:"resources,omitempty"`
+}
 
 // BcsConfigStatus defines the observed state of BcsConfig
 type BcsConfigStatus struct {
@@ -72,7 +71,7 @@ type BcsConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   BcsConfigSpec   `json:"spec,omitempty"`
+	Spec   []BcsConfigSpec `json:"spec,omitempty"`
 	Status BcsConfigStatus `json:"status,omitempty"`
 }
 

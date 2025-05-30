@@ -8,28 +8,67 @@ package containercontroller
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"io"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
+	"sync"
 
+	"bcs.pod.launcher.intel/resources_library/parser"
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/utils"
 
-	// "bcs.pod.launcher.intel/resources_library/utils"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/go-logr/logr"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 )
+
+var fileMutex sync.Mutex
+
 const (
 	MediaProxyAgentContainerName = "mesh-agent"
 	MediaProxyContainerName      = "media-proxy"
 	BCSPipelineContainerName     = "bcs-ffmpeg-pipeline"
 )
+
 type ContainerController interface {
-	CreateAndRunContainers(ctx context.Context,launcherConfigName string, log logr.Logger) error
-	IsContainerRunning(containerID string) (bool, error)
+	ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error)
+	ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error)
+	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
+	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
+	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *v1.Platform, containerName string) (container.CreateResponse, error)
 }
 
 type DockerContainerController struct {
 	cli *client.Client
+}
+
+func (d *DockerContainerController) ImageList(ctx context.Context, options image.ListOptions) ([]image.Summary, error) {
+	return d.cli.ImageList(ctx, options)
+}
+
+func (d *DockerContainerController) ImagePull(ctx context.Context, ref string, options image.PullOptions) (io.ReadCloser, error) {
+	return d.cli.ImagePull(ctx, ref, options)
+}
+func (d *DockerContainerController) ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error) {
+	return d.cli.ContainerList(ctx, options)
+}
+func (d *DockerContainerController) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *v1.Platform, containerName string) (container.CreateResponse, error) {
+	return d.cli.ContainerCreate(ctx, config, hostConfig, networkingConfig, platform, containerName)
+}
+func (d *DockerContainerController) ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error {
+	return d.cli.ContainerStart(ctx, containerID, options)
+}
+func (d *DockerContainerController) ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error {
+	return d.cli.ContainerRemove(ctx, containerID, options)
 }
 
 func NewDockerContainerController() (*DockerContainerController, error) {
@@ -40,7 +79,7 @@ func NewDockerContainerController() (*DockerContainerController, error) {
 	return &DockerContainerController{cli: cli}, nil
 }
 
-func (d *DockerContainerController) isEmptyStruct(s interface{}) bool {
+func IsEmptyStruct(s interface{}) bool {
 	return reflect.DeepEqual(s, reflect.Zero(reflect.TypeOf(s)).Interface())
 }
 
@@ -65,143 +104,267 @@ func (d *DockerContainerController) isEmptyStruct(s interface{}) bool {
 //   5. Creates and runs the BCS NMOS client container if its configuration is provided.
 //   6. Creates and runs the BCS FFmpeg pipeline container with predefined settings.
 
-func (d *DockerContainerController) CreateAndRunContainers(ctx context.Context, launcherConfigName string, log logr.Logger) error {
-	config, err := utils.ParseLauncherConfiguration(launcherConfigName)
+func CreateAndRunContainers(ctx context.Context, cli ContainerController, launcherConfigName string, log logr.Logger) error {
+	config, err := parser.ParseLauncherConfiguration(launcherConfigName)
 	if err != nil {
 		log.Error(err, "Failed to parse launcher configuration file")
 		return err
 	}
-	if d.isEmptyStruct(config) {
+	if IsEmptyStruct(config) {
 		log.Error(err, "Failed to parse launcher configuration file. Configuration is empty")
 		return err
 	}
-	//pass the yaml configuration to the Contaier struct
-	if !d.isEmptyStruct(config.RunOnce.MediaProxyAgent) {
+	//pass the yaml configuration to the Container struct
+	if !IsEmptyStruct(config.RunOnce.MediaProxyAgent) {
 
 		mcmAgentContainer := general.Containers{}
 		mcmAgentContainer.Type = general.MediaProxyAgent
 		mcmAgentContainer.ContainerName = MediaProxyAgentContainerName
 		mcmAgentContainer.Image = config.RunOnce.MediaProxyAgent.ImageAndTag
-		mcmAgentContainer.Configuration.MediaProxyAgentConfig.ImageAndTag = config.RunOnce.MediaProxyAgent.ImageAndTag
-		mcmAgentContainer.Configuration.MediaProxyAgentConfig.GRPCPort = config.RunOnce.MediaProxyAgent.GRPCPort
-		mcmAgentContainer.Configuration.MediaProxyAgentConfig.RestPort = config.RunOnce.MediaProxyAgent.RestPort
-
-		mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Enable = config.RunOnce.MediaProxyAgent.Network.Enable
-		if config.RunOnce.MediaProxyAgent.Network.Enable {
-			mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = config.RunOnce.MediaProxyAgent.Network.Name
-		    mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.IP = config.RunOnce.MediaProxyAgent.Network.IP
-		} else{
-			mcmAgentContainer.Configuration.MediaProxyAgentConfig.Network.Name = "host"
+		if !config.RunOnce.MediaProxyAgent.Network.Enable {
+			config.RunOnce.MediaProxyAgent.Network.Name = "host"
 			// Note - When you use the host network mode in Docker, the container shares
 			// the host machine's network stack.
 		}
 
-		err := utils.CreateAndRunContainer(ctx, d.cli, log, &mcmAgentContainer)
+		err := createAndRunContainer(ctx, cli, log, &mcmAgentContainer, &config)
 		if err != nil {
-			log.Error(err, "Failed to create contianer MCM MediaProxy Agent!")
+			log.Error(err, "Failed to create container MCM MediaProxy Agent!")
 			return err
 		}
 	} else {
 		log.Info("No information about MCM MediaProxy Agent provided. Omitting creation of MCM MediaProxy Agent container")
 	}
 
-	if !d.isEmptyStruct(config.RunOnce.MediaProxyMcm) {
+	if !IsEmptyStruct(config.RunOnce.MediaProxyMcm) {
 		mediaProxyContainer := general.Containers{}
 		mediaProxyContainer.Type = general.MediaProxyMCM
 		mediaProxyContainer.ContainerName = MediaProxyContainerName
 		mediaProxyContainer.Image = config.RunOnce.MediaProxyMcm.ImageAndTag
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.ImageAndTag = config.RunOnce.MediaProxyMcm.ImageAndTag
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.InterfaceName = config.RunOnce.MediaProxyMcm.InterfaceName
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Volumes = config.RunOnce.MediaProxyMcm.Volumes
-		
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Enable = config.RunOnce.MediaProxyMcm.Network.Enable
-		if config.RunOnce.MediaProxyMcm.Network.Enable {
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Name = config.RunOnce.MediaProxyMcm.Network.Name
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.IP = config.RunOnce.MediaProxyMcm.Network.IP
-		} else{
-		mediaProxyContainer.Configuration.MediaProxyMcmConfig.Network.Name = "host"
-		// Note - When you use the host network mode in Docker, the container shares
-		// the host machine's network stack.
+		if !config.RunOnce.MediaProxyMcm.Network.Enable {
+			config.RunOnce.MediaProxyMcm.Network.Name = "host"
+			// Note - When you use the host network mode in Docker, the container shares
+			// the host machine's network stack.
 		}
-		err := utils.CreateAndRunContainer(ctx, d.cli, log, &mediaProxyContainer)
+		err := createAndRunContainer(ctx, cli, log, &mediaProxyContainer, &config)
 		if err != nil {
-			log.Error(err, "Failed to create contianer MCM MediaProxy!")
+			log.Error(err, "Failed to create container MCM MediaProxy!")
 			return err
 		}
 	} else {
 		log.Info("No information about MCM MediaProxy provided. Omitting creation of MCM MediaProxy container")
 	}
 
-	bcsPipelinesContainer := general.Containers{}
-	bcsPipelinesContainer.Type = general.BcsPipelineFfmpeg
-	bcsPipelinesContainer.ContainerName = config.WorkloadToBeRun.FfmpegPipeline.Name
-	bcsPipelinesContainer.Image = config.WorkloadToBeRun.FfmpegPipeline.ImageAndTag
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Name = config.WorkloadToBeRun.FfmpegPipeline.Name
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.ImageAndTag = config.WorkloadToBeRun.FfmpegPipeline.ImageAndTag
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.GRPCPort = config.WorkloadToBeRun.FfmpegPipeline.GRPCPort
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.NmosPort = config.WorkloadToBeRun.FfmpegPipeline.NmosPort
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.EnvironmentVariables = config.WorkloadToBeRun.FfmpegPipeline.EnvironmentVariables
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Devnull = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Devnull
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Dri = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Dri
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Hugepages = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Hugepages
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Imtl = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Imtl
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Kahawai = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Kahawai
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Shm = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Shm
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.TmpHugepages = config.WorkloadToBeRun.FfmpegPipeline.Volumes.TmpHugepages
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Volumes.Videos = config.WorkloadToBeRun.FfmpegPipeline.Volumes.Videos
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Dri = config.WorkloadToBeRun.FfmpegPipeline.Devices.Dri
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Devices.Vfio = config.WorkloadToBeRun.FfmpegPipeline.Devices.Vfio
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Enable = config.WorkloadToBeRun.FfmpegPipeline.Network.Enable
-	if config.WorkloadToBeRun.FfmpegPipeline.Network.Enable {
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name = config.WorkloadToBeRun.FfmpegPipeline.Network.Name
-	bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.IP = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
-	} else{
-		bcsPipelinesContainer.Configuration.WorkloadConfig.FfmpegPipeline.Network.Name = "host"
-		// Note - When you use the host network mode in Docker, the container shares
-		// the host machine's network stack.
+	if IsEmptyStruct(config.WorkloadToBeRun) || len(config.WorkloadToBeRun) == 0 {
+		log.Info("No workloads provided under workloadToBeRun. Omitting creation of BCS pipeline and NMOS node containers")
 	}
-	err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsPipelinesContainer)
-	if err != nil {
-		log.Error(err, "Failed to create contianer!")
-		return err
-	}
-	if !d.isEmptyStruct(config.WorkloadToBeRun.NmosClient) {
-		bcsNmosContainer := general.Containers{}
-		bcsNmosContainer.Type = general.BcsPipelineNmosClient
-		bcsNmosContainer.ContainerName = config.WorkloadToBeRun.NmosClient.Name
-		bcsNmosContainer.Image = config.WorkloadToBeRun.NmosClient.ImageAndTag
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.ImageAndTag = config.WorkloadToBeRun.NmosClient.ImageAndTag
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.EnvironmentVariables = config.WorkloadToBeRun.NmosClient.EnvironmentVariables
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigPath = config.WorkloadToBeRun.NmosClient.NmosConfigPath
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.NmosConfigFileName = config.WorkloadToBeRun.NmosClient.NmosConfigFileName
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Enable = config.WorkloadToBeRun.NmosClient.Network.Enable
-		if config.WorkloadToBeRun.NmosClient.Network.Enable {
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = config.WorkloadToBeRun.NmosClient.Network.Name
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
-		} else{
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.Name = "host"
-			bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.Network.IP = config.WorkloadToBeRun.NmosClient.Network.IP
+
+	for n, instance := range config.WorkloadToBeRun {
+		if IsEmptyStruct(instance.FfmpegPipeline) || IsEmptyStruct(instance.NmosClient) {
+			return fmt.Errorf("no information about BCS pipeline provided. Either FfmpegPipeline or NmosClient is empty for instance Ffmpeg: %s; Nmos: %s", instance.FfmpegPipeline.Name, instance.NmosClient.Name)
+		}
+		bcsPipelinesContainer := general.Containers{}
+		bcsPipelinesContainer.Type = general.BcsPipelineFfmpeg
+		bcsPipelinesContainer.ContainerName = instance.FfmpegPipeline.Name
+		bcsPipelinesContainer.Image = instance.FfmpegPipeline.ImageAndTag
+		bcsPipelinesContainer.Id = n // use the index of the instance as the ID for the container
+
+		if !instance.FfmpegPipeline.Network.Enable {
+			instance.FfmpegPipeline.Network.Name = "host"
 			// Note - When you use the host network mode in Docker, the container shares
 			// the host machine's network stack.
 		}
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConectionAddress = config.WorkloadToBeRun.FfmpegPipeline.Network.IP
-		bcsNmosContainer.Configuration.WorkloadConfig.NmosClient.FfmpegConnectionPort = strconv.Itoa(config.WorkloadToBeRun.FfmpegPipeline.GRPCPort)
-
-		err = utils.CreateAndRunContainer(ctx, d.cli, log, &bcsNmosContainer)
+		err = createAndRunContainer(ctx, cli, log, &bcsPipelinesContainer, &config)
 		if err != nil {
-			log.Error(err, "Failed to create contianer!")
+			log.Error(err, "Failed to create container for FFMPEG pipeline instance %d!")
 			return err
 		}
-	} else {
-		log.Info("No information about BCS NMOS client container provided. Omitting creation of BCS NMOS client container")
+		bcsNmosContainer := general.Containers{}
+		bcsNmosContainer.Type = general.BcsPipelineNmosClient
+		bcsNmosContainer.ContainerName = instance.NmosClient.Name
+		bcsNmosContainer.Image = instance.NmosClient.ImageAndTag
+		bcsNmosContainer.Id = n // use the index of the instance as the ID for the container
+
+		if !instance.NmosClient.Network.Enable {
+			// do not forget to set the network ip address despite disabling the custom network!
+			instance.NmosClient.Network.IP = "host"
+			// Note - When you use the host network mode in Docker, the container shares
+			// the host machine's network stack.
+		}
+		instance.NmosClient.FfmpegConnectionAddress = instance.FfmpegPipeline.Network.IP
+		instance.NmosClient.FfmpegConnectionPort = strconv.Itoa(instance.FfmpegPipeline.GRPCPort)
+
+		err = createAndRunContainer(ctx, cli, log, &bcsNmosContainer, &config)
+		if err != nil {
+			log.Error(err, "Failed to create container!")
+			return err
+		}
+
 	}
 	return nil
 }
 
-func (d *DockerContainerController) IsContainerRunning(contaierName string) (bool, error) {
-	cotainerStatus, err := d.cli.ContainerInspect(context.Background(), contaierName)
+func createAndRunContainer(ctx context.Context, cli ContainerController, log logr.Logger, containerInfo *general.Containers, config *parser.Configuration) error {
+	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
 	if err != nil {
-		return false, err
+		log.Error(err, "Failed to parse launcher configuration file")
+		return err
 	}
-	return cotainerStatus.State.Running, nil
+
+	if isRunning {
+		log.Info("Container ", containerInfo.ContainerName, " is running. Omitting this container creation.")
+		return nil
+	}
+
+	err, exists := doesContainerExist(ctx, cli, containerInfo.ContainerName)
+	if err != nil {
+		log.Error(err, "Failed to read container status (if it exists)")
+		return err
+	}
+
+	if exists {
+		log.Info("Removing container to re-create and re-run because container with a such name exists but with status exited:", "container", containerInfo.ContainerName)
+		err = removeContainer(ctx, cli, containerInfo.ContainerName)
+		if err != nil {
+			log.Error(err, "Failed to remove container")
+			return err
+		}
+
+	}
+
+	err = pullImageIfNotExists(ctx, cli, containerInfo.Image, log)
+	if err != nil {
+		log.Error(err, "Error pulling image for container")
+		return err
+	}
+	// Define the container configuration
+	containerConfig, hostConfig, networkConfig := utils.ConstructContainerConfig(containerInfo, config, log)
+
+	if containerConfig == nil || hostConfig == nil || networkConfig == nil {
+		// log.Error(errors.New("container configuration is nil"), "Failed to construct container configuration")
+		return errors.New("container configuration is nil")
+	}
+	// Create the container
+	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, nil, containerInfo.ContainerName)
+
+	if err != nil {
+		log.Error(err, "Error creating container")
+		return err
+	}
+
+	// Start the container
+	err = cli.ContainerStart(ctx, resp.ID, container.StartOptions{})
+	if err != nil {
+		log.Error(err, "Error starting container")
+		return err
+	}
+
+	log.Info("Container is created and started successfully", "name", containerInfo.ContainerName, "container id: ", resp.ID)
+	return nil
+}
+
+func isImagePulled(ctx context.Context, cli ContainerController, imageName string) (error, bool) {
+	images, err := cli.ImageList(ctx, image.ListOptions{})
+	if err != nil {
+		return err, false
+	}
+
+	imageMap := make(map[string]bool)
+	for _, image := range images {
+		for _, tag := range image.RepoTags {
+			imageMap[tag] = true
+		}
+	}
+
+	_, isPulled := imageMap[imageName]
+	return nil, isPulled
+}
+
+func pullImageIfNotExists(ctx context.Context, cli ContainerController, imageName string, log logr.Logger) error {
+
+	// Check if the Docker client is nil
+	if cli == nil {
+		err := errors.New("docker client is nil")
+		log.Error(err, "Docker client is not initialized")
+		return err
+	}
+
+	// Check if the context is nil
+	if ctx == nil {
+		err := errors.New("context is nil")
+		log.Error(err, "Context is not initialized")
+		return err
+	}
+
+	// Check if the image is already pulled
+	err, pulled := isImagePulled(ctx, cli, imageName)
+	if err != nil {
+		log.Error(err, "Error checking if image is pulled")
+		return err
+	}
+
+	// Pull the image if it is not already pulled
+	if !pulled {
+		reader, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
+		if err != nil {
+			log.Error(err, "Error pulling image")
+			return err
+		}
+		defer reader.Close()
+
+		_, err = io.Copy(os.Stdout, reader)
+		if err != nil {
+			log.Error(err, "Error reading output")
+			return err
+		}
+		log.Info("Image pulled successfully", "image", imageName)
+	}
+
+	return nil
+}
+
+func doesContainerExist(ctx context.Context, cli ContainerController, containerName string) (error, bool) {
+	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		return err, false
+	}
+
+	containerMap := make(map[string]string)
+	for _, container := range containers {
+		for _, name := range container.Names {
+			containerMap[name] = strings.ToLower(container.State)
+		}
+	}
+
+	state, exists := containerMap["/"+containerName]
+	if !exists {
+		return nil, false
+	}
+
+	return nil, state == "exited"
+}
+
+func isContainerRunning(ctx context.Context, cli ContainerController, containerName string) (error, bool) {
+	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		return err, false
+	}
+
+	containerMap := make(map[string]string)
+	for _, container := range containers {
+		for _, name := range container.Names {
+			containerMap[name] = strings.ToLower(container.State)
+		}
+	}
+
+	state, exists := containerMap["/"+containerName]
+	if !exists {
+		return nil, false
+	}
+
+	return nil, state == "running"
+}
+
+func removeContainer(ctx context.Context, cli ContainerController, containerID string) error {
+	return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
 }

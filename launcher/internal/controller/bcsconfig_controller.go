@@ -28,6 +28,7 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -82,7 +83,7 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return nil
 	}
 
-	mcmCmInfo:= &corev1.ConfigMap{}
+	mcmCmInfo := &corev1.ConfigMap{}
 	err := r.Get(ctx, types.NamespacedName{Name: "k8s-bcs-config", Namespace: "bcs"}, mcmCmInfo)
 	if err != nil {
 		log.Error(err, "Failed to get resource", "resource", mcmCmInfo.GetObjectKind(), "named", "k8s-bcs-config")
@@ -107,13 +108,13 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "Failed to create resource", "resource", mcmAgentDeployment.GetObjectKind(), "named", mcmAgentDeployment.Name)
 		return ctrl.Result{}, err
 	}
-	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace:"mcm"})
+	err = createResourceIfNotExists(mcmAgentService, types.NamespacedName{Name: mcmAgentService.Name, Namespace: "mcm"})
 	if err != nil {
 		log.Error(err, "Failed to create resource", "resource", mcmAgentService.GetObjectKind(), "named", mcmAgentService.Name)
 		return ctrl.Result{}, err
 	}
 	err = createResourceIfNotExists(mcmMediaProxyPv, types.NamespacedName{Name: mcmMediaProxyPv.Name, Namespace: "mcm"})
-	if err != nil {	
+	if err != nil {
 		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyPv.GetObjectKind(), "named", mcmMediaProxyPv.Name)
 		return ctrl.Result{}, err
 	}
@@ -123,7 +124,7 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 	err = createResourceIfNotExists(mcmMediaProxyDs, types.NamespacedName{Name: mcmMediaProxyDs.Name, Namespace: "mcm"})
-    if err != nil {
+	if err != nil {
 		log.Error(err, "Failed to create resource", "resource", mcmMediaProxyDs.GetObjectKind(), "named", mcmMediaProxyDs.Name)
 		return ctrl.Result{}, err
 	}
@@ -132,7 +133,7 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "Failed to create resource", "resource", mtlManagerDeployment.GetObjectKind(), "named", mtlManagerDeployment.Name)
 		return ctrl.Result{}, err
 	}
-	
+
 	// Lookup the BcsConfig instance for this reconcile request
 	bcsConf := &bcsv1.BcsConfig{}
 	err = r.Get(ctx, req.NamespacedName, bcsConf)
@@ -144,7 +145,6 @@ func (r *BcsConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "Error reading the object; Failed to get BcsConfig. \n ...Requeue...")
 		return ctrl.Result{}, err
 	}
-	log.Info("Reconciling", "app", bcsConf.Spec.Name)
 
 	// Run all k8s resources for BCS pipeline and NMOS
 	err = r.reconcileResources(ctx, bcsConf, log)
@@ -163,31 +163,51 @@ func (r *BcsConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *BcsConfigReconciler) reconcileResources(ctx context.Context, bcs *bcsv1.BcsConfig, log logr.Logger) error {
-	// Reconcile ConfigMap
-	if err := r.reconcileConfigMap(ctx, bcs , log); err != nil {
-		log.Error(err, "Failed to reconcile ConfigMap")
-		return err
-	}
+	for iter, specInstance := range bcs.Spec {
+		log.Info("Processing BcsConfig Spec", "instance number", iter, "name", specInstance.Name, "namespace", specInstance.Namespace)
+		// Check if the namespace exists, if not create it
+		namespace := &corev1.Namespace{}
+		err := r.Get(ctx, types.NamespacedName{Name: specInstance.Namespace}, namespace)
+		if err != nil && errors.IsNotFound(err) {
+			namespace = &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: specInstance.Namespace,
+				},
+			}
+			if err := r.Create(ctx, namespace); err != nil {
+				log.Error(err, "Failed to create Namespace", "name", specInstance.Namespace)
+				return err
+			}
+			log.Info("Namespace created successfully", "name", specInstance.Namespace)
+		}
 
-	// Reconcile Deployment
-	if err := r.reconcileDeployment(ctx, bcs, log); err != nil {
-		log.Error(err, "Failed to reconcile Deployment")
-		return err
-	}
+		// Reconcile ConfigMap
+		if err := r.reconcileConfigMap(ctx, &specInstance, log); err != nil {
+			log.Error(err, "Failed to reconcile ConfigMap")
+			return err
+		}
 
-	// Reconcile Service
-	if err := r.reconcileService(ctx, bcs , log); err != nil {
-		log.Error(err, "Failed to reconcile Service")
-		return err
+		// Reconcile Deployment
+		if err := r.reconcileDeployment(ctx, &specInstance, log); err != nil {
+			log.Error(err, "Failed to reconcile Deployment")
+			return err
+		}
+
+		// Reconcile Service
+		if err := r.reconcileService(ctx, &specInstance, log); err != nil {
+			log.Error(err, "Failed to reconcile Service")
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, bcs *bcsv1.BcsConfig, log logr.Logger) error {
+func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, bcs *bcsv1.BcsConfigSpec, log logr.Logger) error {
+	log.Info("Processing BcsConfig Spec", "name", bcs.Name, "namespace", bcs.Namespace)
+	configMapName := bcs.Name + "-config"
 	bcsConfigMap := &corev1.ConfigMap{}
-	configMapName := bcs.Spec.Name+"-config"
-	err := r.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: bcs.Spec.Namespace}, bcsConfigMap)
+	err := r.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: bcs.Namespace}, bcsConfigMap)
 	if err != nil && errors.IsNotFound(err) {
 		bcsConfigMap = utils.CreateConfigMap(bcs)
 		if err := r.Create(ctx, bcsConfigMap); err != nil {
@@ -207,13 +227,12 @@ func (r *BcsConfigReconciler) reconcileConfigMap(ctx context.Context, bcs *bcsv1
 		}
 		log.Info("ConfigMap updated successfully", "name", bcsConfigMap.Name, "namespace", bcsConfigMap.Namespace)
 	}
-
 	return nil
 }
 
-func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context,bcs *bcsv1.BcsConfig, log logr.Logger) error {
+func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context, bcs *bcsv1.BcsConfigSpec, log logr.Logger) error {
 	bcsDeployment := &appsv1.Deployment{}
-	err := r.Get(ctx, types.NamespacedName{Name: bcs.Spec.Name, Namespace: bcs.Spec.Namespace}, bcsDeployment)
+	err := r.Get(ctx, types.NamespacedName{Name: bcs.Name, Namespace: bcs.Namespace}, bcsDeployment)
 	if errors.IsNotFound(err) {
 		bcsDeployment = utils.CreateBcsDeployment(bcs)
 		if err := r.Create(ctx, bcsDeployment); err != nil {
@@ -221,7 +240,7 @@ func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context,bcs *bcsv1
 			return err
 		}
 		log.Info("Deployment is created successfully", "name", bcsDeployment.Name, "namespace", bcsDeployment.Namespace)
-	} else if err != nil  {
+	} else if err != nil {
 		log.Error(err, "Failed to create/update Deployment. Check your either cluster or bcs launcher configuration")
 		return err
 	} else {
@@ -234,9 +253,9 @@ func (r *BcsConfigReconciler) reconcileDeployment(ctx context.Context,bcs *bcsv1
 	return nil
 }
 
-func (r *BcsConfigReconciler) reconcileService(ctx context.Context,bcs *bcsv1.BcsConfig, log logr.Logger) error {
+func (r *BcsConfigReconciler) reconcileService(ctx context.Context, bcs *bcsv1.BcsConfigSpec, log logr.Logger) error {
 	bcsSevice := &corev1.Service{}
-	err := r.Get(ctx, types.NamespacedName{Name: bcs.Spec.Name, Namespace: bcs.Spec.Namespace}, bcsSevice)
+	err := r.Get(ctx, types.NamespacedName{Name: bcs.Name, Namespace: bcs.Namespace}, bcsSevice)
 	if errors.IsNotFound(err) {
 		bcsSevice = utils.CreateBcsService(bcs)
 		if err := r.Create(ctx, bcsSevice); err != nil {
@@ -244,7 +263,7 @@ func (r *BcsConfigReconciler) reconcileService(ctx context.Context,bcs *bcsv1.Bc
 			return err
 		}
 		log.Info("Service is created successfully", "name", bcsSevice.Name, "namespace", bcsSevice.Namespace)
-	} else if err != nil  {
+	} else if err != nil {
 		log.Error(err, "Failed to create/update Service. Check your either cluster or bcs launcher configuration")
 		return err
 	} else {

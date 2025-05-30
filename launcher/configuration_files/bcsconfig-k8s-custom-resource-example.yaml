@@ -12,107 +12,107 @@ metadata:
   name: bcsconfig-sample
   namespace: bcs
 spec:
-  name: tiber-broadcast-suite
-  namespace: bcs
-  app:
-    image: video_production_image:latest
-    grpcPort: 50051
-    resources:
-      requests:
-        cpu: "500m"
-        memory: "256Mi"
-        hugepages-1Gi: "1Ki"
-        hugepages-2Mi: "2Ki"
-      limits:
-        cpu: "1000m"
-        memory: "512Mi"
-        hugepages-1Gi: "1Mi"
-        hugepages-2Mi: "2Mi"
-    environmentVariables:
-      - name: "http_proxy"
-        value: ""
-      - name: "https_proxy"
-        value: ""
-    volumes:
-      videos: /root/demo
-      dri: /usr/lib/x86_64-linux-gnu/dri
-      kahawaiLock: /tmp/kahawai_lcore.lock
-      devNull: /dev/null
-      imtl: /var/run/imtl
-      shm: /dev/shm
-      vfio: /dev/vfio
-      dri-dev: /dev/dri
-  nmos:
-    image: tiber-broadcast-suite-nmos-node:latest
-    args: ["config/config.json"]
-    environmentVariables:
-      - name: "http_proxy"
-        value: ""
-      - name: "https_proxy"
-        value: ""
-      - name: "VFIO_PORT_TX"
-        value: "0000:ca:11.0"
-    nmosApiNodePort: 30084 #node port for nmosInputFile.http_port
-    resources:
-      requests:
-        cpu: "500m"
-        memory: "256Mi"
-        hugepages-1Gi: "1Ki"
-        hugepages-2Mi: "2Ki"
-      limits:
-        cpu: "1000m"
-        memory: "512Mi"
-        hugepages-1Gi: "1Mi"
-        hugepages-2Mi: "2Mi"
-    nmosInputFile:
-      logging_level: 10
-      http_port: 5004
-      label: intel-broadcast-suite-tx
-      device_tags:
-        pipeline:
-          - tx
-      function: tx
-      activate_senders: false
-      stream_loop: -1
-      gpu_hw_acceleration: none
-      domain: local
-      sender_payload_type: 112
-      sender:
-        - stream_payload:
-            video:
-              frame_width: 1920
-              frame_height: 1080
-              frame_rate:
-                numerator: 60
-                denominator: 1
-              pixel_format: yuv422p10le
-              video_type: rawvideo
-            audio:
-              channels: 2
-              sampleRate: 48000
-              format: pcm_s24be
-              packetTime: 1ms
-          stream_type:
-            st2110:
-              transport: st2110-20
-              payloadType: 112
-              queues_cnt: 0
-      receiver:
-        - stream_payload:
-            video:
-              frame_width: 1920
-              frame_height: 1080
-              frame_rate:
-                numerator: 60
-                denominator: 1
-              pixel_format: yuv422p10le
-              video_type: rawvideo
-            audio:
-              channels: 2
-              sampleRate: 48000
-              format: pcm_s24be
-              packetTime: 1ms
-          stream_type:
-            file:
-              path: /videos
-              filename: 1920x1080p10le_0.yuv
+  - name: tiber-broadcast-suite
+    namespace: bcs
+    app:
+      image: video_production_image:latest
+      grpcPort: 50051
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "256Mi"
+          hugepages-1Gi: "1Ki"
+          hugepages-2Mi: "2Ki"
+        limits:
+          cpu: "1000m"
+          memory: "512Mi"
+          hugepages-1Gi: "1Mi"
+          hugepages-2Mi: "2Mi"
+      environmentVariables:
+        - name: "http_proxy"
+          value: ""
+        - name: "https_proxy"
+          value: ""
+      volumes:
+        videos: /root/demo
+        dri: /usr/lib/x86_64-linux-gnu/dri
+        kahawaiLock: /tmp/kahawai_lcore.lock
+        devNull: /dev/null
+        imtl: /var/run/imtl
+        shm: /dev/shm
+        vfio: /dev/vfio
+        dri-dev: /dev/dri
+    nmos:
+      image: tiber-broadcast-suite-nmos-node:latest
+      args: ["config/config.json"]
+      environmentVariables:
+        - name: "http_proxy"
+          value: ""
+        - name: "https_proxy"
+          value: ""
+        - name: "VFIO_PORT_TX"
+          value: "0000:ca:11.0"
+      nmosApiNodePort: 30084 #node port for nmosInputFile.http_port
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "256Mi"
+          hugepages-1Gi: "1Ki"
+          hugepages-2Mi: "2Ki"
+        limits:
+          cpu: "1000m"
+          memory: "512Mi"
+          hugepages-1Gi: "1Mi"
+          hugepages-2Mi: "2Mi"
+      nmosInputFile:
+        logging_level: 10
+        http_port: 5004
+        label: intel-broadcast-suite-tx
+        device_tags:
+          pipeline:
+            - tx
+        function: tx
+        activate_senders: false
+        stream_loop: -1
+        gpu_hw_acceleration: none
+        domain: local
+        sender_payload_type: 112
+        sender:
+          - stream_payload:
+              video:
+                frame_width: 1920
+                frame_height: 1080
+                frame_rate:
+                  numerator: 60
+                  denominator: 1
+                pixel_format: yuv422p10le
+                video_type: rawvideo
+              audio:
+                channels: 2
+                sampleRate: 48000
+                format: pcm_s24be
+                packetTime: 1ms
+            stream_type:
+              st2110:
+                transport: st2110-20
+                payloadType: 112
+                queues_cnt: 0
+        receiver:
+          - stream_payload:
+              video:
+                frame_width: 1920
+                frame_height: 1080
+                frame_rate:
+                  numerator: 60
+                  denominator: 1
+                pixel_format: yuv422p10le
+                video_type: rawvideo
+              audio:
+                channels: 2
+                sampleRate: 48000
+                format: pcm_s24be
+                packetTime: 1ms
+            stream_type:
+              file:
+                path: /videos
+                filename: 1920x1080p10le_0.yuv
