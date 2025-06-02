@@ -299,6 +299,9 @@ spec:
             cpu: 5m
             memory: 64Mi
         securityContext:
+          runAsGroup: 13002
+          runAsUser: 13002
+          runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
           readOnlyRootFilesystem: true
@@ -333,6 +336,9 @@ spec:
             cpu: 10m
             memory: 64Mi
         securityContext:
+          runAsGroup: 65532
+          runAsUser: 65532
+          runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
           allowPrivilegeEscalation: false
@@ -353,5 +359,7 @@ spec:
             path: config.yaml
       securityContext:
         runAsNonRoot: true
+        runAsGroup: 65532
+        runAsUser: 65532
       serviceAccountName: bcs-launcher-controller-manager
       terminationGracePeriodSeconds: 10
