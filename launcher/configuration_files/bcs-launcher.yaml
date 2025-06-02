@@ -359,7 +359,7 @@ spec:
             path: config.yaml
       securityContext:
         runAsNonRoot: true
-        runAsGroup: 13002
-        runAsUser: 13002
+        runAsGroup: 65532
+        runAsUser: 65532
       serviceAccountName: bcs-launcher-controller-manager
       terminationGracePeriodSeconds: 10
