@@ -336,8 +336,8 @@ spec:
             cpu: 10m
             memory: 64Mi
         securityContext:
-          runAsGroup: 13002
-          runAsUser: 13002
+          runAsGroup: 65532
+          runAsUser: 65532
           runAsNonRoot: true
           seccompProfile:
             type: RuntimeDefault
