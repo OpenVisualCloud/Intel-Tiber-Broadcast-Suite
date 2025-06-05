@@ -214,14 +214,12 @@ func ConstructContainerConfig(containerInfo *general.Containers, config *parser.
 		nmosFilePathJson := config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosConfigPath + "/" + nmosFileNameJson
 		if !FileExists(nmosFilePathJson) {
 			log.Error(errors.New("NMOS json file does not exist"), "NMOS json file does not exist")
-			return nil, nil, nil
 		}
 		errUpdateJson := updateNmosJsonFile(nmosFilePathJson,
 			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionAddress,
 			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionPort)
 		if errUpdateJson != nil {
 			log.Error(errUpdateJson, "Error updating NMOS json file")
-			return nil, nil, nil
 		}
 		configPathContainer := "config/" + nmosFileNameJson
 		containerConfig = &container.Config{

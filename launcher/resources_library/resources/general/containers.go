@@ -20,10 +20,11 @@ const (
 	MediaProxyMCM
 	BcsPipelineFfmpeg
 	BcsPipelineNmosClient
+	NotSupportedWorkload
 )
 
 func (w Workload) String() string {
-	return [...]string{"MediaProxyAgent", "MediaProxyMCM", "BcsPipelineFfmpeg", "BcsPipelineNmosClient"}[w]
+	return [...]string{"MediaProxyAgent", "MediaProxyMCM", "BcsPipelineFfmpeg", "BcsPipelineNmosClient", "NotSupportedWorkload"}[w]
 }
 
 type ContainersConfig struct {
