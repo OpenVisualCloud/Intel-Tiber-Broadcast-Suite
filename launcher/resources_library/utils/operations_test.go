@@ -552,9 +552,7 @@ definition:
 
 		assert.Equal(t, "mesh-agent-service", service.ObjectMeta.Name)
 		assert.Equal(t, "mcm", service.ObjectMeta.Namespace)
-
 		assert.Equal(t, map[string]string{"app": "mesh-agent"}, service.Spec.Selector)
-
 		assert.Len(t, service.Spec.Ports, 2)
 		assert.Equal(t, "rest", service.Spec.Ports[0].Name)
 		assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
@@ -592,11 +590,7 @@ func TestCreateService(t *testing.T) {
 		assert.NotNil(t, service)
 		assert.Equal(t, serviceName, service.ObjectMeta.Name)
 		assert.Equal(t, "default", service.ObjectMeta.Namespace)
-
-		// Verify selector
 		assert.Equal(t, map[string]string{"app": serviceName}, service.Spec.Selector)
-
-		// Verify ports
 		assert.Len(t, service.Spec.Ports, 1)
 		assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
 		assert.Equal(t, int32(80), service.Spec.Ports[0].Port)
@@ -609,11 +603,7 @@ func TestCreateService(t *testing.T) {
 		assert.NotNil(t, service)
 		assert.Equal(t, serviceName, service.ObjectMeta.Name)
 		assert.Equal(t, "default", service.ObjectMeta.Namespace)
-
-		// Verify selector
 		assert.Equal(t, map[string]string{"app": serviceName}, service.Spec.Selector)
-
-		// Verify ports
 		assert.Len(t, service.Spec.Ports, 1)
 		assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
 		assert.Equal(t, int32(80), service.Spec.Ports[0].Port)
@@ -635,17 +625,10 @@ func TestCreateBcsService(t *testing.T) {
 		service := CreateBcsService(bcsConfig)
 		assert.NotNil(t, service)
 
-		// Verify metadata
 		assert.Equal(t, "test-bcs-service", service.ObjectMeta.Name)
 		assert.Equal(t, "test-namespace", service.ObjectMeta.Namespace)
-
-		// Verify service type
 		assert.Equal(t, corev1.ServiceTypeNodePort, service.Spec.Type)
-
-		// Verify selector
 		assert.Equal(t, map[string]string{"app": "test-bcs-service"}, service.Spec.Selector)
-
-		// Verify ports
 		assert.Len(t, service.Spec.Ports, 1)
 		assert.Equal(t, "nmos-node-api", service.Spec.Ports[0].Name)
 		assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
@@ -669,17 +652,13 @@ func TestCreateBcsService(t *testing.T) {
 		service := CreateBcsService(bcsConfig)
 		assert.NotNil(t, service)
 
-		// Verify metadata
 		assert.Equal(t, "", service.ObjectMeta.Name)
 		assert.Equal(t, "", service.ObjectMeta.Namespace)
 
-		// Verify service type
 		assert.Equal(t, corev1.ServiceTypeNodePort, service.Spec.Type)
 
-		// Verify selector
 		assert.Equal(t, map[string]string{"app": ""}, service.Spec.Selector)
 
-		// Verify ports
 		assert.Len(t, service.Spec.Ports, 1)
 		assert.Equal(t, "nmos-node-api", service.Spec.Ports[0].Name)
 		assert.Equal(t, corev1.ProtocolTCP, service.Spec.Ports[0].Protocol)
@@ -706,34 +685,14 @@ definition:
 		pvc := CreatePersistentVolumeClaim(cm)
 		assert.NotNil(t, pvc)
 
-		// Verify metadata
 		assert.Equal(t, "test-pvc", pvc.ObjectMeta.Name)
 		assert.Equal(t, "mcm", pvc.ObjectMeta.Namespace)
 
-		// Verify spec
 		assert.Equal(t, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, pvc.Spec.AccessModes)
 		assert.Equal(t, resource.MustParse("5Gi"), pvc.Spec.Resources.Requests[corev1.ResourceStorage])
 		assert.Equal(t, "standard", *pvc.Spec.StorageClassName)
 		assert.Equal(t, "mtl-pv", pvc.Spec.VolumeName)
 	})
-
-	// t.Run("InvalidConfigMap", func(t *testing.T) {
-	// 	cm := &corev1.ConfigMap{
-	// 		Data: map[string]string{
-	// 			"config.yaml": `
-	// k8s: true
-	// definition:
-	//   mediaProxy:
-	//     pvcAssignedName: ""
-	//     pvcStorage: ""
-	//     pvStorageClass: ""
-	// `,
-	// 		},
-	// 	}
-
-	// 	pvc := CreatePersistentVolumeClaim(cm)
-	// 	assert.Nil(t, pvc)
-	// })
 }
 func TestCreateConfigMap(t *testing.T) {
 	t.Run("ValidBcsConfigSpec", func(t *testing.T) {
@@ -754,11 +713,9 @@ func TestCreateConfigMap(t *testing.T) {
 		configMap := CreateConfigMap(bcsConfig)
 		assert.NotNil(t, configMap)
 
-		// Verify metadata
 		assert.Equal(t, "test-config-map-config", configMap.ObjectMeta.Name)
 		assert.Equal(t, "test-namespace", configMap.ObjectMeta.Namespace)
 
-		// Verify data
 		assert.Contains(t, configMap.Data, "config.json")
 		var configData nmos.Config
 		err := json.Unmarshal([]byte(configMap.Data["config.json"]), &configData)
@@ -766,31 +723,6 @@ func TestCreateConfigMap(t *testing.T) {
 		assert.Equal(t, "localhost", configData.FfmpegGrpcServerAddress)
 		assert.Equal(t, "50051", configData.FfmpegGrpcServerPort)
 	})
-
-	// t.Run("InvalidBcsConfigSpec", func(t *testing.T) {
-	// 	bcsConfig := &bcsv1.BcsConfigSpec{
-	// 		Name:      "",
-	// 		Namespace: "",
-	// 		Nmos: bcsv1.Nmos{
-	// 			NmosInputFile: nmos.Config{},
-	// 		},
-	// 	}
-
-	// 	configMap := CreateConfigMap(bcsConfig)
-	// 	assert.NotNil(t, configMap)
-
-	// 	// Verify metadata
-	// 	assert.Equal(t, "-config", configMap.ObjectMeta.Name)
-	// 	assert.Equal(t, "", configMap.ObjectMeta.Namespace)
-
-	// 	// Verify data
-	// 	assert.Contains(t, configMap.Data, "config.json")
-	// 	var configData nmos.Config
-	// 	err := json.Unmarshal([]byte(configMap.Data["config.json"]), &configData)
-	// 	assert.NoError(t, err)
-	// 	assert.Empty(t, configData.FfmpegGrpcServerAddress)
-	// 	assert.Empty(t, configData.FfmpegGrpcServerPort)
-	// })
 }
 func TestAssignNodeAntiAffinityFromConfig(t *testing.T) {
 	t.Run("ValidDoNotScheduleOnNode", func(t *testing.T) {
@@ -991,11 +923,9 @@ func TestBcsConstructContainerConfig(t *testing.T) {
 			},
 		}
 
-		// Ensure the directory exists
 		err := os.MkdirAll("/host/config", os.ModePerm)
 		assert.NoError(t, err)
 
-		// Create a temporary NMOS config file
 		tempFile, err := os.CreateTemp("/host/config", "config.json")
 		assert.NoError(t, err)
 		defer os.Remove(tempFile.Name())
@@ -1004,13 +934,11 @@ func TestBcsConstructContainerConfig(t *testing.T) {
 		assert.NoError(t, err)
 		tempFile.Close()
 
-		// Ensure the config.json file exists before calling ConstructContainerConfig
 		_, err = os.Stat(tempFile.Name())
 		assert.NoError(t, err, "config.json file should exist")
 
 		containerConfig, hostConfig, networkConfig := ConstructContainerConfig(containerInfo, config, log)
 
-		// Debugging output
 		fmt.Printf("Container Config: %+v\n", containerConfig)
 		fmt.Printf("Host Config: %+v\n", hostConfig)
 		fmt.Printf("Network Config: %+v\n", networkConfig)
@@ -1047,11 +975,9 @@ func TestBcsConstructContainerConfig(t *testing.T) {
 			},
 		}
 
-		// Ensure the directory exists
 		err := os.MkdirAll("/host/config", os.ModePerm)
 		assert.NoError(t, err)
 
-		// Create a temporary NMOS config file
 		tempFile, err := os.CreateTemp("/host/config", "config.json")
 		assert.NoError(t, err)
 		defer os.Remove(tempFile.Name())
@@ -1060,7 +986,6 @@ func TestBcsConstructContainerConfig(t *testing.T) {
 		assert.NoError(t, err)
 		tempFile.Close()
 
-		// Ensure the config.json file exists before calling ConstructContainerConfig
 		_, err = os.Stat(tempFile.Name())
 		assert.NoError(t, err, "config.json file should exist")
 
@@ -1105,11 +1030,9 @@ definition:
 		deployment := CreateMeshAgentDeployment(cm)
 		assert.NotNil(t, deployment)
 
-		// Verify metadata
 		assert.Equal(t, "mesh-agent-deployment", deployment.ObjectMeta.Name)
 		assert.Equal(t, "mcm", deployment.ObjectMeta.Namespace)
 
-		// Verify container configuration
 		assert.Len(t, deployment.Spec.Template.Spec.Containers, 1)
 		container := deployment.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "mesh-agent", container.Name)
@@ -1121,19 +1044,16 @@ definition:
 		assert.Contains(t, container.Command, "-p")
 		assert.Contains(t, container.Command, "9090")
 
-		// Verify resource requests and limits
 		resources := container.Resources
 		assert.Equal(t, resource.MustParse("500m"), resources.Requests[corev1.ResourceCPU])
 		assert.Equal(t, resource.MustParse("256Mi"), resources.Requests[corev1.ResourceMemory])
 		assert.Equal(t, resource.MustParse("1000m"), resources.Limits[corev1.ResourceCPU])
 		assert.Equal(t, resource.MustParse("512Mi"), resources.Limits[corev1.ResourceMemory])
 
-		// Verify ports
 		assert.Len(t, container.Ports, 2)
 		assert.Equal(t, int32(8080), container.Ports[0].ContainerPort)
 		assert.Equal(t, int32(9090), container.Ports[1].ContainerPort)
 
-		// Verify security context
 		assert.NotNil(t, container.SecurityContext)
 		assert.True(t, *container.SecurityContext.Privileged)
 
@@ -1182,10 +1102,8 @@ definition:
 		pv := CreatePersistentVolume(cm)
 		assert.NotNil(t, pv)
 
-		// Verify metadata
 		assert.Equal(t, "mtl-pv", pv.ObjectMeta.Name)
 
-		// Verify spec
 		assert.Equal(t, resource.MustParse("10Gi"), pv.Spec.Capacity[corev1.ResourceStorage])
 		assert.Equal(t, corev1.PersistentVolumeFilesystem, *pv.Spec.VolumeMode)
 		assert.Equal(t, []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce}, pv.Spec.AccessModes)
@@ -1229,11 +1147,9 @@ func TestCreateBcsDeployment(t *testing.T) {
 		deployment := CreateBcsDeployment(bcsConfig)
 		assert.NotNil(t, deployment)
 
-		// Verify metadata
 		assert.Equal(t, "test-bcs-deployment", deployment.ObjectMeta.Name)
 		assert.Equal(t, "test-namespace", deployment.ObjectMeta.Namespace)
 
-		// Verify NMOS container
 		nmosContainer := deployment.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "tiber-broadcast-suite-nmos-node", nmosContainer.Name)
 		assert.Equal(t, "nmos-node:latest", nmosContainer.Image)
@@ -1243,18 +1159,14 @@ func TestCreateBcsDeployment(t *testing.T) {
 		assert.Equal(t, "ENV_VAR_1", nmosContainer.Env[0].Name)
 		assert.Equal(t, "value1", nmosContainer.Env[0].Value)
 
-		// Verify App container
 		appContainer := deployment.Spec.Template.Spec.Containers[1]
 		assert.Equal(t, "tiber-broadcast-suite", appContainer.Name)
 		assert.Equal(t, "broadcast-suite:latest", appContainer.Image)
 		assert.Equal(t, []string{"localhost", "50051"}, appContainer.Args)
 
-		// Verify volumes
-		// assert.Len(t, deployment.Spec.Template.Spec.Volumes, 10)
 		assert.Equal(t, "/host/videos", deployment.Spec.Template.Spec.Volumes[0].HostPath.Path)
 		assert.Equal(t, "/host/dri", deployment.Spec.Template.Spec.Volumes[1].HostPath.Path)
 
-		// Verify affinity
 		assert.NotNil(t, deployment.Spec.Template.Spec.Affinity)
 		assert.NotNil(t, deployment.Spec.Template.Spec.Affinity.NodeAffinity)
 		assert.NotNil(t, deployment.Spec.Template.Spec.Affinity.PodAntiAffinity)
@@ -1311,18 +1223,15 @@ definition:
 		daemonSet := CreateDaemonSet(cm)
 		assert.NotNil(t, daemonSet)
 
-		// Verify metadata
 		assert.Equal(t, "media-proxy", daemonSet.ObjectMeta.Name)
 		assert.Equal(t, "mcm", daemonSet.ObjectMeta.Namespace)
 
-		// Verify container configuration
 		container := daemonSet.Spec.Template.Spec.Containers[0]
 		assert.Equal(t, "media-proxy", container.Name)
 		assert.Equal(t, "media-proxy:latest", container.Image)
 		assert.Equal(t, []string{"media-proxy"}, container.Command)
 		assert.Equal(t, []string{"--grpc-port", "50051", "--sdk-port", "50052"}, container.Args)
 
-		// Verify resource requests and limits
 		assert.Equal(t, resource.MustParse("2"), container.Resources.Requests[corev1.ResourceCPU])
 		assert.Equal(t, resource.MustParse("8Gi"), container.Resources.Requests[corev1.ResourceMemory])
 		assert.Equal(t, resource.MustParse("1Gi"), container.Resources.Requests[corev1.ResourceHugePagesPrefix+"1Gi"])
@@ -1332,7 +1241,6 @@ definition:
 		assert.Equal(t, resource.MustParse("2Gi"), container.Resources.Limits[corev1.ResourceHugePagesPrefix+"1Gi"])
 		assert.Equal(t, resource.MustParse("4Gi"), container.Resources.Limits[corev1.ResourceHugePagesPrefix+"2Mi"])
 
-		// Verify ports
 		assert.Len(t, container.Ports, 2)
 		assert.Equal(t, int32(50051), container.Ports[0].ContainerPort)
 		assert.Equal(t, int32(50051), container.Ports[0].HostPort)
@@ -1343,7 +1251,6 @@ definition:
 		assert.Equal(t, corev1.ProtocolTCP, container.Ports[1].Protocol)
 		assert.Equal(t, "sdk-port", container.Ports[1].Name)
 
-		// Verify volume mounts
 		assert.Len(t, container.VolumeMounts, 6)
 		assert.Equal(t, "/run/mcm", container.VolumeMounts[0].MountPath)
 		assert.Equal(t, "/dev/vfio", container.VolumeMounts[1].MountPath)
@@ -1352,7 +1259,6 @@ definition:
 		assert.Equal(t, "/dev/shm", container.VolumeMounts[4].MountPath)
 		assert.Equal(t, "/var/run/imtl", container.VolumeMounts[5].MountPath)
 
-		// Verify volumes
 		assert.Len(t, daemonSet.Spec.Template.Spec.Volumes, 6)
 		assert.Equal(t, "/run/memif", daemonSet.Spec.Template.Spec.Volumes[0].VolumeSource.HostPath.Path)
 		assert.Equal(t, "/dev/vfio", daemonSet.Spec.Template.Spec.Volumes[1].VolumeSource.HostPath.Path)
@@ -1361,7 +1267,6 @@ definition:
 		assert.Equal(t, corev1.StorageMediumMemory, daemonSet.Spec.Template.Spec.Volumes[4].VolumeSource.EmptyDir.Medium)
 		assert.Equal(t, "media-proxy-pvc", daemonSet.Spec.Template.Spec.Volumes[5].VolumeSource.PersistentVolumeClaim.ClaimName)
 
-		// Verify node affinity
 		affinity := daemonSet.Spec.Template.Spec.Affinity
 		assert.NotNil(t, affinity)
 		assert.NotNil(t, affinity.NodeAffinity)
@@ -1370,7 +1275,6 @@ definition:
 		assert.Equal(t, "key1", affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Key)
 		assert.Contains(t, affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0].MatchExpressions[0].Values, "value1")
 
-		// Verify pod anti-affinity
 		podAntiAffinity := affinity.PodAntiAffinity
 		assert.NotNil(t, podAntiAffinity)
 		assert.Len(t, podAntiAffinity.RequiredDuringSchedulingIgnoredDuringExecution, 1)

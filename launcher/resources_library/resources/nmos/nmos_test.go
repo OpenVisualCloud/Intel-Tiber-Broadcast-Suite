@@ -69,7 +69,6 @@ func TestConfig_UnmarshalJSON(t *testing.T) {
 	err := json.Unmarshal([]byte(jsonData), &config)
 	assert.NoError(t, err)
 
-	// Validate Config fields
 	assert.Equal(t, 10, config.LoggingLevel)
 	assert.Equal(t, 5004, config.HttpPort)
 	assert.Equal(t, "nmos-test", config.Label)
@@ -81,7 +80,6 @@ func TestConfig_UnmarshalJSON(t *testing.T) {
 	assert.Equal(t, "local", config.Domain)
 	assert.Equal(t, 112, config.SenderPayloadType)
 
-	// Validate Sender
 	assert.Len(t, config.Sender, 1)
 	assert.Equal(t, 1920, config.Sender[0].StreamPayload.Video.FrameWidth)
 	assert.Equal(t, 1080, config.Sender[0].StreamPayload.Video.FrameHeight)
@@ -93,7 +91,6 @@ func TestConfig_UnmarshalJSON(t *testing.T) {
 	assert.Equal(t, 112, config.Sender[0].StreamType.St2110.Payload_type)
 	assert.Equal(t, 0, config.Sender[0].StreamType.St2110.QueuesCount)
 
-	// Validate Receiver
 	assert.Len(t, config.Receiver, 1)
 	assert.Equal(t, 2, config.Receiver[0].StreamPayload.Audio.Channels)
 	assert.Equal(t, 48000, config.Receiver[0].StreamPayload.Audio.SampleRate)

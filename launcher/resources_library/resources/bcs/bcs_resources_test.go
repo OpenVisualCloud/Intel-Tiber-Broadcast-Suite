@@ -23,14 +23,10 @@ limits:
 	var hwResources HwResources
 	err := yaml.Unmarshal([]byte(yamlData), &hwResources)
 	assert.NoError(t, err)
-
-	// Validate Requests
 	assert.Equal(t, "500m", hwResources.Requests.CPU)
 	assert.Equal(t, "256Mi", hwResources.Requests.Memory)
 	assert.Equal(t, "1Gi", hwResources.Requests.Hugepages1Gi)
 	assert.Equal(t, "2Mi", hwResources.Requests.Hugepages2Mi)
-
-	// Validate Limits
 	assert.Equal(t, "1000m", hwResources.Limits.CPU)
 	assert.Equal(t, "512Mi", hwResources.Limits.Memory)
 	assert.Equal(t, "2Gi", hwResources.Limits.Hugepages1Gi)
