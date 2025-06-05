@@ -106,7 +106,16 @@ func main() {
 			os.Exit(1)
 		}
 		// Handle container configuration
-		if err := controller.CreateAndRunContainers(ctx, launcherStartupConfig, setupContainerLog); err != nil {
+		config, err := parser.ParseLauncherConfiguration(launcherStartupConfig)
+		if err != nil {
+			setupLog.Error(err, "Failed to parse launcher configuration file")
+			os.Exit(1)
+		}
+		if containercontroller.IsEmptyStruct(config) {
+			setupLog.Error(err, "Failed to parse launcher configuration file. Configuration is empty")
+			os.Exit(1)
+		}
+		if err := containercontroller.CreateAndRunContainers(ctx, controller, setupContainerLog, &config); err != nil {
 			setupLog.Error(err, "unable to create and run containers!")
 			os.Exit(1)
 		}
