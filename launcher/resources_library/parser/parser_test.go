@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 package parser
 
 import (
@@ -8,7 +13,6 @@ import (
 )
 
 func TestParseLauncherMode(t *testing.T) {
-	// Create a temporary YAML file for testing
 	yamlData := `
 k8s: false
 configuration:
@@ -70,14 +74,12 @@ configuration:
 	assert.NoError(t, err)
 	tempFile.Close()
 
-	// Test ParseLauncherMode
 	modeK8s, err := ParseLauncherMode(tempFile.Name())
 	assert.NoError(t, err)
 	assert.False(t, modeK8s)
 }
 
 func TestParseLauncherConfiguration(t *testing.T) {
-	// Create a temporary YAML file for testing
 	yamlData := `
 k8s: false
 configuration:
@@ -139,11 +141,9 @@ configuration:
 	assert.NoError(t, err)
 	tempFile.Close()
 
-	// Test ParseLauncherConfiguration
 	config, err := ParseLauncherConfiguration(tempFile.Name())
 	assert.NoError(t, err)
 
-	// Validate RunOnce
 	assert.Equal(t, "mcm/mesh-agent:latest", config.RunOnce.MediaProxyAgent.ImageAndTag)
 	assert.Equal(t, "50051", config.RunOnce.MediaProxyAgent.GRPCPort)
 	assert.Equal(t, "8100", config.RunOnce.MediaProxyAgent.RestPort)
@@ -154,7 +154,6 @@ configuration:
 	assert.Equal(t, "/dev/vfio:/dev/vfio", config.RunOnce.MediaProxyMcm.Volumes[0])
 	assert.False(t, config.RunOnce.MediaProxyMcm.Network.Enable)
 
-	// Validate WorkloadToBeRun
 	assert.Len(t, config.WorkloadToBeRun, 1)
 	assert.Equal(t, "bcs-ffmpeg-pipeline-tx", config.WorkloadToBeRun[0].FfmpegPipeline.Name)
 	assert.Equal(t, "tiber-broadcast-suite:latest", config.WorkloadToBeRun[0].FfmpegPipeline.ImageAndTag)
@@ -184,7 +183,6 @@ configuration:
 }
 
 func TestParseLauncherConfigurationWithMultipleWorkloads(t *testing.T) {
-	// Create a temporary YAML file for testing
 	yamlData := `
 k8s: true
 configuration:
@@ -266,14 +264,11 @@ configuration:
 	assert.NoError(t, err)
 	tempFile.Close()
 
-	// Test ParseLauncherConfiguration
 	config, err := ParseLauncherConfiguration(tempFile.Name())
 	assert.NoError(t, err)
 
-	// Validate WorkloadToBeRun
 	assert.Len(t, config.WorkloadToBeRun, 2)
 
-	// Validate first workload
 	assert.Equal(t, "bcs-ffmpeg-pipeline-tx-1", config.WorkloadToBeRun[0].FfmpegPipeline.Name)
 	assert.Equal(t, "tiber-broadcast-suite:latest", config.WorkloadToBeRun[0].FfmpegPipeline.ImageAndTag)
 	assert.Equal(t, 50088, config.WorkloadToBeRun[0].FfmpegPipeline.GRPCPort)
@@ -291,7 +286,6 @@ configuration:
 	assert.Equal(t, "intel-node-tx-1.json", config.WorkloadToBeRun[0].NmosClient.NmosConfigFileName)
 	assert.True(t, config.WorkloadToBeRun[0].NmosClient.Network.Enable)
 
-	// Validate second workload
 	assert.Equal(t, "bcs-ffmpeg-pipeline-tx-2", config.WorkloadToBeRun[1].FfmpegPipeline.Name)
 	assert.Equal(t, "tiber-broadcast-suite:latest", config.WorkloadToBeRun[1].FfmpegPipeline.ImageAndTag)
 	assert.Equal(t, 50089, config.WorkloadToBeRun[1].FfmpegPipeline.GRPCPort)

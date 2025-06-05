@@ -104,16 +104,8 @@ func IsEmptyStruct(s interface{}) bool {
 //   5. Creates and runs the BCS NMOS client container if its configuration is provided.
 //   6. Creates and runs the BCS FFmpeg pipeline container with predefined settings.
 
-func CreateAndRunContainers(ctx context.Context, cli ContainerController, launcherConfigName string, log logr.Logger) error {
-	config, err := parser.ParseLauncherConfiguration(launcherConfigName)
-	if err != nil {
-		log.Error(err, "Failed to parse launcher configuration file")
-		return err
-	}
-	if IsEmptyStruct(config) {
-		log.Error(err, "Failed to parse launcher configuration file. Configuration is empty")
-		return err
-	}
+func CreateAndRunContainers(ctx context.Context, cli ContainerController, log logr.Logger, config *parser.Configuration) error {
+
 	//pass the yaml configuration to the Container struct
 	if !IsEmptyStruct(config.RunOnce.MediaProxyAgent) {
 
@@ -127,7 +119,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 			// the host machine's network stack.
 		}
 
-		err := createAndRunContainer(ctx, cli, log, &mcmAgentContainer, &config)
+		err := createAndRunContainer(ctx, cli, log, &mcmAgentContainer, config)
 		if err != nil {
 			log.Error(err, "Failed to create container MCM MediaProxy Agent!")
 			return err
@@ -146,7 +138,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 			// Note - When you use the host network mode in Docker, the container shares
 			// the host machine's network stack.
 		}
-		err := createAndRunContainer(ctx, cli, log, &mediaProxyContainer, &config)
+		err := createAndRunContainer(ctx, cli, log, &mediaProxyContainer, config)
 		if err != nil {
 			log.Error(err, "Failed to create container MCM MediaProxy!")
 			return err
@@ -174,9 +166,9 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 			// Note - When you use the host network mode in Docker, the container shares
 			// the host machine's network stack.
 		}
-		err = createAndRunContainer(ctx, cli, log, &bcsPipelinesContainer, &config)
+		err := createAndRunContainer(ctx, cli, log, &bcsPipelinesContainer, config)
 		if err != nil {
-			log.Error(err, "Failed to create container for FFMPEG pipeline instance %d!")
+			log.Error(err, "Failed to create container for FFMPEG pipeline instance %d!", n)
 			return err
 		}
 		bcsNmosContainer := general.Containers{}
@@ -194,7 +186,7 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, launch
 		instance.NmosClient.FfmpegConnectionAddress = instance.FfmpegPipeline.Network.IP
 		instance.NmosClient.FfmpegConnectionPort = strconv.Itoa(instance.FfmpegPipeline.GRPCPort)
 
-		err = createAndRunContainer(ctx, cli, log, &bcsNmosContainer, &config)
+		err = createAndRunContainer(ctx, cli, log, &bcsNmosContainer, config)
 		if err != nil {
 			log.Error(err, "Failed to create container!")
 			return err
