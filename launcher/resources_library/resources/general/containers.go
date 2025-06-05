@@ -20,10 +20,11 @@ const (
 	MediaProxyMCM
 	BcsPipelineFfmpeg
 	BcsPipelineNmosClient
+	NotSupportedWorkload
 )
 
 func (w Workload) String() string {
-	return [...]string{"MediaProxyAgent", "MediaProxyMCM", "BcsPipelineFfmpeg", "BcsPipelineNmosClient"}[w]
+	return [...]string{"MediaProxyAgent", "MediaProxyMCM", "BcsPipelineFfmpeg", "BcsPipelineNmosClient", "NotSupportedWorkload"}[w]
 }
 
 type ContainersConfig struct {
@@ -33,22 +34,8 @@ type ContainersConfig struct {
 }
 
 type Containers struct {
-	Type Workload
-	// Configuration   ContainersConfig
+	Type          Workload
 	ContainerName string
 	Image         string // image + tag
 	Id            int
-	// Command    		string
-	// ContainerName   string
-	// Ip              string
-	// ExposedPort     []string // "format should be: 80/tcp"
-	// BindingHostPort []string
-	// NetworkMode     string
-	// Overridden      string
-	// Privileged      bool
-	// VolumeMount     []string
-	// EnviromentVariables []string
-	// Network         string
-	// DeviceDri       string
-	// DeviceVfio      string
 }
