@@ -139,6 +139,13 @@ namespace impl
         const web::json::field_as_string_or ffmpeg_grpc_server_address{ U("ffmpeg_grpc_server_address"), "localhost"};
         const web::json::field_as_string_or ffmpeg_grpc_server_port{ U("ffmpeg_grpc_server_port"), "50051"};
 
+        // // default values for the node implementation
+        const web::json::field_as_string_or default_source_ip{ U("default_source_ip"), "192.168.2.1"};
+        const web::json::field_as_integer_or default_source_port{ U("default_source_port"), 5005};
+        const web::json::field_as_integer_or default_destination_port{ U("default_destination_port"), 5000};
+        const web::json::field_as_string_or default_destination_ip{ U("default_destination_ip"), "192.168.2.2"};
+        const web::json::field_as_string_or default_interface_ip{ U("default_interface_ip"), "192.168.2.2"};
+
         const web::json::field_as_value_or frame_rate{ U("frame_rate"), web::json::value_of({
             { nmos::fields::numerator, 25 },
             { nmos::fields::denominator, 1 }
@@ -284,6 +291,13 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
     const auto ffmpeg_grpc_server_address = impl::fields::ffmpeg_grpc_server_address(model.settings);
     const auto ffmpeg_grpc_server_port = impl::fields::ffmpeg_grpc_server_port(model.settings);
+
+    const auto default_source_ip = impl::fields::default_source_ip(model.settings);
+    const auto default_source_port = impl::fields::default_source_port(model.settings);
+    const auto default_destination_ip = impl::fields::default_destination_ip(model.settings);
+    const auto default_destination_port = impl::fields::default_destination_port(model.settings);
+    const auto default_interface_ip = impl::fields::default_interface_ip(model.settings);
+
     //seder payload is right know global for all senders
     const auto sender_payload_type = impl::fields::sender_payload_type(model.settings);
 
@@ -296,7 +310,7 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
     const std::vector<impl::port> media_ports = { impl::ports::video };
  
     //generic values for whole node
-    // const auto interlace_mode = impl::get_interlace_mode(model.settings);
+    //const auto interlace_mode = impl::get_interlace_mode(model.settings);
     const auto frame_rate = nmos::parse_rational(impl::fields::frame_rate(model.settings));
     const auto colorspace = nmos::colorspace{ impl::fields::colorspace(model.settings) };
     const auto transfer_characteristic = nmos::transfer_characteristic{ impl::fields::transfer_characteristic(model.settings) };
@@ -547,6 +561,11 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
 
             auto connection_sender = nmos::make_connection_rtp_sender(sender_id, smpte2022_7);
 
+            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_ip] = web::json::value::string(impl::fields::default_source_ip(model.settings));
+            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_ip] = web::json::value::string(impl::fields::default_destination_ip(model.settings));
+            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::source_port] = web::json::value::number(impl::fields::default_source_port(model.settings));
+            connection_sender.data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::destination_port] = web::json::value::number(impl::fields::default_destination_port(model.settings));
+
             if (impl::fields::activate_senders(model.settings))
             {
                 // initialize this sender with a scheduled activation, e.g. to enable the IS-05-01 test suite to run immediately
@@ -681,6 +700,8 @@ void node_implementation_init(nmos::node_model& model, nmos::experimental::contr
             impl::insert_group_hint(receiver, port, index);
 
             auto connection_receiver = nmos::make_connection_rtp_receiver(receiver_id, smpte2022_7);
+            connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params][0][nmos::fields::interface_ip] = web::json::value::string(impl::fields::default_interface_ip(model.settings));
+
 
             resolve_auto(receiver, connection_receiver, connection_receiver.data[nmos::fields::endpoint_active][nmos::fields::transport_params]);
 
@@ -767,7 +788,42 @@ nmos::details::connection_resource_patch_validator make_node_implementation_patc
     return{};
 }
 
-// Example Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
+void assign_default_transport_params_sender( web::json::value& transport_params, const nmos::settings & settings, const nmos::type & type_nmos)
+{
+    if (!impl::fields::default_source_ip(settings).empty()) {
+        nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] {
+            return web::json::value::string(impl::fields::default_source_ip(settings));
+        });
+    }
+    if (!impl::fields::default_destination_ip(settings).empty()) {
+        nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] {
+            return web::json::value::string(impl::fields::default_destination_ip(settings));
+        });
+    }
+    if (impl::fields::default_source_port(settings) > 0) {
+        nmos::details::resolve_auto(transport_params[0], nmos::fields::source_port, [&] {
+            return web::json::value::number(impl::fields::default_source_port(settings));
+        });
+    }
+    if (impl::fields::default_destination_port(settings) > 0) {
+        nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_port, [&] {
+            return web::json::value::number(impl::fields::default_destination_port(settings));
+        });
+    }
+    nmos::resolve_rtp_auto(type_nmos, transport_params);
+}
+
+void assign_default_transport_params_receiver(web::json::value& transport_params, const nmos::settings & settings, const nmos::type & type_nmos)
+{
+    if (!impl::fields::default_interface_ip(settings).empty()) {
+    nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { 
+        return web::json::value::string(impl::fields::default_interface_ip(settings));
+    });
+}
+nmos::resolve_rtp_auto(type_nmos, transport_params);
+}
+
+// Connection API activation callback to resolve "auto" values when /staged is transitioned to /active
 nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(const nmos::settings& settings, ConfigManager& config_manager, slog::base_gate& gate)
 {
     using web::json::value;
@@ -788,7 +844,8 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
 
     // although which properties may need to be defaulted depends on the resource type,
     // the default value will almost always be different for each resource
-    return [rtp_sender_ids, rtp_receiver_ids, &gate](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
+
+    return [rtp_sender_ids, rtp_receiver_ids, &gate, &settings](const nmos::resource& resource, const nmos::resource& connection_resource, value& transport_params)
     {
         const std::pair<nmos::id, nmos::type> id_type{ connection_resource.id, connection_resource.type };
 
@@ -803,21 +860,32 @@ nmos::connection_resource_auto_resolver make_node_implementation_auto_resolver(c
             if (source_ip.is_null() || destination_ip.is_null() || source_port.is_null() || destination_port.is_null()) {
                 throw std::runtime_error("One or more transport parameters are empty: source_ip, destination_ip, source_port, destination_port when connecting sender and receiver - refer to NMOS IS-05");
             }
-
-            std::cout << "[TX] SENDER IS-05 connection API -> source_ip: " << source_ip.serialize() << std::endl;
-            std::cout << "[TX] SENDER IS-05 connection API -> destination_ip: " << destination_ip.serialize() << std::endl;
-            std::cout << "[TX] SENDER IS-05 connection API -> source_port: " << source_port.serialize() << std::endl;
-            std::cout << "[TX] SENDER IS-05 connection API -> destination_port: " << destination_port.serialize() << std::endl;
-
+            if (source_ip.as_string() == "auto" || destination_ip.as_string() == "auto" || 
+                source_port.as_string() == "auto" || destination_port.as_string() == "auto") {
+                    std::cout << "Default transport parameters are being assigned for sender with ID: " << id_type.first << std::endl;
+                assign_default_transport_params_sender(transport_params, settings, id_type.second);
+            } else {
+            // if the transport parameters are not "auto", then we can just resolve them
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_ip, [&] { return source_ip; });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_ip, [&] { return destination_ip; });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::source_port, [&] { return source_port; });
             nmos::details::resolve_auto(transport_params[0], nmos::fields::destination_port, [&] { return destination_port; });
-
+            }
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
         else if (rtp_receiver_ids.end() != boost::range::find(rtp_receiver_ids, id_type.first))
         {
+            auto data= connection_resource.data;
+            auto interface_ip = data[nmos::fields::endpoint_staged][nmos::fields::transport_params][0][nmos::fields::interface_ip];
+            if (interface_ip.is_null()) {
+                throw std::runtime_error("One or more transport parameters are empty: interface_ip when connecting sender and receiver - refer to NMOS IS-05");
+            }
+            if (interface_ip.as_string() == "auto" ) {
+                assign_default_transport_params_receiver(transport_params, settings, id_type.second);
+            }else{
+                nmos::details::resolve_auto(transport_params[0], nmos::fields::interface_ip, [&] { return interface_ip; });
+
+            }
             nmos::resolve_rtp_auto(id_type.second, transport_params);
         }
     };

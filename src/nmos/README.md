@@ -27,6 +27,10 @@ Here is sample config `intel-node-tx.json` (treated as transmitter node with 1 d
   },
   "function": "tx",
   "activate_senders": false,
+  "default_source_ip": "192.168.2.2",
+  "default_destination_ip": "192.168.2.3",
+  "default_source_port": 5000,
+  "default_destination_port": 5001,
   "stream_loop": -1,
   "gpu_hw_acceleration": "none",
   "domain": "local",
@@ -93,9 +97,23 @@ Here is sample config `intel-node-tx.json` (treated as transmitter node with 1 d
 }
 ```
 
+> NOTE that sender's snippet: 
+```bash 
+  "default_source_ip": "192.168.2.2",
+  "default_destination_ip": "192.168.2.3",
+  "default_source_port": 5000,
+  "default_destination_port": 5001,
+```
+> is used to set the default source and destination IP addresses and ports for the NMOS node sender type. These values are used when the node is not configured with specific settings during activation (standard IS-05 activation). If you want to use the default values, you can leave them as they are. If you want to set specific values for the sender or receiver, you can override them in the `sender` configuration or in the test script `tests/nmos-is05-controller/threaded-nmos-controller05.py`.
+> NOTE that receiver's snippet:
+```bash
+  "default_interface_ip": "192.168.2.3",    
+```
+> is used to set the default interface IP address for the NMOS node receiver type. This value is used when the node is not configured with specific settings during activation (standard IS-05 activation). If you want to use the default values, you can leave them as they are. If you want to set specific values for the sender or receiver, you can override them in the `receiver` configuration or in the test script `tests/nmos-is05-controller/threaded-nmos-controller05.py`.
+
 You can find more examples here: `<repo>/tests/`
 
-Curretly only video mode is supported. The audio support is under development and will be relesed too.
+Currently only video mode is supported. The audio support is under development and will be released too.
 - `logging_level`: The level of logging detail.
 - `http_port`: The port number for HTTP communication (REST API). Using this port you can refer to NMOS node via e.g." curl command and send request to GET the content or PATCH configuration to connect sender to receiver of two different NMOS nodes.
 - `label`: A label or identifier for the configuration ("intel-broadcast-suite").
@@ -103,8 +121,13 @@ Curretly only video mode is supported. The audio support is under development an
 - `function`: The function of the device, here indicating the pipeline type ("tx" for transmit). Possible options are: `multiviewer|upscale|replay|recorder|jpegxs|rx|tx`.
 - `multiviewer_columns`: Number of streams in a row. [used only for multiviewer]
 - `stream_loop`: Number of times to loop the input stream. Default value is -1.
-- `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none"). Possible oprtions are `intel`, `nvidia`, `none`.
-- `gpu_hw_acceleration_device`:If `gpu_hw_acceleration` is not `none`, GPU acceleration requires a device path, e.g.: `/dev/dri/renderD128`
+- `default_source_ip`: [only used when sender] The default source IP address for the NMOS node sender type (e.g., "192.168.2.2").
+- `default_destination_ip`: [only used when sender] The default destination IP address for the NMOS node sender type (e.g., "192.168.2.3").
+- `default_source_port`: [only used when sender] The default source port for the NMOS node sender type (e.g., 5000).
+- `default_destination_port`: [only used when sender] The default destination port for the NMOS node sender type (e.g., 5001).
+- `default_interface_ip`: [only used when receiver] The default interface IP address for the NMOS node receiver type (e.g., "192.168.2.3").
+- `gpu_hw_acceleration`: Indicates if GPU hardware acceleration is used ("none"). Possible options are `intel`, `nvidia`, `none`.
+- `gpu_hw_acceleration_device`: If `gpu_hw_acceleration` is not `none`, GPU acceleration requires a device path, e.g.: `/dev/dri/renderD128`
 - `domain`: The domain of the device ("local"). If NMOS node is used as an orchestrated app, you should change it according to [DNS Kubernetes rules](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#namespaces-of-services)  
 - `ffmpeg_grpc_server_address`: The address of the FFmpeg gRPC server that is exposed by ffmpeg (streaming) app e.g.: ("localhost").
 - `ffmpeg_grpc_server_port`: The port of the FFmpeg gRPC server that is exposed by ffmpeg (streaming) app e.g.: (50051).
@@ -130,7 +153,7 @@ Curretly only video mode is supported. The audio support is under development an
         - `queues_cnt`: As a parameter in ffmpeg: `-tx_queues` or `-rx_queues` depending on if it is sender or receiver.
       - `file`: Details for file-based stream:
         - `path`: Path to the file ("/root").
-        - `filename`: Filename ("1920x1080p10le_1.yuv").
+         - `filename`: Filename ("1920x1080p10le_1.yuv").
       - `mcm`: Details for Media Communications Mesh
         - `conn_type`: SMPTE ST 2110 Connection Type e.g.: "st2110",
         - `transport`: Transport Type: e.g.: "st2110-20",

@@ -1,6 +1,6 @@
 {
   "logging_level": 10,
-  "http_port": 95,
+  "http_port": 995,
   "label": "intel-broadcast-suite",
   "device_tags": {
     "pipeline": [
@@ -9,6 +9,7 @@
   },
   "function": "rx",
   "activate_senders": false,
+  "default_interface_ip": "192.168.2.2",
   "gpu_hw_acceleration": "none",
   "domain": "local",
   "ffmpeg_grpc_server_address": "192.168.2.6",

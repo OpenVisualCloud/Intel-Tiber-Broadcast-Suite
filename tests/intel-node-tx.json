@@ -1,6 +1,6 @@
 {
   "logging_level": 10,
-  "http_port": 5004,
+  "http_port": 3333,
   "label": "intel-broadcast-suite-tx",
   "device_tags": {
     "pipeline": [
@@ -9,6 +9,10 @@
   },
   "function": "tx",
   "activate_senders": false,
+  "default_source_ip": "192.168.2.2",
+  "default_destination_ip": "192.168.2.3",
+  "default_source_port": 5000,
+  "default_destination_port": 5001,
   "stream_loop": -1,
   "gpu_hw_acceleration": "none",
   "domain": "local",
@@ -66,8 +70,8 @@
       },
       "stream_type": {
         "file": {
-          "path": "/videos",
-          "filename": "1920x1080p10le_0.yuv"
+          "path": "../../../../tests",
+          "filename": "receiver_1.yuv"
         }
       }
     }
