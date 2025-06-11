@@ -143,8 +143,8 @@ def main():
     input_connection_data = parser.parse_args()
     receiver_ip = input_connection_data.receiver_ip
     receiver_port = input_connection_data.receiver_port
-    sender_ip = input_connection_data.sender_source_ip
-    sender_port = input_connection_data.sender_source_port
+    sender_ip = input_connection_data.sender_ip
+    sender_port = input_connection_data.sender_port
     receiver_index = input_connection_data.receiver_index
     sender_index = input_connection_data.sender_index
     
