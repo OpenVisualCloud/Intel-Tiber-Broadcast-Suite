@@ -161,11 +161,7 @@ func ConstructContainerConfig(containerInfo *general.Containers, config *parser.
 			},
 		}
 
-		if config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.Enable {
-			containerConfig.Cmd = []string{config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.IP, fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)}
-		} else {
-			containerConfig.Cmd = []string{"localhost", fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)}
-		}
+		containerConfig.Cmd = []string{config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.IP, fmt.Sprintf("%d", config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort)}
 
 		hostConfig = &container.HostConfig{
 			Privileged: true,
