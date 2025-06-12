@@ -7,7 +7,6 @@
 package utils
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,17 +14,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 
 	"bcs.pod.launcher.intel/resources_library/parser"
 	"bcs.pod.launcher.intel/resources_library/resources/bcs"
 	"bcs.pod.launcher.intel/resources_library/resources/general"
 	"bcs.pod.launcher.intel/resources_library/resources/nmos"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-logr/logr"
 	"gopkg.in/yaml.v2"
@@ -39,114 +35,6 @@ import (
 
 	bcsv1 "bcs.pod.launcher.intel/api/v1"
 )
-
-var fileMutex sync.Mutex
-
-func isImagePulled(ctx context.Context, cli *client.Client, imageName string) (error, bool) {
-	images, err := cli.ImageList(ctx, image.ListOptions{})
-	if err != nil {
-		return err, false
-	}
-
-	imageMap := make(map[string]bool)
-	for _, image := range images {
-		for _, tag := range image.RepoTags {
-			imageMap[tag] = true
-		}
-	}
-
-	_, isPulled := imageMap[imageName]
-	return nil, isPulled
-}
-
-func pullImageIfNotExists(ctx context.Context, cli *client.Client, imageName string, log logr.Logger) error {
-
-	// Check if the Docker client is nil
-	if cli == nil {
-		err := errors.New("docker client is nil")
-		log.Error(err, "Docker client is not initialized")
-		return err
-	}
-
-	// Check if the context is nil
-	if ctx == nil {
-		err := errors.New("context is nil")
-		log.Error(err, "Context is not initialized")
-		return err
-	}
-
-	// Check if the image is already pulled
-	err, pulled := isImagePulled(ctx, cli, imageName)
-	if err != nil {
-		log.Error(err, "Error checking if image is pulled")
-		return err
-	}
-
-	// Pull the image if it is not already pulled
-	if !pulled {
-		reader, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
-		if err != nil {
-			log.Error(err, "Error pulling image")
-			return err
-		}
-		defer reader.Close()
-
-		_, err = io.Copy(os.Stdout, reader)
-		if err != nil {
-			log.Error(err, "Error reading output")
-			return err
-		}
-		log.Info("Image pulled successfully", "image", imageName)
-	}
-
-	return nil
-}
-
-func doesContainerExist(ctx context.Context, cli *client.Client, containerName string) (error, bool) {
-	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
-	if err != nil {
-		return err, false
-	}
-
-	containerMap := make(map[string]string)
-	for _, container := range containers {
-		for _, name := range container.Names {
-			containerMap[name] = strings.ToLower(container.State)
-		}
-	}
-
-	state, exists := containerMap["/"+containerName]
-	if !exists {
-		return nil, false
-	}
-
-	return nil, state == "exited"
-}
-
-func isContainerRunning(ctx context.Context, cli *client.Client, containerName string) (error, bool) {
-	containers, err := cli.ContainerList(ctx, container.ListOptions{All: true})
-	if err != nil {
-		return err, false
-	}
-
-	containerMap := make(map[string]string)
-	for _, container := range containers {
-		for _, name := range container.Names {
-			containerMap[name] = strings.ToLower(container.State)
-		}
-	}
-
-	state, exists := containerMap["/"+containerName]
-	if !exists {
-		return nil, false
-	}
-
-	return nil, state == "running"
-}
-
-func removeContainer(ctx context.Context, cli *client.Client, containerID string) error {
-	return cli.ContainerRemove(ctx, containerID, container.RemoveOptions{Force: true})
-}
 
 func updateNmosJsonFile(filePath string, ip string, port string) error {
 	file, err := os.Open(filePath)
@@ -193,7 +81,7 @@ func FileExists(filePath string) bool {
 	return !os.IsNotExist(err)
 }
 
-func constructContainerConfig(containerInfo *general.Containers, config *parser.Configuration, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
+func ConstructContainerConfig(containerInfo *general.Containers, config *parser.Configuration, log logr.Logger) (*container.Config, *container.HostConfig, *network.NetworkingConfig) {
 	var containerConfig *container.Config
 	var hostConfig *container.HostConfig
 	var networkConfig *network.NetworkingConfig
@@ -326,14 +214,12 @@ func constructContainerConfig(containerInfo *general.Containers, config *parser.
 		nmosFilePathJson := config.WorkloadToBeRun[containerInfo.Id].NmosClient.NmosConfigPath + "/" + nmosFileNameJson
 		if !FileExists(nmosFilePathJson) {
 			log.Error(errors.New("NMOS json file does not exist"), "NMOS json file does not exist")
-			return nil, nil, nil
 		}
 		errUpdateJson := updateNmosJsonFile(nmosFilePathJson,
 			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionAddress,
 			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionPort)
 		if errUpdateJson != nil {
 			log.Error(errUpdateJson, "Error updating NMOS json file")
-			return nil, nil, nil
 		}
 		configPathContainer := "config/" + nmosFileNameJson
 		containerConfig = &container.Config{
@@ -379,65 +265,6 @@ func constructContainerConfig(containerInfo *general.Containers, config *parser.
 	}
 
 	return containerConfig, hostConfig, networkConfig
-}
-
-func CreateAndRunContainer(ctx context.Context, cli *client.Client, log logr.Logger, containerInfo *general.Containers, config *parser.Configuration) error {
-	err, isRunning := isContainerRunning(ctx, cli, containerInfo.ContainerName)
-	if err != nil {
-		log.Error(err, "Failed to read container status (if it is in running state)")
-		return err
-	}
-
-	if isRunning {
-		log.Info("Container ", containerInfo.ContainerName, " is running. Omitting this container creation.")
-		return nil
-	}
-
-	err, exists := doesContainerExist(ctx, cli, containerInfo.ContainerName)
-	if err != nil {
-		log.Error(err, "Failed to read container status (if it exists)")
-		return err
-	}
-
-	if exists {
-		log.Info("Removing container to re-create and re-run because container with a such name exists but with status exited:", "container", containerInfo.ContainerName)
-		err = removeContainer(ctx, cli, containerInfo.ContainerName)
-		if err != nil {
-			log.Error(err, "Failed to remove container")
-			return err
-		}
-
-	}
-
-	err = pullImageIfNotExists(ctx, cli, containerInfo.Image, log)
-	if err != nil {
-		log.Error(err, "Error pulling image for container")
-		return err
-	}
-	// Define the container configuration
-	containerConfig, hostConfig, networkConfig := constructContainerConfig(containerInfo, config, log)
-
-	if containerConfig == nil || hostConfig == nil || networkConfig == nil {
-		// log.Error(errors.New("container configuration is nil"), "Failed to construct container configuration")
-		return errors.New("container configuration is nil")
-	}
-	// Create the container
-	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, networkConfig, nil, containerInfo.ContainerName)
-
-	if err != nil {
-		log.Error(err, "Error creating container")
-		return err
-	}
-
-	// Start the container
-	err = cli.ContainerStart(ctx, resp.ID, container.StartOptions{})
-	if err != nil {
-		log.Error(err, "Error starting container")
-		return err
-	}
-
-	log.Info("Container is created and started successfully", "name", containerInfo.ContainerName, "container id: ", resp.ID)
-	return nil
 }
 
 func boolPtr(b bool) *bool { return &b }
