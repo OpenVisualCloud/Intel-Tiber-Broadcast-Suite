@@ -3,61 +3,74 @@
   "http_port": 95,
   "label": "intel-broadcast-suite",
   "device_tags": {
-    "pipeline": ["rx"]
+    "pipeline": [
+      "rx"
+    ]
   },
   "function": "rx",
   "activate_senders": false,
   "gpu_hw_acceleration": "none",
   "domain": "local",
+  "default_interface_ip": "192.168.2.2",
   "ffmpeg_grpc_server_address": "localhost",
   "ffmpeg_grpc_server_port": "50056",
-  "receiver_payload_type":112,
-  "receiver": [{
-    "stream_payload": {
-      "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
-        "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv422p10le",
-        "video_type": "rawvideo"
+  "receiver_payload_type": 112,
+  "receiver": [
+    {
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "pixel_format": "yuv422p10le",
+          "video_type": "rawvideo"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
       },
-      "audio": {
-        "channels": 2,
-        "sampleRate": 48000,
-        "format": "pcm_s24be",
-        "packetTime": "1ms"
-      }
-    },
-    "stream_type": {
-        "st2110" : {
-          "transport" : "st2110-20",
-          "payloadType" :  112
+      "stream_type": {
+        "st2110": {
+          "transport": "st2110-20",
+          "payloadType": 112
         }
       }
-  }],
-  "sender": [{
-    "stream_payload": {
-      "video": {
-        "frame_width": 1920,
-        "frame_height": 1080,
-        "frame_rate": { "numerator": 60, "denominator": 1 },
-        "pixel_format": "yuv420p",
-        "video_type": "h264",
-        "preset": "veryfast",
-        "profile": "main"
+    }
+  ],
+  "sender": [
+    {
+      "stream_payload": {
+        "video": {
+          "frame_width": 1920,
+          "frame_height": 1080,
+          "frame_rate": {
+            "numerator": 60,
+            "denominator": 1
+          },
+          "pixel_format": "yuv420p",
+          "video_type": "h264",
+          "preset": "veryfast",
+          "profile": "main"
+        },
+        "audio": {
+          "channels": 2,
+          "sampleRate": 48000,
+          "format": "pcm_s24be",
+          "packetTime": "1ms"
+        }
       },
-      "audio": {
-        "channels": 2,
-        "sampleRate": 48000,
-        "format": "pcm_s24be",
-        "packetTime": "1ms"
-      }
-    },
-    "stream_type": {
-      "file": {
-        "path": "/videos/recv",
-        "filename": "output3.h264"
+      "stream_type": {
+        "file": {
+          "path": "/videos/recv",
+          "filename": "output3.h264"
+        }
       }
     }
-  }]
+  ]
 }
