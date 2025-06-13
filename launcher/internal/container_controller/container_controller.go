@@ -118,7 +118,6 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, log lo
 			// Note - When you use the host network mode in Docker, the container shares
 			// the host machine's network stack.
 		}
-
 		err := createAndRunContainer(ctx, cli, log, &mcmAgentContainer, config)
 		if err != nil {
 			log.Error(err, "Failed to create container MCM MediaProxy Agent!")
@@ -185,7 +184,6 @@ func CreateAndRunContainers(ctx context.Context, cli ContainerController, log lo
 		}
 		instance.NmosClient.FfmpegConnectionAddress = instance.FfmpegPipeline.Network.IP
 		instance.NmosClient.FfmpegConnectionPort = strconv.Itoa(instance.FfmpegPipeline.GRPCPort)
-
 		err = createAndRunContainer(ctx, cli, log, &bcsNmosContainer, config)
 		if err != nil {
 			log.Error(err, "Failed to create container!")
