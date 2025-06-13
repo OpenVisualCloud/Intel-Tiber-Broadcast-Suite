@@ -150,7 +150,7 @@ func ConstructContainerConfig(containerInfo *general.Containers, config *parser.
 			hostConfig.NetworkMode = "host"
 		}
 	case general.BcsPipelineFfmpeg:
-		fmt.Printf(">> BcsPipelineFfmpeg: %+v\n", config.WorkloadToBeRun)
+		fmt.Printf("\n>>> BcsPipelineFfmpeg: %+v\n", config.WorkloadToBeRun[containerInfo.Id])
 
 		containerConfig = &container.Config{
 			User:  "root",
@@ -212,8 +212,8 @@ func ConstructContainerConfig(containerInfo *general.Containers, config *parser.
 			log.Error(errors.New("NMOS json file does not exist"), "NMOS json file does not exist")
 		}
 		errUpdateJson := updateNmosJsonFile(nmosFilePathJson,
-			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionAddress,
-			config.WorkloadToBeRun[containerInfo.Id].NmosClient.FfmpegConnectionPort)
+			config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.Network.IP,
+			strconv.Itoa(config.WorkloadToBeRun[containerInfo.Id].FfmpegPipeline.GRPCPort))
 		if errUpdateJson != nil {
 			log.Error(errUpdateJson, "Error updating NMOS json file")
 		}

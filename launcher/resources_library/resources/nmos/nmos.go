@@ -18,8 +18,8 @@ type Config struct {
 	GpuHwAcceleration       string     `json:"gpu_hw_acceleration"`
 	GpuHwAccelerationDevice string     `json:"gpu_hw_acceleration_device,omitempty"`
 	Domain                  string     `json:"domain"`
-	FfmpegGrpcServerAddress string     `json:"ffmpeg_grpc_server_address,omitempty"`
-	FfmpegGrpcServerPort    string     `json:"ffmpeg_grpc_server_port,omitempty"`
+	FfmpegGrpcServerAddress string     `json:"ffmpeg_grpc_server_address"`
+	FfmpegGrpcServerPort    string     `json:"ffmpeg_grpc_server_port"`
 	SenderPayloadType       int        `json:"sender_payload_type"`
 	Sender                  []Sender   `json:"sender"`
 	Receiver                []Receiver `json:"receiver"`
